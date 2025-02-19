@@ -1,6 +1,6 @@
 import axios from "axios"
 import { errorWrapper } from "../../middleware/errorWrapper.js"
-import { FetchUsingDroxy, FetchUsingFlaskServer, sitemapGenerator } from "../../utils/websiteHelpers.js"
+import { fetchUrlsFromSitemap, FetchUsingDroxy, FetchUsingFlaskServer, sitemapGenerator } from "../../utils/websiteHelpers.js"
 
 export const OrgNameSuggestion = errorWrapper(async (req, res, next) => {
     const { query } = req.query
@@ -17,13 +17,8 @@ export const subURLSuggest = errorWrapper(async (req, res, next) => {
     let { sitemapUrls, mainUrl } = await sitemapGenerator(url)
     let subLinks = [];
     let src = "";
-    if (sitemapUrls && sitemapUrls.length > 0) {
-        const flaskResult = await FetchUsingFlaskServer(sitemapUrls);
-        if (flaskResult.success) {
-            subLinks = flaskResult.urls;
-            src = "flask";
-        }
-    }
+    subLinks = (sitemapUrls && sitemapUrls.length > 0) ? await fetchUrlsFromSitemap(sitemapUrls) : []
+    src = "basics"
     if (subLinks.length === 0) {
         const droxyResult = await FetchUsingDroxy(mainUrl || url);
         if (droxyResult.success) {
@@ -31,5 +26,6 @@ export const subURLSuggest = errorWrapper(async (req, res, next) => {
             src = "droxy";
         }
     }
-    return { statusCode: 200, message: "Sub-URLs suggestions", data: { urls: subLinks, metadata: { size: subLinks.length, source: src } } };
+    console.log(src);
+    return { statusCode: 200, message: "Sub-URLs suggestions", data: { urls: subLinks, metadata: { size: subLinks.length } } };
 })
