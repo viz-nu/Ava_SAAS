@@ -33,6 +33,8 @@
     "nodemailer": "^6.10.0",
     "openai": "^4.85.1",
     "psl": "^1.15.0",
+    "puppeteer": "^24.2.1",
+    "xml2js": "^0.6.2",
     "xss-req-sanitizer": "^1.0.4",
     "yup": "^1.6.1"
   },

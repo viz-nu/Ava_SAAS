@@ -12,6 +12,7 @@ export const createCollection = errorWrapper(async (req, res) => {
     await collection.save();
     business.collections.push(collection._id);
     await business.save();
+
     return { statusCode: 201, message: "Registration successful", data: req.user }
 });
 
