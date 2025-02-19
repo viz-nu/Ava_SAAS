@@ -3,14 +3,15 @@ import { URL } from 'url';
 import psl from 'psl';
 import axios from 'axios';
 export const sitemapGenerator = async (url) => {
+    let baseUrl = "", sitemapUrls = []
     try {
         const urlObj = new URL(url);
         console.log("got url");
         const parsedDomain = psl.parse(urlObj.hostname);
-        let baseUrl = parsedDomain.domain || urlObj.hostname;
+        baseUrl = parsedDomain.domain || urlObj.hostname;
 
         // Attempt to fetch robots.txt
-        let sitemapUrls = [];
+     sitemapUrls = [];
         try {
             const response = await axios.get(`https://${baseUrl}/robots.txt`);
             const match = response.data.match(/Sitemap:\s*(.+)/gi);
@@ -43,6 +44,7 @@ export const sitemapGenerator = async (url) => {
         return { sitemapUrls, mainUrl: `https://${baseUrl}/` };
     } catch (error) {
         console.error(`Error processing ${url}:`, error.message);
+        return { sitemapUrls: [], mainUrl: `https://${baseUrl}/` };
     }
 };
 export const FetchUsingFlaskServer = async (sitemapUrls) => {
