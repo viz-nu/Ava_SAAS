@@ -13,7 +13,7 @@ import { getContext, openai } from "./utils/openai.js";
 import { MongoClient, ObjectId } from "mongodb";
 await initialize();
 const app = express();
-const whitelist = ["*"];
+const whitelist = ["https://ava.campusroot.com"];
 const corsOptions = {
 	origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
 	methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
