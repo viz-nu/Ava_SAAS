@@ -1,6 +1,6 @@
 import axios from "axios"
 import { errorWrapper } from "../../middleware/errorWrapper.js"
-import { fetchUrlsFromSitemap, FetchUsingDroxy, FetchUsingFlaskServer, sitemapGenerator } from "../../utils/websiteHelpers.js"
+import { fetchUrlsFromSitemap, FetchUsingDroxy, sitemapGenerator } from "../../utils/websiteHelpers.js"
 
 export const OrgNameSuggestion = errorWrapper(async (req, res, next) => {
     const { query } = req.query
