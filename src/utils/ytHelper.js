@@ -2,6 +2,7 @@ import { YoutubeTranscript } from "youtube-transcript"
 import { digest } from "./setup.js";
 
 export const processYT = async (collectionId, urls) => {
+    let result = [];
     try {
         for (const { url, lang = "en" } of urls) {
             let resp
@@ -26,14 +27,14 @@ export const processYT = async (collectionId, urls) => {
             }
             let text = resp.map(ele => ele.text).join('');
             await digest(text, url, collectionId)
+            result.push({ url, success: true })
         }
         console.log("Finished processing YouTube videos")
-        return { success: true }
+        return { success: true, data: result }
     } catch (error) {
         console.log(error);
-        return { success: false, error: error.message || error}
+        return { success: false, error: error.message || error, data: result }
     }
-
 }
 
 
