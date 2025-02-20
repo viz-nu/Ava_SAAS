@@ -226,10 +226,10 @@ export const processURLS = async (collectionId, urls) => {
     for (const ele of results.flat()) {
       if (ele.success) {
         await digestMarkdown(ele.content, ele.url, collectionId)
-        finalResults({ success: true, url: ele.url })
+        finalResults.push({ success: true, url: ele.url })
       }
       else {
-        finalResults({ success: false, url: ele.url, errors: ele.errors })
+        finalResults.push({ success: false, url: ele.url, errors: ele.errors })
       }
     };
     return { success: true, data: finalResults }

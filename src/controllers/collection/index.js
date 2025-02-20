@@ -45,15 +45,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                         //     "url": "https://files-accl.zohopublic.in/public/workdrive-public/download/wbmcx2b2fbba5db9845be81995c67065346d6"
                         // }
                         console.log("file process started");
-                        switch (metaData.mimetype) {
-                            case "application/pdf":
-                                result = await fileProcessor(collection._id, metaData.url);
-                                break;
-                            default:
-                                console.warn(`Unknown mimetype: ${metaData.mimetype}`);
-                                break;
-                        }
-
+                        if (metaData?.url) result = await fileProcessor(collection._id, metaData.url);
                         break;
                     default:
                         console.warn(`Unknown source type: ${source}`);
