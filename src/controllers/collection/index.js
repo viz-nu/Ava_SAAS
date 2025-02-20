@@ -2,7 +2,7 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
 import { Collection } from "../../models/Collection.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
-import { processYT } from "../../utils/ythelper.js";
+import { processYT } from "../../utils/ytHelper.js";
 // Create Collection
 export const createCollection = errorWrapper(async (req, res) => {
     await collectionSchema.validate(req.body);
