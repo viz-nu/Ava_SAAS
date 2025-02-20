@@ -2,6 +2,8 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
 import { Collection } from "../../models/Collection.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
+import { processFile } from "../../utils/fileHelper.js";
+import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 // Create Collection
 export const createCollection = errorWrapper(async (req, res) => {
@@ -21,6 +23,8 @@ export const createCollection = errorWrapper(async (req, res) => {
                 switch (source) {
                     case "website":
                         // Handle website processing here if needed
+                        console.log("website process started");
+                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls);
                         break;
                     case "youtube":
                         // urls =[{url:"https....",lang:"en"}]
@@ -40,6 +44,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                         //     "originalname": "news1.pdf",
                         //     "url": "https://files-accl.zohopublic.in/public/workdrive-public/download/wbmcx2b2fbba5db9845be81995c67065346d6"
                         // }
+                        console.log("file process started");
                         switch (metaData.mimetype) {
                             case "application/pdf":
                                 result = await fileProcessor(collection._id, metaData.url);
@@ -59,7 +64,8 @@ export const createCollection = errorWrapper(async (req, res) => {
                     {
                         $set: {
                             "contents.$.status": result.success ? "active" : "failed",
-                            "contents.$.error": result.success ? null : result.error
+                            "contents.$.error": result.success ? null : result.error,
+                            "contents.$.metaData.detailedReport": result.data,
                         }
                     }
                 );
