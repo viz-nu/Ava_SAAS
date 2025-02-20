@@ -2,18 +2,73 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
 import { Collection } from "../../models/Collection.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
+import { processYT } from "../../utils/ythelper.js";
 // Create Collection
 export const createCollection = errorWrapper(async (req, res) => {
     await collectionSchema.validate(req.body);
     const { name, contents } = req.body;
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const collection = new Collection({ name, contents });
+    const collection = new Collection({ name, contents, business: business._id, createdBy: req.user._id });
     await collection.save();
     business.collections.push(collection._id);
     await business.save();
+    (async function processCollection(collection) {
+        try {
+            for (const content of collection.contents) {
+                const { source, metaData, _id } = content;
+                let result
+                switch (source) {
+                    case "website":
+                        // Handle website processing here if needed
+                        break;
+                    case "youtube":
+                        // urls =[{url:"https....",lang:"en"}]
+                        console.log("youtube process started");
+                        // metaData = {
+                        //     "urls": [
+                        //         {
+                        //             "url": "https://www.youtube.com/watch?v=R3l3TvkwIAo&ab_channel=CaffeinatedCameras",
+                        //             "lang": "en"
+                        //         }],
+                        // }
+                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls);
+                        break;
+                    case "file":
+                        // metaData = {
+                        //     "mimetype": "application/pdf",
+                        //     "originalname": "news1.pdf",
+                        //     "url": "https://files-accl.zohopublic.in/public/workdrive-public/download/wbmcx2b2fbba5db9845be81995c67065346d6"
+                        // }
+                        switch (metaData.mimetype) {
+                            case "application/pdf":
+                                result = await fileProcessor(collection._id, metaData.url);
+                                break;
+                            default:
+                                console.warn(`Unknown mimetype: ${metaData.mimetype}`);
+                                break;
+                        }
 
-    return { statusCode: 201, message: "Registration successful", data: req.user }
+                        break;
+                    default:
+                        console.warn(`Unknown source type: ${source}`);
+                        break;
+                }
+                await Collection.updateOne(
+                    { _id: collection._id, "contents._id": _id },
+                    {
+                        $set: {
+                            "contents.$.status": result.success ? "active" : "failed",
+                            "contents.$.error": result.success ? null : result.error
+                        }
+                    }
+                );
+            }
+        } catch (error) {
+            console.error("Failed to sync collection:", error);
+        }
+    })(collection);
+    return { statusCode: 201, message: "Registration successful", data: collection }
 });
 
 // Get All Collections

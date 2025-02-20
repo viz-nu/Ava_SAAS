@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { createClient } from 'redis';
 
 export const connectDB = async (retryCount = 0) => {
     try {
@@ -14,11 +15,36 @@ export const connectDB = async (retryCount = 0) => {
         }
     }
 };
+export let redisClient;
+
+export const connectRedis = async () => {
+    if (redisClient) return redisClient
+    try {
+        redisClient = createClient({
+            url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
+            password: process.env.REDIS_PASSWORD
+        });
+        redisClient.on('error', (err) => console.log('Redis Client Error', err));
+        await redisClient.connect();
+        console.log('Connected to Redis');
+        return redisClient;
+    } catch (err) {
+        console.error('Error connecting to Redis:', err);
+    }
+};
+
+export const getRedisClient = async () => {
+    if (!redisClient) await connectRedis();
+    return redisClient;
+};
 
 export const initialize = async () => {
     try {
-        await connectDB()
-        // console.log('Application initialized successfully');
+        await Promise.all([
+            connectDB(),
+            connectRedis()
+        ])
+        console.log('Application initialized successfully');
     } catch (err) {
         console.error('Error during initialization:', err);
         process.exit(1); // Exit the process if initialization fails
