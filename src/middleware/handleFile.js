@@ -1,27 +1,33 @@
 import multer from "multer";
-export const handleFile = (req, res, next) => {
-    const upload = multer({
-        dest: "./public/data/uploads/",
-        fileFilter: (req, file, cb) => {
-            // const validFiles = ["image/jpeg", "image/png", "application/pdf"];
-            const validFiles = ["image/jpeg", "image/jpg", "image/png", "application/pdf", "text/plain", "video/mp4", "audio/mpeg"]
-            if (validFiles.includes(file.mimetype)) return cb(null, true);
-            return cb(new Error("File should be jpeg, png, mp4, mpeg, or pdf"), false);
-        },
-        limits: { fileSize: 50 * 1000 * 1000 },
-    }).single("uploaded_file");
+import { promisify } from "util";
+import { v4 as uuidv4 } from "uuid";
+const upload = multer({
+    dest: "./public/data/uploads/",
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + "-" + uuidv4() + path.extname(file.originalname));
+    },
+    fileFilter: (req, file, cb) => {
+        const validFiles = ["application/pdf", "text/plain"];
+        if (validFiles.includes(file.mimetype)) return cb(null, true);
+        return cb(new Error("File should be txt or pdf"), false);
+    },
+    limits: { fileSize: 50 * 1000 * 1000 },
+}).array("uploaded_files", 10); // Accepts up to 10 files
 
-    upload(req, res, (err) => {
-        if (err instanceof multer.MulterError) {
-            // A Multer error occurred when uploading.
-            return res.status(400).json({ success: false, message: err.message });
-        } else if (err) {
-            // An unknown error occurred when uploading.
-
-            return res.status(400).json({ success: false, message: "Please make sure the file is in JPEG, PNG, or PDF format" });
+const uploadAsync = promisify(upload);
+export const handleFiles = async (req, res, next) => {
+    try {
+        await uploadAsync(req, res);
+        if (!req.files || req.files.length === 0) {
+            return res.status(401).json({ success: false, message: "No files were uploaded", data: null });
+            // res.write(JSON.stringify({ success: false, message: "No files were uploaded" }) + "\n");
+            // return res.end({ done: true });
         }
-
-        // Everything went fine.
         next();
-    });
+    } catch (err) {
+        console.log(err);
+        return res.status(401).json({ success: false, message: err instanceof multer.MulterError ? err.message : "Please make sure the files are in TXT or PDF format", data: null });
+        // res.write(JSON.stringify({ success: false, message: err instanceof multer.MulterError ? err.message : "Please make sure the files are in TXT or PDF format" }) + "\n");
+        // res.end({ done: true });
+    }
 };

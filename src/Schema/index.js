@@ -1,5 +1,5 @@
 // import * as yup from "yup";
-import { string,object,ValidationError,array,mixed } from "yup"
+import { string, object, ValidationError, array, mixed, boolean } from "yup"
 import { Business } from "../models/Business.js"
 import { User } from "../models/User.js";
 export const registerSchema = object({
@@ -36,7 +36,7 @@ export const collectionSchema = object({
     name: string().required("Name is required"),
     contents: array().of(
         object({
-            source: string().oneOf(['website', 'youtubeVideo', 'file']).required(),
+            source: string().oneOf(['website', 'youtube', 'file']).required("Should be one of the following 'website', 'youtube', 'file' "),
             metaData: mixed().notRequired(),
             status: string().oneOf(['active', 'loading', 'failed']).default('loading')
         })
@@ -48,9 +48,22 @@ export const updateSchema = object({
     name: string().optional(),
     contents: array().of(
         object({
-            source: string().oneOf(['website', 'youtubeVideo', 'file']).optional(),
+            source: string().oneOf(['website', 'youtube', 'file']).optional("Should be one of the following 'website', 'youtube', 'file' "),
             metaData: mixed().optional(),
-            status: string().oneOf(['active', 'loading', 'failed']).optional()
+            status: string().oneOf(['active', 'loading', 'failed']).optional("Should be one of the following 'active', 'loading', 'failed'")
         })
     ).optional()
+});
+import mongoose from 'mongoose';
+
+const objectIdValidator = string().test('is-valid-objectId', 'Invalid ObjectId', (value) => mongoose.Types.ObjectId.isValid(value));
+export const agentSchema = object({
+    collections: array().of(objectIdValidator),
+    appearance: object().optional(),
+    personalInfo: object().optional(),
+    actions: array().of(object()).optional(),
+    // business: objectIdValidator.required('Business is required').optional(),
+    // createdBy: objectIdValidator.required('CreatedBy is required').optional(),
+    isPublic: boolean(),
+    isFeatured: boolean(),
 });

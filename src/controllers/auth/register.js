@@ -8,6 +8,7 @@ import path from 'path';
 import { readFileSync } from "fs";
 import bcrypt from "bcryptjs";
 import Handlebars from "handlebars";
+import { createFolder } from "../../utils/CRMintegrations.js";
 export const register = errorWrapper(async (req, res, next) => {
     const { name, email, password, role, BusinessName } = req.body;
     const newOrganization = await Business.create({ name: BusinessName })
@@ -15,6 +16,14 @@ export const register = errorWrapper(async (req, res, next) => {
     const user = await User.create({ email: email, password: bcrypt.hashSync(password, 12), role: role, name: name, business: newOrganization._id, isVerified: false, emailToken });
     newOrganization.members.push(user._id)
     newOrganization.createdBy = user._id
+    const doc = await createFolder(newOrganization._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO)
+    newOrganization.docData = {
+        folder: doc.id,
+        name: doc.attributes.name,
+        parent: doc.attributes.parent_id,
+        download_url: doc.attributes.download_url,
+        modified_by_zuid: doc.attributes.modified_by_zuid
+    }
     await Promise.all([user.save(), newOrganization.save()])
     let subject = "	[AVA] Click this link to confirm your email address"
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
