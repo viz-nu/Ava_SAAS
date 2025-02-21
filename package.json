@@ -13,7 +13,7 @@
   "description": "",
   "dependencies": {
     "@apollo/server": "^4.11.3",
-    "@langchain/community": "^0.3.31",
+    "@langchain/community": "^0.3.32",
     "@langchain/core": "^0.3.40",
     "axios": "^1.7.9",
     "bcryptjs": "^3.0.0",
@@ -43,7 +43,7 @@
     "uuid": "^11.1.0",
     "xml2js": "^0.6.2",
     "xss-req-sanitizer": "^1.0.4",
-    "youtube-transcript": "^1.2.1",
+    "youtubei.js": "^13.0.0",
     "yup": "^1.6.1"
   },
   "devDependencies": {

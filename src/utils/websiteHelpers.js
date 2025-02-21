@@ -196,14 +196,12 @@ export const processURLS = async (collectionId, urls) => {
     //     }
     //   })
     // );
-
     for (let i = 0; i < urls.length; i += batchSize) {
-      const batch = urls.slice(i, i + batchSize); // Grouping URLs in batches of 3
+      const batch = urls.slice(i, i + batchSize).map(ele => ele.url); // Grouping URLs in batches of 3
       tasks.push(
         limit(async () => {
           try {
             const { data } = await axios.post("http://52.91.15.209:5000/crawl-urls", { urls: batch });
-
             if (data.results && data.results.length > 0) {
               return data.results.map(result => ({
                 url: result.url,

@@ -33,19 +33,14 @@ export const createCollection = errorWrapper(async (req, res) => {
                         //     "urls": [
                         //         {
                         //             "url": "https://www.youtube.com/watch?v=R3l3TvkwIAo&ab_channel=CaffeinatedCameras",
-                        //             "lang": "en"
+                        //             data:{"lang": "en"}
                         //         }],
                         // }
                         if (metaData?.urls) result = await processYT(collection._id, metaData.urls);
                         break;
                     case "file":
-                        // metaData = {
-                        //     "mimetype": "application/pdf",
-                        //     "originalname": "news1.pdf",
-                        //     "url": "https://files-accl.zohopublic.in/public/workdrive-public/download/wbmcx2b2fbba5db9845be81995c67065346d6"
-                        // }
                         console.log("file process started");
-                        if (metaData?.url) result = await fileProcessor(collection._id, metaData.url);
+                        if (metaData?.urls) result = await fileProcessor(collection._id, metaData.urls[0]);
                         break;
                     default:
                         console.warn(`Unknown source type: ${source}`);
