@@ -25,7 +25,7 @@ export const handleFiles = async (req, res, next) => {
         }
         next();
     } catch (err) {
-        console.log(err);
+        console.error(err);
         return res.status(401).json({ success: false, message: err instanceof multer.MulterError ? err.message : "Please make sure the files are in TXT or PDF format", data: null });
         // res.write(JSON.stringify({ success: false, message: err instanceof multer.MulterError ? err.message : "Please make sure the files are in TXT or PDF format" }) + "\n");
         // res.end({ done: true });

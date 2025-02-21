@@ -26,7 +26,7 @@ export const verifyTokens = async (source, accessToken, refreshToken) => {
         if (refreshResult.success && refreshResult.message === "Valid Refresh Token") return { success: true, message: refreshResult.message, decoded: refreshResult.decoded, accessToken: refreshResult.newAccessToken, refreshToken: refreshResult.newRefreshToken };
         return { success: false, message: refreshResult.message, decoded: null, accessToken: null, refreshToken: null }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return { success: false, message: 'Error verifying tokens' };
     }
 }
