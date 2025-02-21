@@ -28,8 +28,7 @@ export const subURLSuggest = errorWrapper(async (req, res, next) => {
             src = "droxy";
         }
     }
-    console.log(src);
-    return { statusCode: 200, message: "Sub-URLs suggestions", data: { urls: subLinks, metadata: { size: subLinks.length } } };
+    return { statusCode: 200, message: "Sub-URLs suggestions", data: { urls: subLinks, metadata: { size: subLinks.length, src: src } } };
 })
 
 export const uploadFile = errorWrapper(async (req, res) => {
@@ -39,7 +38,6 @@ export const uploadFile = errorWrapper(async (req, res) => {
         let folder_ID = business.docData.folder;
         const uploadResult = await Promise.all(
             req.files.map(async (file) => {
-                console.log(file.path);
                 const uploadedFileResponse = await uploadFileToWorkDrive({
                     originalname: file.originalname,
                     path: file.path,

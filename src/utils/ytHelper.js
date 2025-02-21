@@ -1,31 +1,13 @@
-import { YoutubeTranscript } from "youtube-transcript"
+import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
 import { digest } from "./setup.js";
-
+import { writeFileSync } from "fs"
 export const processYT = async (collectionId, urls) => {
     let result = [];
     try {
-        for (const { url, lang = "en" } of urls) {
-            let resp
-            try {
-                resp = await YoutubeTranscript.fetchTranscript(url, { lang })
-            } catch (error) {
-                const errorJson = JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)));
-                // Extract the available language from the error message
-                const match = errorJson.message.match(/Available languages: (.+)/);
-                if (match) {
-                    const availableLang = match[1].trim(); // Extracted language
-                    console.log(`Retrying with available language: ${availableLang}`);
-                    // Retry with the available language
-                    try {
-                        resp = await YoutubeTranscript.fetchTranscript(url, { lang: availableLang });
-                    } catch (retryError) {
-                        console.error("Retry failed:", retryError);
-                    }
-                } else {
-                    console.error("No available languages found. Full error:", errorJson);
-                }
-            }
-            let text = resp.map(ele => ele.text).join('');
+        for (const { url, data } of urls) {
+            const loader = YoutubeLoader.createFromUrl(url, { language: data.lang || "en", addVideoInfo: true, });
+            const docs = await loader.load();
+            let text = docs.map(ele => ele.pageContent).join('');
             await digest(text, url, collectionId)
             result.push({ url, success: true })
         }

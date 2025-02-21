@@ -5,8 +5,6 @@ export const authMiddleware = async (req, res, next) => {
     try {
         if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
         const token = req.headers.authorization.split(" ")[1];
-        console.log(token,);
-        
         if (!token) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
         const source = req.headers['user-agent']; // Use device token or user-agent string as the identifier
         const { success, message, decoded, accessToken, refreshToken } = await verifyTokens(source, token, req.cookies.AVA_RT)
@@ -18,7 +16,7 @@ export const authMiddleware = async (req, res, next) => {
         if (accessToken && refreshToken) {
             res.cookie("AVA_RT", refreshToken, {
                 secure: true,
-                // httpOnly: true,
+                httpOnly: true,
                 sameSite: 'strict'
             })
             req.AccessToken = accessToken;
