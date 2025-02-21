@@ -49,7 +49,7 @@ app.get("/client/:clientId", async (req, res) => {
         await client.close();
         res.status(200).json({ success: true, message: "Client info", data: clientDetails })
     } catch (error) {
-        console.log(error);
+        console.error(error);
         res.status(500).json({ error: error.message });
     }
 })

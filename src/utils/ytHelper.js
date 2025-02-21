@@ -14,7 +14,7 @@ export const processYT = async (collectionId, urls) => {
         console.log("Finished processing YouTube videos")
         return { success: true, data: result }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return { success: false, error: error.message || error, data: result }
     }
 }

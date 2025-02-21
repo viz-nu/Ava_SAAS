@@ -11,7 +11,7 @@ export const EmbeddingFunct = async (text) => {
         });
         return { data, model, usage }
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return null;
     }
 }
@@ -26,7 +26,7 @@ export const getSummary = async (chunk) => {
         })
         return choices[0].message.content
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return null;
     }
 }
@@ -70,7 +70,7 @@ export const getContext = async (institutionName, text) => {
         return result;
     } catch (error) {
         await client.close();
-        console.log(error);
+        console.error(error);
         return null;
     }
 }
@@ -114,7 +114,7 @@ export const getContextMain = async (collectionIds, text) => {
         return result;
     } catch (error) {
         await client.close();
-        console.log(error);
+        console.error(error);
         return null;
     }
 }

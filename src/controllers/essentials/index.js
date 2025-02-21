@@ -64,7 +64,7 @@ export const uploadFile = errorWrapper(async (req, res) => {
         );
         return { statusCode: 200, message: "File uploaded successfully", data: uploadResult }
     } catch (err) {
-        console.log(err);
+        console.error(err);
         return { statusCode: 500, message: "File upload failed", data: err.message }
     }
 });
