@@ -173,7 +173,7 @@ export const deleteCollection = errorWrapper(async (req, res) => {
     if (!business.collections.includes(req.params.id)) return { statusCode: 404, message: "You are not authorized to delete this collection", data: null }
     business.collections = business.collections.filter(id => id.toString() !== req.params.id);
     // Delete the collection
-    Promise.all([
+    await Promise.all([
         Collection.findByIdAndDelete(req.params.id),
         Data.deleteMany({ collection: req.params.id }),
         business.save()
