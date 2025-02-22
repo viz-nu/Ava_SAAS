@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node -r dotenv/config src/index.js",
-    "dev": "nodemon --exec 'clear && node -r dotenv/config src/index.js'"
+    "dev": "nodemon"
   },
   "type": "module",
   "keywords": [],
