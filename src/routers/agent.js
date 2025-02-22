@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, isAdmin } from "../middleware/auth.js";
-import { createAgent, deleteAgent, getAllAgents, getAgentById, updateAgent } from "../controllers/product.js/index.js";
+import { createAgent, deleteAgent, getAgentById, getAllAgents, updateAgent } from "../controllers/agent.js/index.js";
 
 export const AgentsRouter = Router()
 AgentsRouter.post('/', authMiddleware, isAdmin, createAgent);
