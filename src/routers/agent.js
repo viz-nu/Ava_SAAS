@@ -1,5 +1,4 @@
 import { Router } from "express";
-// import { createCollection, deleteCollection, getCollectionById, getCollections, updateCollection } from "../controllers/collection/index.js";
 import { authMiddleware, isAdmin } from "../middleware/auth.js";
 import { createAgent, deleteAgent, getAllAgents, getAgentById, updateAgent } from "../controllers/product.js/index.js";
 

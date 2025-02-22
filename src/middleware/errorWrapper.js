@@ -29,6 +29,7 @@ export const errorWrapper = (fn) => {
         }
       }
     } catch (error) {
+      console.error(error);
       await session.abortTransaction();
       next(error);
     }

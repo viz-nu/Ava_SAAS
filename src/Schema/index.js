@@ -37,22 +37,22 @@ export const collectionSchema = object({
     contents: array().of(
         object({
             source: string().oneOf(['website', 'youtube', 'file']).required("Should be one of the following 'website', 'youtube', 'file' "),
-            metaData: mixed().notRequired(),
-            status: string().oneOf(['active', 'loading', 'failed']).default('loading')
+            metaData: mixed().notRequired()
         })
     ).optional()
 });
 
 export const updateSchema = object({
-    action: string().oneOf(['rename', 'addContent', 'removeContent']).required(),
+    action: string().oneOf(['rename', 'addContents', 'removeContents']).required(),
     name: string().optional(),
-    contents: array().of(
+    addContents: array().of(
         object({
             source: string().oneOf(['website', 'youtube', 'file']).optional("Should be one of the following 'website', 'youtube', 'file' "),
-            metaData: mixed().optional(),
-            status: string().oneOf(['active', 'loading', 'failed']).optional("Should be one of the following 'active', 'loading', 'failed'")
+            metaData: mixed().optional()
         })
-    ).optional()
+    ).optional(),
+    removeContentIds: array().optional()
+
 });
 import mongoose from 'mongoose';
 
