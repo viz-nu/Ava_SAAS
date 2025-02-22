@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import fs from "fs";
 import path from "path";
 import { digest } from "./setup.js";
+import { URL } from "url";
 
 const mimeToExt = {
     // Documents & Text Files
@@ -44,22 +45,59 @@ const mimeToExt = {
     "audio/wav": "wav",
     "video/webm": "webm"
 };
-const downloadFile = async (url) => {
-    const __dirname = path.dirname(new URL(import.meta.url).pathname);
-    const response = await fetch(url);
-    const buffer = await response.buffer();
-    const contentType = response.headers.get('content-type');
-    const ext = mimeToExt[contentType] || "bin"; // Default to 'bin' if unknown
-    let fileType = contentType.split('/')[0]
-    const tempFilePath = path.join(__dirname, `${new Date().toISOString()}.${ext}`);
-    fs.writeFileSync(tempFilePath, buffer);
-    return { tempFilePath, fileType, ext };
+// const downloadFile = async (url) => {
+//     const __dirname = path.dirname(new URL(import.meta.url).pathname);
+//     const response = await fetch(url);
+//     const buffer = await response.buffer();
+//     const contentType = response.headers.get('content-type');
+//     const ext = mimeToExt[contentType] || "bin"; // Default to 'bin' if unknown
+//     let fileType = contentType.split('/')[0]
+//     const tempFilePath = path.resolve(process.cwd(), `public/data/uploads/${new Date().toISOString()}.${ext}`);
+//     fs.writeFileSync(tempFilePath, buffer);
+//     return { tempFilePath, fileType, ext };
+// };
+// const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const isAbsoluteUrl = (url) => {
+    try {
+        new URL(url);
+        return true;
+    } catch {
+        return false;
+    }
 };
+const downloadFile = async (url) => {
+    try {
+        if (!isAbsoluteUrl(url)) {
+            throw new Error(`Invalid URL: ${url}. Only absolute URLs are supported.`);
+        }
+        console.log(url);
 
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch file: ${response.statusText}`);
+
+        const buffer = await response.arrayBuffer();
+        const contentType = response.headers.get("content-type") || "application/octet-stream";
+        const ext = mimeToExt[contentType] || mime.extension(contentType) || "bin";
+        const fileType = contentType.split("/")[0];
+
+        const uploadDir = path.resolve(process.cwd(), "public/data/uploads");
+        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+        const timestamp = new Date().toISOString().replace(/:/g, "-");
+        const tempFilePath = path.join(uploadDir, `${timestamp}.${ext}`);
+
+        fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+
+        return { tempFilePath, fileType, ext };
+    } catch (error) {
+        console.error("Error downloading file:", error.message);
+        throw error;
+    }
+};
 export const processFile = async (collectionId, url) => {
     let result = [];
     try {
-        let { tempFilePath, ext } = await downloadFile(url);
+        let { tempFilePath, fileType, ext } = await downloadFile(url);
         if (!tempFilePath) throw new Error("Failed to download file");
         switch (ext) {
             case "pdf":
@@ -79,11 +117,10 @@ export const processFile = async (collectionId, url) => {
                 break;
 
 
-                // more document itegrations 
-                // https://js.langchain.com/docs/integrations/document_loaders/file_loaders/
+            // more document itegrations 
+            // https://js.langchain.com/docs/integrations/document_loaders/file_loaders/
 
 
-                
             default:
                 throw new Error("unsupported file type");
             // break;
