@@ -14,7 +14,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
-import { Message } from "./models/messages.js";
+import { Message } from "./models/Messages.js";
 await initialize();
 const app = express();
 const whitelist = ["https://ava.campusroot.com", "http://localhost:5174"];
