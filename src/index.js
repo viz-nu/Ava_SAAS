@@ -9,9 +9,12 @@ import { initialize } from "./utils/dbConnect.js";
 import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
-import { getContext, openai } from "./utils/openai.js";
+import { getContext, getContextMain, openai } from "./utils/openai.js";
 import { MongoClient, ObjectId } from "mongodb";
 import { Agent } from "./models/Agent.js";
+import { Business } from "./models/Business.js";
+import { Conversation } from "./models/Conversations.js";
+import { Message } from "./models/messages.js";
 await initialize();
 const app = express();
 const whitelist = ["https://ava.campusroot.com", "http://localhost:5174"];
@@ -141,88 +144,57 @@ app.post('/chat-bot', async (req, res) => {
 });
 app.post('v2/chat-bot', async (req, res) => {
     try {
-        const { userMessage, prevMessages = [], agentId, streamOption = false } = req.body;
-        const agent = await Agent.findById(agentId);
+        const { userMessage, agentId, streamOption = false, conversationId } = req.body;
+        const [agent, business, conversation] = await Promise.all([
+            Agent.findById(agentId),
+            Business.findOne({ agents: agentId }),
+            conversationId ? Conversation.findById(conversationId) : null
+        ]);
         if (!agent) return res.status(404).json({ error: 'Agent not found' });
-
-        // const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-        let { systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
-        const message = { "query": userMessage, "response": "", "embeddingTokens": {}, "responseTokens": {}, clientId: new ObjectId(clientId) }
-        const { context, data, embeddingTokens } = await getContext(institutionName, userMessage)
-        message.embeddingTokens = embeddingTokens
-        message.context = context
-        if (data == "") console.log("Empty context received")
-        if (!streamOption) {
-            const { choices, model, usage } = await openai.chat.completions.create({
-                // const { choices, model, usage } = await lamaClient.chat.completions.create({
-                model: "gpt-4o-mini",
-                // model: "llama3.2-3b",
-                messages: [
-                    { "role": "system", "content": systemPrompt },
-                    ...prevMessages,
-                    {
-                        role: "user",
-                        content: UserPrompt.replace("${contexts}", data).replace("${userMessage}", userMessage).replace("${businessName}", businessName)
-                    }],
-                tools: tools.length > 1 ? tools : null,
-                store: tools.length > 1 ? true : null,
-                tool_choice: tools.length > 1 ? "auto" : null,
-            })
-            message.responseTokens = { model, usage }
-            message.response = choices[0].message.content
-            await client.db("Demonstrations").collection("Analysis").insertOne(message);
-            await client.close();
-            return res.status(200).send({ success: true, data: choices[0].message.content })  // if tools are used then it works differently
+        if (!business) return res.status(404).json({ error: 'Business not found' });
+        let prevMessages = [{ role: "system", content: agent.personalInfo.systemPrompt || "" }];
+        if (conversation) {
+            const messages = await Message.find({ conversationId }).select("query response");
+            prevMessages.push(...messages.flatMap(({ query, response }) => [
+                { role: "user", content: query },
+                { role: "assistant", content: response }
+            ]));
+        } else {
+            conversation = await Conversation.create({ business: business._id, agent: agentId });
         }
-        const stream = await openai.chat.completions.create({
-            // const stream = await lamaClient.chat.completions.create({
-            // model: "llama3.2-3b",
-            model: "gpt-4o-mini",
-            messages: [
-                { "role": "system", "content": systemPrompt, },
-                ...prevMessages,
-                {
-                    role: "user",
-                    content: UserPrompt.replace("${contexts}", data).replace("${userMessage}", userMessage)
-                }],
-            stream: true,
-            tools: tools.length > 1 ? tools : null,
-            store: tools.length > 1 ? true : null,
-            tool_choice: tools.length > 1 ? "auto" : null,
-        });
-        let finalToolCalls = [];
+        const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
+        const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible.`;
+        prevMessages.push({ role: "user", content: userPrompt });
+        const message = {
+            query: userMessage,
+            response: "",
+            embeddingTokens,
+            responseTokens: {},
+            conversationId: conversation._id,
+            context
+        };
+        if (!streamOption) {
+            const { choices, model, usage } = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages });
+            message.responseTokens = { model, usage };
+            message.response = choices[0].message.content;
+            await Message.create(message);
+            return res.status(200).json({ success: true, data: message.response });
+        }
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
+        const stream = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages, stream: true });
         for await (const chunk of stream) {
-            const { choices } = chunk
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+                message.response += content;
+                res.write(JSON.stringify({ chunk: content }));
+            }
             if (chunk.choices[0].finish_reason === "stop") {
-                const { model, usage } = chunk
-                message.responseTokens = { model, usage }
-            }
-            const toolCalls = choices[0].delta.tool_calls || [];
-            for (const toolCall of toolCalls) {
-                const { index } = toolCall;
-                if (!finalToolCalls[index]) finalToolCalls[index] = toolCall;
-                finalToolCalls[index].function.arguments += toolCall.function.arguments;
-            }
-            if (choices[0]?.delta?.content !== null && choices[0]?.delta?.content !== undefined) {
-                message.response += choices[0]?.delta?.content
-                res.write(JSON.stringify({ chunk: choices[0]?.delta?.content, toolResponse: [] }));
+                message.responseTokens = { model: chunk.model, usage: chunk.usage };
             }
         }
-        const functionCalls = []
-        finalToolCalls.forEach(ele => {
-            let parameters = JSON.parse(ele.function.arguments); // Parse the arguments string
-            let functionName = ele.function.name; // Get the function name
-            const result = toolFunctions[functionName](parameters)
-            functionCalls.push(result)
-        });
-        await client.db("Demonstrations").collection("Analysis").insertOne(message);
-        await client.close();
-        res.end(JSON.stringify({
-            chunk: "",
-            toolResponse: functionCalls
-        }))
+        await Message.create(message);
+        res.end(JSON.stringify({ chunk: "" }))
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
