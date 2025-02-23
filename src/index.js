@@ -142,10 +142,10 @@ app.post('/chat-bot', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-app.post('v2/chat-bot', async (req, res) => {
+app.post('/v2/chat-bot', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId } = req.body;
-        const [agent, business, conversation] = await Promise.all([
+        let [agent, business, conversation] = await Promise.all([
             Agent.findById(agentId),
             Business.findOne({ agents: agentId }),
             conversationId ? Conversation.findById(conversationId) : null
@@ -178,7 +178,7 @@ app.post('v2/chat-bot', async (req, res) => {
             message.responseTokens = { model, usage };
             message.response = choices[0].message.content;
             await Message.create(message);
-            return res.status(200).json({ success: true, data: message.response });
+            return res.status(200).json({ success: true, data: message.response, conversationId: conversation._id });
         }
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
@@ -187,14 +187,14 @@ app.post('v2/chat-bot', async (req, res) => {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
                 message.response += content;
-                res.write(JSON.stringify({ chunk: content }));
+                res.write(JSON.stringify({ conversationId: conversation._id, chunk: content }));
             }
             if (chunk.choices[0].finish_reason === "stop") {
                 message.responseTokens = { model: chunk.model, usage: chunk.usage };
             }
         }
         await Message.create(message);
-        res.end(JSON.stringify({ chunk: "" }))
+        res.end(JSON.stringify({ conversationId: conversation._id, chunk: "" }))
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });

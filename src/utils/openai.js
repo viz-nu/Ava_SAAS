@@ -98,7 +98,7 @@ export const getContextMain = async (collectionIds, text) => {
                     score: { $meta: 'vectorSearchScore' }
                 }
             }
-        ]).toArray()
+        ])
         const result = {
             context: [], data: "", embeddingTokens: {
                 model: embeddingResult.model,
