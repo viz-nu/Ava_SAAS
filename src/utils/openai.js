@@ -75,9 +75,7 @@ export const getContext = async (institutionName, text) => {
     }
 }
 export const getContextMain = async (collectionIds, text) => {
-    const dbName = 'Demonstrations';
-    const [client, embeddingResult] = await Promise.all([MongoClient.connect(process.env.GEN_MONGO_URL), EmbeddingFunct(text)])
-    const db = client.db(dbName);
+    const embeddingResult = await EmbeddingFunct(text)
     try {
         let context = await Data.aggregate([
             {
@@ -88,19 +86,19 @@ export const getContextMain = async (collectionIds, text) => {
                     "path": "embeddingVector",
                     "queryVector": embeddingResult.data[0].embedding,
                     "numCandidates": 100,
-                    "limit": 3
+                    "limit": 5
                 }
             },
             {
                 $project: {
-                    content: 1,
+                    // content: 1,
                     chunk_number: 1,
                     metadata: 1,
+                    summary:1,
                     score: { $meta: 'vectorSearchScore' }
                 }
             }
         ]).toArray()
-        await client.close();
         const result = {
             context: [], data: "", embeddingTokens: {
                 model: embeddingResult.model,
@@ -108,12 +106,11 @@ export const getContextMain = async (collectionIds, text) => {
             }
         }
         context.forEach((ele) => {
-            result.data += '\n' + ele.content + '\n'
+            result.data += '\n' + ele.summary + '\n'
             result.context.push({ chunk_number: ele.chunk_number, ...ele.metadata, score: ele.score })
         })
         return result;
     } catch (error) {
-        await client.close();
         console.error(error);
         return null;
     }
