@@ -2,6 +2,7 @@ import { model, Schema } from 'mongoose';
 
 const BusinessSchema = new Schema({
     name: String,
+    logoURL: String,
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     docData: { type: Schema.Types.Mixed },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],

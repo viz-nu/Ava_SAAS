@@ -10,8 +10,8 @@ import bcrypt from "bcryptjs";
 import Handlebars from "handlebars";
 import { createFolder } from "../../utils/CRMintegrations.js";
 export const register = errorWrapper(async (req, res, next) => {
-    const { name, email, password, role, BusinessName } = req.body;
-    const newOrganization = await Business.create({ name: BusinessName })
+    const { name, email, password, role, BusinessName, logoURL } = req.body;
+    const newOrganization = await Business.create({ name: BusinessName, logoURL: logoURL })
     let emailToken = (Math.random() + 1).toString(16).substring(2);
     const user = await User.create({ email: email, password: bcrypt.hashSync(password, 12), role: role, name: name, business: newOrganization._id, isVerified: false, emailToken });
     newOrganization.members.push(user._id)
