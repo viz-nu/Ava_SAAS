@@ -215,7 +215,7 @@ app.put("/reaction", async (req, res) => {
     try {
         // Assuming messageId is the _id of the document in the database
         const updatedMessage = await Message.findByIdAndUpdate(
-            messageId, 
+            messageId,
             { $set: { reaction: reaction } },
             { new: true }  // Option to return the updated document
         );
@@ -229,7 +229,17 @@ app.put("/reaction", async (req, res) => {
         return res.status(500).json({ message: "An error occurred", error: err.message });
     }
 });
-
+app.get("/get-agent", function (req, res) {
+    try {
+        const { agentId } = req.query
+        const agent = Agent.findById(agentId)
+        if (!agent) return res.status(404).json({ message: 'Agent not found' });
+        res.status(200).json({ success: true, data: agent });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred", error: error.message });
+    }
+})
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 
