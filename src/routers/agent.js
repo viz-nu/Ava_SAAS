@@ -5,6 +5,6 @@ import { createAgent, deleteAgent, getAgentById, getAllAgents, updateAgent } fro
 export const AgentsRouter = Router()
 AgentsRouter.post('/', authMiddleware, isAdmin, createAgent);
 AgentsRouter.get('/', authMiddleware, isAdmin, getAllAgents);
-AgentsRouter.get('/:id', authMiddleware, isAdmin, getAgentById);
+AgentsRouter.get('/:id', getAgentById);
 AgentsRouter.put('/:id', authMiddleware, isAdmin, updateAgent);
 AgentsRouter.delete('/:id', authMiddleware, isAdmin, deleteAgent);

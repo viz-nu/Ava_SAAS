@@ -201,6 +201,35 @@ app.post('/v2/chat-bot', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.put("/reaction", async (req, res) => {
+    const { messageId, reaction } = req.body;
+
+    // Validation for messageId and reaction
+    if (!messageId || !reaction) {
+        return res.status(400).json({ message: "Message ID and reaction are required" });
+    }
+    if (!["neutral", "like", "dislike"].includes(reaction)) {
+        return res.status(400).json({ message: "Undefined reaction" });
+    }
+
+    try {
+        // Assuming messageId is the _id of the document in the database
+        const updatedMessage = await Message.findByIdAndUpdate(
+            messageId, 
+            { $set: { reaction: reaction } },
+            { new: true }  // Option to return the updated document
+        );
+
+        if (!updatedMessage) {
+            return res.status(404).json({ message: "Message not found" });
+        }
+
+        return res.status(200).json({ success: true, message: "message updated" });
+    } catch (err) {
+        return res.status(500).json({ message: "An error occurred", error: err.message });
+    }
+});
+
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 

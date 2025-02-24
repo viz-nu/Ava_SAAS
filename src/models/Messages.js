@@ -4,6 +4,7 @@ const MessagesSchema = new Schema({
     conversationId: { type: Schema.Types.ObjectId, ref: 'conversation' },
     query: String,
     response: String,
+    reaction: { type: String, default: "neutral", enum: ["neutral", "like", "dislike"] },
     embeddingTokens: {
         model: String,
         usage: { type: Schema.Types.Mixed }
