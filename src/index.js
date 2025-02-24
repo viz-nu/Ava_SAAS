@@ -232,7 +232,7 @@ app.put("/reaction", async (req, res) => {
 app.get("/get-agent", async (req, res)=> {
     try {
         const { agentId } = req.query
-        const agent = await Agent.findById(agentId)
+        const agent = await Agent.findById(agentId).populate("business")
         if (!agent) return res.status(404).json({ message: 'Agent not found' });
         res.status(200).json({ success: true, data: agent });
     } catch (error) {
