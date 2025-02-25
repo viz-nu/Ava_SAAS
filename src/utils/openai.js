@@ -91,7 +91,7 @@ export const getContextMain = async (collectionIds, text) => {
             },
             {
                 $project: {
-                    // content: 1,
+                    content: 1,
                     chunk_number: 1,
                     metadata: 1,
                     summary:1,
@@ -106,7 +106,7 @@ export const getContextMain = async (collectionIds, text) => {
             }
         }
         context.forEach((ele) => {
-            result.data += '\n' + ele.summary + '\n'
+            result.data += '\n' + ele.content + '\n'
             result.context.push({ chunk_number: ele.chunk_number, ...ele.metadata, score: ele.score })
         })
         return result;
