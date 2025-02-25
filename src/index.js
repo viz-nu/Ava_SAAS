@@ -17,12 +17,19 @@ import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 await initialize();
 const app = express();
-const whitelist = ["https://ava.campusroot.com", "http://localhost:5174"];
+// const whitelist = ["https://ava.campusroot.com", "http://localhost:5174"];
+// const corsOptions = {
+//     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
+//     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+//     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],  // Add necessary headers
+//     credentials: true,
+//     optionsSuccessStatus: 200
+// };
 const corsOptions = {
-    origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
+    origin: '*', // Allows all origins
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],  // Add necessary headers
-    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    credentials: true, // Be careful: This should not be used with '*'
     optionsSuccessStatus: 200
 };
 app.set('trust proxy', 1) // trust first proxy
