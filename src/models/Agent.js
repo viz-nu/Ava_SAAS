@@ -6,7 +6,7 @@ const AgentSchema = new Schema({
     personalInfo: { type: Schema.Types.Mixed },
     actions: [{ type: Schema.Types.Mixed }],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     isPublic: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
 }, {
