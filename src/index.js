@@ -201,6 +201,7 @@ app.post('/v2/chat-bot', async (req, res) => {
                 msg.responseTokens = { model: chunk.model, usage: chunk.usage };
             }
         }
+        console.log(msg)
         await msg.save()
         res.end(JSON.stringify({ conversationId: conversation._id, chunk: "", messageId: msg._id }))
     } catch (error) {
