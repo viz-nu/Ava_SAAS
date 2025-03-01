@@ -208,6 +208,18 @@ app.post('/v2/chat-bot', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.post("/contexts", async (req, res) => {
+    try {
+        const { userMessage, agentId, streamOption = false, conversationId } = req.body;
+        let agent = await Agent.findById(agentId);
+        if (!agent) return res.status(404).json({ error: 'Agent not found' });
+        const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
+        res.status(200).json({ success: true, data: { context, data, embeddingTokens } });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+})
 app.put("/reaction", async (req, res) => {
     const { messageId, reaction } = req.body;
 

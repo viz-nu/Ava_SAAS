@@ -79,13 +79,13 @@ export const getContextMain = async (collectionIds, text) => {
     try {
         let context = await Data.aggregate([
             {
-                "$vectorSearch": {
+                $vectorSearch: {
                     "exact": false,
-                    "filter": { "collection": { $in: collectionIds } },
+                    "filter": { "collection": { $in: collectionIds } },      // collectionIds will be like [ new ObjectId('67bcb48ed9a4b270b14fa171') ]
                     "index": "Data",
                     "path": "embeddingVector",
                     "queryVector": embeddingResult.data[0].embedding,
-                    "numCandidates": 100,
+                    "numCandidates": 500,
                     "limit": 5
                 }
             },
@@ -99,7 +99,7 @@ export const getContextMain = async (collectionIds, text) => {
                 }
             }
         ])
-        const result = {
+        let result = {
             context: [], data: "", embeddingTokens: {
                 model: embeddingResult.model,
                 usage: embeddingResult.usage
