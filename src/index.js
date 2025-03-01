@@ -194,14 +194,13 @@ app.post('/v2/chat-bot', async (req, res) => {
         for await (const chunk of stream) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
-                message.response += content;
+                msg.response += content;
                 res.write(JSON.stringify({ conversationId: conversation._id, chunk: content, messageId: msg._id }));
             }
             if (chunk.choices[0].finish_reason === "stop") {
                 msg.responseTokens = { model: chunk.model, usage: chunk.usage };
             }
         }
-        console.log(msg)
         await msg.save()
         res.end(JSON.stringify({ conversationId: conversation._id, chunk: "", messageId: msg._id }))
     } catch (error) {
@@ -237,7 +236,7 @@ app.put("/reaction", async (req, res) => {
         return res.status(500).json({ message: "An error occurred", error: err.message });
     }
 });
-app.get("/get-agent", async (req, res)=> {
+app.get("/get-agent", async (req, res) => {
     try {
         const { agentId } = req.query
         const agent = await Agent.findById(agentId).populate("business")
