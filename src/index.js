@@ -259,6 +259,57 @@ app.get("/get-agent", async (req, res) => {
         res.status(500).json({ message: "An error occurred", error: error.message });
     }
 })
+import ical, { ICalCalendarMethod } from 'ical-generator';
+import { sendMail } from "./utils/sendEmail.js";
+app.post('/send-invite', async (req, res) => {
+    try {
+        const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
+        if (!attendees || !Array.isArray(attendees) || attendees.length === 0) return res.status(400).json({ error: 'Attendees list is required' });
+        if (!startTime || !endTime || !timezone) return res.status(400).json({ error: 'Start time, end time, and timezone are required' });
+        // const startTime = new Date();
+        // startTime.setHours(startTime.getHours() + 1);
+        // const endTime = new Date();
+        // endTime.setHours(startTime.getHours() + 1);
+        const calendar = ical({ name: 'Appointment Invitation' });
+        calendar.method(ICalCalendarMethod.REQUEST);
+        calendar.createEvent({
+            start: new Date(startTime),
+            end: new Date(endTime),
+            timezone: timezone,
+            organizer: { name: 'AVA', email: 'no-reply@ava.com' },
+            // created?: ICalDateTimeValue | null;
+            // lastModified?: ICalDateTimeValue | null;
+            summary: summary || 'Meeting Invitation',
+            description: description || 'You are invited to a meeting.',
+            location: location || 'Online',
+            url: url || 'http://example.com',
+            attendees: attendees.map(email => ({ email }))
+        });
+        await sendMail({
+            to: attendees.join(','),
+            subject: 'Appointment Schedule Invitation',
+            text: `You are invited to a meeting. Summary: ${summary}`,
+            html: `<div style="font-family: Arial, sans-serif; color: #333;">
+                  <h2>You are invited to a meeting</h2>
+                  <p><strong>Summary:</strong> ${summary}</p>
+                  <p><strong>Description:</strong> ${description}</p>
+                  <p><strong>Location:</strong> ${location}</p>
+                  <p><strong>Time:</strong> ${new Date(startTime).toUTCString()} - ${new Date(endTime).toUTCString()} (${timezone})</p>
+                  <p><a href="${url}" style="color: blue;">Join Meeting</a></p>
+               </div>`,
+            attachments: [{
+                filename: 'invite.ics',
+                content: calendar.toString(),
+                contentType: 'text/calendar'
+            }]
+        })
+        res.json({ message: 'Invitation sent' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message })
+    }
+
+});
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 
