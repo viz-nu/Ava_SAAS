@@ -14,12 +14,15 @@ export const sendMail = async (emailData) => {
                 pass: PASS,
             },
         });
-        info = await transporter.sendMail({
+        let mailData = {
             from: `"AVA" <${AUTH}>`, // sender address
             to: emailData.to, // list of receivers
             subject: emailData.subject, // Subject line
-            html: emailData.html, // html body
-        });
+        }
+        if (emailData.attachments.length > 0) mailData.attachments = emailData.attachments
+        if (emailData.html) mailData.html = emailData.html
+        if (emailData.text) mailData.text = emailData.text
+        info = await transporter.sendMail(mailData);
         console.log("Message sent: %s", info.messageId);
     } catch (error) {
         console.error(error);
