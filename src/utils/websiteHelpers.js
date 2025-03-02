@@ -182,7 +182,7 @@ export const processURLS = async (collectionId, urls) => {
       tasks.push(
         limit(async () => {
           try {
-            const { data } = await axios.post("http://52.91.15.209:5000/crawl-urls", { urls: batch });
+            const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
             if (data.results && data.results.length > 0) {
               return data.results.map(result => ({
                 url: result.url,
