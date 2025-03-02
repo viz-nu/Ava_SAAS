@@ -17,14 +17,15 @@ export const EmbeddingFunct = async (text) => {
 }
 export const getSummary = async (chunk) => {
     try {
-        let { choices } = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                { role: "system", content: "Summarize the given text concisely while preserving key points." },
-                { role: "user", content: chunk }
-            ]
-        })
-        return choices[0].message.content
+        // let { choices } = await openai.chat.completions.create({
+        //     model: "gpt-4o-mini",
+        //     messages: [
+        //         { role: "system", content: "Summarize the given text concisely while preserving key points." },
+        //         { role: "user", content: chunk }
+        //     ]
+        // })
+        // return choices[0].message.content
+        return ""
     } catch (error) {
         console.error(error);
         return null;
