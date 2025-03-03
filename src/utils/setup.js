@@ -14,7 +14,7 @@ export const digest = async (text, url, collectionId) => {
         const batch = chunks.slice(i, i + batchSize);
         const responses = await Promise.all(
             batch.map(async (chunk, index) => {
-                const enc = encoding_for_model(model);
+                const enc = encoding_for_model("text-embedding-3-small");
                 const tokens = enc.encode(chunk);
                 const tokensUsed = tokens.length;
                 const summary = await getSummary(chunk)
@@ -35,7 +35,7 @@ export const digestMarkdown = async (text, url, collectionId) => {
         const batch = chunks.slice(i, i + batchSize);
         const responses = await Promise.all(
             batch.map(async (chunk, index) => {
-                const enc = encoding_for_model(model);
+                const enc = encoding_for_model("text-embedding-3-small");
                 const tokens = enc.encode(text);
                 const tokensUsed = tokens.length;
                 const summary = await getSummary(chunk)
