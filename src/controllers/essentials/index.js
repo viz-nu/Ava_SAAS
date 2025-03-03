@@ -1,6 +1,8 @@
+import { URL } from 'url';
+import psl from 'psl';
 import axios from "axios"
 import { errorWrapper } from "../../middleware/errorWrapper.js"
-import { fetchUrlsFromSitemap, FetchUsingDroxy, sitemapGenerator } from "../../utils/websiteHelpers.js"
+import { fetchUrlsFromSitemap, fetchUrlsUsingLangChain, FetchUsingDroxy, sitemapGenerator } from "../../utils/websiteHelpers.js"
 import { Business } from "../../models/Business.js"
 import Document from "../../models/Document.js"
 import { uploadFileToWorkDrive } from "../../utils/CRMintegrations.js"
@@ -13,14 +15,20 @@ export const OrgNameSuggestion = errorWrapper(async (req, res, next) => {
     return { statusCode: 200, message: "Organization name suggestions", data }
 })
 export const subURLSuggest = errorWrapper(async (req, res, next) => {
-    let { url } = req.query;
+    let { url } = req.query, subLinks = [], src = "LangChain";
     if (!url) return res.status(400).json({ error: 'Missing url' });
     url = decodeURIComponent(url);
-    let { sitemapUrls, mainUrl } = await sitemapGenerator(url)
-    let subLinks = [];
-    let src = "";
-    subLinks = (sitemapUrls && sitemapUrls.length > 0) ? await fetchUrlsFromSitemap(sitemapUrls) : []
-    src = "basics"
+    const urlObj = new URL(url);
+    console.log("got url");
+    const parsedDomain = psl.parse(urlObj.hostname);
+    let baseUrl = parsedDomain.domain || urlObj.hostname;
+    let mainUrl = `https://${baseUrl}`
+    subLinks = await fetchUrlsUsingLangChain(mainUrl)
+    if (subLinks.length === 0) {
+        let sitemapUrls = await sitemapGenerator(mainUrl)
+        subLinks = (sitemapUrls && sitemapUrls.length > 0) ? await fetchUrlsFromSitemap(sitemapUrls) : []
+        src = "basics"
+    }
     if (subLinks.length === 0) {
         const droxyResult = await FetchUsingDroxy(mainUrl || url);
         if (droxyResult.success) {
