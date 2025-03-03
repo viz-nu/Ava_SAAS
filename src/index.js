@@ -170,7 +170,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             conversation = await Conversation.create({ business: business._id, agent: agentId });
         }
         const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
-        const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible.`;
+        const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly`;
         prevMessages.push({ role: "user", content: userPrompt });
         const message = {
             query: userMessage,
