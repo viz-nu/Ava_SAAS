@@ -14,9 +14,12 @@ export const digest = async (text, url, collectionId) => {
         const batch = chunks.slice(i, i + batchSize);
         const responses = await Promise.all(
             batch.map(async (chunk, index) => {
+                const enc = encoding_for_model(model);
+                const tokens = enc.encode(chunk);
+                const tokensUsed = tokens.length;
                 const summary = await getSummary(chunk)
                 let embeddingVector = await EmbeddingFunct(summary)
-                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { url: url } }
+                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url } }
             }));
         await Data.insertMany(responses)
     }
