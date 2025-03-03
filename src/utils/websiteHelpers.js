@@ -1,31 +1,23 @@
-
-import { URL } from 'url';
-import psl from 'psl';
 import axios from 'axios';
 import { parseStringPromise } from "xml2js";
 import https from "https";
 import pLimit from "p-limit";
 import { digestMarkdown } from './setup.js';
-export const sitemapGenerator = async (url) => {
-  let baseUrl = "", sitemapUrls = []
+import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
+import { writeFileSync } from 'fs';
+export const sitemapGenerator = async (mainUrl) => {
   try {
-    const urlObj = new URL(url);
-    console.log("got url");
-    const parsedDomain = psl.parse(urlObj.hostname);
-    baseUrl = parsedDomain.domain || urlObj.hostname;
-
     // Attempt to fetch robots.txt
-    sitemapUrls = [];
+    let sitemapUrls = [];
     try {
-      const response = await axios.get(`https://${baseUrl}/robots.txt`);
+      const response = await axios.get(`${mainUrl}/robots.txt`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
+        }
+      });
       const match = response.data.match(/Sitemap:\s*(.+)/gi);
-      if (match) {
-        sitemapUrls = match.map(line => line.replace(/Sitemap:\s*/, '').trim());
-      }
-    } catch (err) {
-      console.warn(`No robots.txt found for ${url}, trying default sitemap paths.`);
-    }
-
+      if (match) sitemapUrls = match.map(line => line.replace(/Sitemap:\s*/, '').trim());
+    } catch (err) { console.warn(`No robots.txt found for ${mainUrl}, trying default sitemap paths.`); }
     if (sitemapUrls.length === 0) {
       const commonPaths = [
         '/sitemap.xml', '/sitemap_index.xml', '/sitemap-index.xml', '/sitemap.php',
@@ -34,21 +26,21 @@ export const sitemapGenerator = async (url) => {
       ];
       await Promise.all(commonPaths.map(async (path) => {
         try {
-          const sitemapResponse = await axios.get(`https://${baseUrl}${path}`);
-          if (sitemapResponse.status === 200) sitemapUrls.push(`https://${baseUrl}${path}`);
+          const sitemapResponse = await axios.get(`${mainUrl}${path}`);
+          if (sitemapResponse.status === 200) sitemapUrls.push(`${mainUrl}${path}`);
         } catch (error) {
           console.error(`error at ${path}`);
         }
       }))
     }
     if (sitemapUrls.length === 0) {
-      console.error(`No sitemap found for ${url}`);
+      console.error(`No sitemap found for ${mainUrl}`);
       return [];
     }
-    return { sitemapUrls, mainUrl: `https://${baseUrl}/` };
+    return sitemapUrls;
   } catch (error) {
-    console.error(`Error processing ${url}:`, error.message);
-    return { sitemapUrls: [], mainUrl: `https://${baseUrl}/` };
+    console.error(`Error processing ${mainUrl}:`, error.message);
+    return [];
   }
 };
 const userAgents = [
@@ -59,7 +51,6 @@ const userAgents = [
 const agent = new https.Agent({ rejectUnauthorized: false });
 export const fetchUrlsFromSitemap = async (sitemapUrls) => {
   const seenUrls = new Set();
-  const allUrls = [];
   const fetchSitemap = async (url, attempt = 0) => {
     if (seenUrls.has(url)) return [];
     seenUrls.add(url);
@@ -213,5 +204,31 @@ export const processURLS = async (collectionId, urls) => {
   } catch (error) {
     console.error(error);
     return { success: false, error: error.message || error, data: finalResults }
+  }
+}
+export const fetchUrlsUsingLangChain = async (sitemapUrl, visited = new Set()) => {
+  try {
+    if (visited.has(sitemapUrl)) return [];
+    visited.add(sitemapUrl);
+    // Initialize the SitemapLoader with the given URL
+    const loader = new SitemapLoader(sitemapUrl);
+
+    // Load all URLs from the sitemap
+    const sitemap = await loader.parseSitemap();
+
+    let allUrls = [];
+    for (const entry of sitemap) {
+      if (entry.loc.endsWith(".xml")) {
+        // Recursively fetch sub-sitemaps
+        const subUrls = await fetchSitemapUrls(entry.loc, visited);
+        allUrls = allUrls.concat(subUrls);
+      } else {
+        allUrls.push(entry.loc);
+      }
+    }
+    return allUrls;
+  } catch (error) {
+    console.error("Error fetching sitemap URLs:", error);
+    return [];
   }
 }
