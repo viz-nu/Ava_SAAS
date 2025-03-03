@@ -24,6 +24,7 @@ export const subURLSuggest = errorWrapper(async (req, res, next) => {
     let baseUrl = parsedDomain.domain || urlObj.hostname;
     let mainUrl = `https://${baseUrl}`
     subLinks = await fetchUrlsUsingLangChain(mainUrl)
+    subLinks.map(sublink => { return { url: sublink } })
     if (subLinks.length === 0) {
         let sitemapUrls = await sitemapGenerator(mainUrl)
         subLinks = (sitemapUrls && sitemapUrls.length > 0) ? await fetchUrlsFromSitemap(sitemapUrls) : []
