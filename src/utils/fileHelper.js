@@ -100,6 +100,7 @@ export const processFile = async (collectionId, url) => {
     try {
         let { tempFilePath, fileType, ext } = await downloadFile(url);
         if (!tempFilePath) throw new Error("Failed to download file");
+        let content
         switch (ext) {
             case "pdf":
                 const loader = new PDFLoader(tempFilePath);
