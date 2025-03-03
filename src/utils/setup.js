@@ -1,6 +1,7 @@
 import { RecursiveCharacterTextSplitter, MarkdownTextSplitter } from "langchain/text_splitter";
 import { EmbeddingFunct, getSummary } from "./openai.js";
 import { Data } from "../models/Data.js";
+import { encoding_for_model } from "tiktoken";
 
 export const digest = async (text, url, collectionId) => {
     const splitter = new RecursiveCharacterTextSplitter({
@@ -31,9 +32,12 @@ export const digestMarkdown = async (text, url, collectionId) => {
         const batch = chunks.slice(i, i + batchSize);
         const responses = await Promise.all(
             batch.map(async (chunk, index) => {
+                const enc = encoding_for_model(model);
+                const tokens = enc.encode(text);
+                const tokensUsed = tokens.length;
                 const summary = await getSummary(chunk)
                 let embeddingVector = await EmbeddingFunct(summary)
-                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { url: url } }
+                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url } }
             }));
         await Data.insertMany(responses)
     }
