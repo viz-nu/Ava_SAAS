@@ -7,6 +7,7 @@ const DataSchema = new Schema({
     summary: { type: String },
     embeddingVector: { type: [Number] },
     metadata: {
+        tokensUsed: { type: Number },
         chunkSize: { type: Number }, // length of content
         createdAt: { type: Date, default: Date.now },  // time of creation
         url: { type: String }

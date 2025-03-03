@@ -4,7 +4,6 @@ import https from "https";
 import pLimit from "p-limit";
 import { digestMarkdown } from './setup.js';
 import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
-import { writeFileSync } from 'fs';
 export const sitemapGenerator = async (mainUrl) => {
   try {
     // Attempt to fetch robots.txt

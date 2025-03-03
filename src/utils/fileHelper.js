@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { digest } from "./setup.js";
 import { URL } from "url";
+import officeParser from "officeparser";
 
 const mimeToExt = {
     // Documents & Text Files
@@ -103,20 +104,18 @@ export const processFile = async (collectionId, url) => {
             case "pdf":
                 const loader = new PDFLoader(tempFilePath);
                 const docs = await loader.load();
-                for await (const doc of docs) await digest(doc.pageContent, url, collectionId)
+                content = docs.map(doc => doc.pageContent).join("\n");
+                // for await (const doc of docs) await digest(doc.pageContent, url, collectionId)
                 break;
             case "txt":
-                // For .txt files, just read the content directly
-                const txtContent = fs.readFileSync(filePath, 'utf-8');
-                await digest(txtContent, url, collectionId);
-                break;
             case "json":
-                // For JSON files, parse the content and handle it
-                const jsonContent = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-                await digest(JSON.stringify(jsonContent, null, 2), url, collectionId);
+                content = fs.readFileSync(tempFilePath, "utf-8");
                 break;
-
-
+            case "docx":
+            case "xlsx":
+            case "pptx":
+                content = await officeParser.parse(tempFilePath);
+                break;
             // more document itegrations 
             // https://js.langchain.com/docs/integrations/document_loaders/file_loaders/
 
@@ -125,6 +124,7 @@ export const processFile = async (collectionId, url) => {
                 throw new Error("unsupported file type");
             // break;
         }
+        await digest(content, url, collectionId);
         result.push({ url, success: true })
         fs.unlinkSync(tempFilePath);
         return { success: true, data: result }
