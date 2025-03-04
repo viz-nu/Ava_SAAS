@@ -170,7 +170,11 @@ app.post('/v2/chat-bot', async (req, res) => {
                 { role: "user", content: query },
                 { role: "assistant", content: response }
             ]));
-        } else conversation = await Conversation.create({ business: business._id, agent: agentId });
+        } else {
+            let clientIP = getClientIP(req);
+            let geoLocation = await getGeoLocation(clientIP);
+            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
+        }
         const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
         const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`;
         prevMessages.push({ role: "user", content: userPrompt });
@@ -266,6 +270,7 @@ app.get("/get-agent", async (req, res) => {
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { tokenSize } from "./utils/tiktoken.js";
+import { getClientIP, getGeoLocation } from "./utils/ipWorker.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
