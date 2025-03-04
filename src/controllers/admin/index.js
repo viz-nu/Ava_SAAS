@@ -1,16 +1,36 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
+import { Conversation } from "../../models/Conversations.js";
 import { Data } from "../../models/Data.js";
+import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
 export const Dashboard = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate("agents members documents");
+    const business = await Business.findById(req.user.business).populate("agents members documents").select("collections");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const result = await Data.aggregate([
-        { $match: { collection: { $in: business.collections } } },
-        { $group: { _id: null, totalTokensUsed: { $sum: "$metadata.tokensUsed" } } }
-      ]);
-      const totalTokensUsed = result[0]?.totalTokensUsed || 0;
-    return { statusCode: 200, message: "Dashboard retrieved", data: { user: req.user, business: business ,totalTokensUsed} };
+    const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts] = await Promise.all([
+        business.collections.length > 0
+            ? Data.aggregate([
+                { $match: { collection: { $in: business.collections } } },
+                { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
+            ]).then(res => res[0]?.totalKnowledgeTokensUsed || 0)
+            : 0,
+        Conversation.find({ business: req.user.business }, "_id").then(async conversations => {
+            if (conversations.length === 0) return 0;
+            return Message.aggregate([
+                { $match: { conversationId: { $in: conversations.map(c => c._id) } } },
+                { $group: { _id: null, totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" } } }
+            ]).then(res => res[0]?.totalChatTokensUsed || 0);
+        }),
+        Message.aggregate([
+            { $group: { _id: "$reaction", count: { $sum: 1 } } }
+        ]).then(res =>
+            res.reduce((acc, { _id, count }) => {
+                acc[_id] = count;
+                return acc;
+            }, { neutral: 0, like: 0, dislike: 0 }) // Ensure all keys exist
+        )
+    ]);
+    return { statusCode: 200, message: "Dashboard retrieved", data: { user: req.user, business, totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts } };
 })
 export const editBusiness = errorWrapper(async (req, res) => {
     let business = await Business.findById(req.user.business)
