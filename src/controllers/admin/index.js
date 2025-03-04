@@ -29,7 +29,12 @@ export const raiseTicket = errorWrapper(async (req, res) => {
     const message = `Dear Support Team, \n\nA new support ticket has been raised by ${req.user.email}. \n\nIssue Details:\n${issueDetails}\n\nPlease assist as soon as possible.\n\nBest regards,\nSupport System`;
     const htmlMessage = `
             <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
-                <h2 style="color: #007bff;">New Support Ticket Raised</h2>
+                <h2 style="color: #007bff;">
+  New Support Ticket Raised by 
+  <a href="mailto:${req.user.email}" style="color: #007bff; text-decoration: none;">
+    ${req.user.email}
+  </a>
+</h2>
                 <p><strong>Issue Details:</strong></p>
                 <blockquote style="background: #f8f9fa; padding: 10px; border-left: 4px solid #007bff;">
                     ${issueDetails}
@@ -57,7 +62,9 @@ export const raiseTicket = errorWrapper(async (req, res) => {
         <blockquote style="background: #f8f9fa; padding: 10px; border-left: 4px solid #28a745;">
             ${issueDetails}
         </blockquote>
-        <p>If you need to add any more information, feel free to reply to ankit@onewindow.co.</p>
+        <p>If you need to add any more information, feel free to reply to   <a href="mailto:ankit@onewindow.co" style="color: #007bff; text-decoration: none;">
+    ankit@onewindow.co
+  </a></p>
         <p>Best Regards,</p>
         <p><strong>Support Team</strong></p>
     </div>

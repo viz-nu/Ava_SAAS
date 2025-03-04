@@ -96,7 +96,7 @@ const downloadFile = async (url) => {
         throw error;
     }
 };
-export const processFile = async (collectionId, url) => {
+export const processFile = async (collectionId, url, receivers = [], _id) => {
     try {
         let { tempFilePath, fileType, ext } = await downloadFile(url);
         if (!tempFilePath) throw new Error("Failed to download file");
@@ -138,6 +138,7 @@ export const processFile = async (collectionId, url) => {
             }
         );
         fs.unlinkSync(tempFilePath);
+        receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1 } }));
         return { success: true, data: null }
     } catch (error) {
         console.error(error);
