@@ -1,10 +1,16 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
+import { Data } from "../../models/Data.js";
 import { sendMail } from "../../utils/sendEmail.js";
 export const Dashboard = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate("agents collections members documents");
+    const business = await Business.findById(req.user.business).populate("agents members documents");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    return { statusCode: 200, message: "Dashboard retrieved", data: { user: req.user, business: business } };
+    const result = await Data.aggregate([
+        { $match: { collection: { $in: business.collections } } },
+        { $group: { _id: null, totalTokensUsed: { $sum: "$metadata.tokensUsed" } } }
+      ]);
+      const totalTokensUsed = result[0]?.totalTokensUsed || 0;
+    return { statusCode: 200, message: "Dashboard retrieved", data: { user: req.user, business: business ,totalTokensUsed} };
 })
 export const editBusiness = errorWrapper(async (req, res) => {
     let business = await Business.findById(req.user.business)
