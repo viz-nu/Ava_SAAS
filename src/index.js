@@ -17,7 +17,6 @@ import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 import { createServer } from "http";
 import { initializeSocket, io } from "./utils/io.js";
-
 await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
@@ -171,11 +170,9 @@ app.post('/v2/chat-bot', async (req, res) => {
                 { role: "user", content: query },
                 { role: "assistant", content: response }
             ]));
-        } else {
-            conversation = await Conversation.create({ business: business._id, agent: agentId });
-        }
+        } else conversation = await Conversation.create({ business: business._id, agent: agentId });
         const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
-        const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly`;
+        const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`;
         prevMessages.push({ role: "user", content: userPrompt });
         const message = {
             query: userMessage,
@@ -203,7 +200,9 @@ app.post('/v2/chat-bot', async (req, res) => {
                 res.write(JSON.stringify({ conversationId: conversation._id, chunk: content, messageId: msg._id }));
             }
             if (chunk.choices[0].finish_reason === "stop") {
-                msg.responseTokens = { model: chunk.model, usage: chunk.usage };
+                const completion_tokens = tokenSize(chunk.model, msg.response);
+                const prompt_tokens = tokenSize(chunk.model, msg.query);
+                msg.responseTokens = { model: chunk.model, usage: { completion_tokens, prompt_tokens, total_tokens: completion_tokens + prompt_tokens } };
             }
         }
         await msg.save()
@@ -266,6 +265,7 @@ app.get("/get-agent", async (req, res) => {
 })
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
+import { tokenSize } from "./utils/tiktoken.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
