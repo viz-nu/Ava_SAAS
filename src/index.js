@@ -15,8 +15,13 @@ import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
+import { createServer } from "http";
+import { initializeSocket, io } from "./utils/io.js";
+
 await initialize();
 const app = express();
+const server = createServer(app); // Create HTTP server
+await initializeSocket(server);
 // const whitelist = ["https://ava.campusroot.com", "http://localhost:5174"];
 // const corsOptions = {
 //     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
@@ -314,4 +319,5 @@ app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
+// app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

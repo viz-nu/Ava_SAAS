@@ -25,7 +25,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                     case "website":
                         // Handle website processing here if needed
                         console.log("website process started");
-                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls);
+                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers = [], _id);
                         break;
                     case "youtube":
                         // urls =[{url:"https....",lang:"en"}]
@@ -53,7 +53,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                         $set: {
                             "contents.$.status": result.success ? "active" : "failed",
                             "contents.$.error": result.success ? null : result.error,
-                            "contents.$.metaData.detailedReport": result.data,
+                            // "contents.$.metaData.detailedReport": result.data,
                         }
                     }
                 );
