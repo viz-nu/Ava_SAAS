@@ -276,14 +276,9 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
 
       // Emit progress update
       completed += batch.length;
-      const progressData = { total, progress: completed };
-      console.log("receivers", receivers);
-      receivers.forEach(receiver => {
-        console.log("1", receiver.toString());
-        io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData })
-      });
+      const progressData = { total, progress: completed, collectionId: collectionId };
+      receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
     }
-
     return { success: true };
   } catch (error) {
     console.error("Error processing URLs:", error);

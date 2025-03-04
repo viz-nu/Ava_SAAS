@@ -22,7 +22,7 @@ export const processYT = async (collectionId, urls, receivers = [], _id) => {
                 }
             );
             completed += 1
-            const progressData = { total, progress: completed }
+            const progressData = { total, progress: completed, collectionId: collectionId }
             receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
         }
         console.log("Finished processing YouTube videos")
