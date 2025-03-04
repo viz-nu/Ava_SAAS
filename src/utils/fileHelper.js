@@ -138,7 +138,7 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
             }
         );
         fs.unlinkSync(tempFilePath);
-        receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1 } }));
+        receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1, collectionId: collectionId } }));
         return { success: true, data: null }
     } catch (error) {
         console.error(error);
