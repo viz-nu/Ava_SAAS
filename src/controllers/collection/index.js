@@ -4,6 +4,7 @@ import { Collection } from "../../models/Collection.js";
 import { Data } from "../../models/Data.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
 import { processFile } from "../../utils/fileHelper.js";
+import { io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 // Create Collection
