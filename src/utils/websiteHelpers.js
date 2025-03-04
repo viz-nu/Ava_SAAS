@@ -277,7 +277,7 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
       // Emit progress update
       completed += batch.length;
       const progressData = { total, progress: completed };
-      receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { data: progressData }));
+      receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action:"adding-collection",data: progressData }));
     }
 
     return { success: true };
