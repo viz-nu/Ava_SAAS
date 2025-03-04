@@ -5,6 +5,7 @@ import path from "path";
 import { digest } from "./setup.js";
 import { URL } from "url";
 import officeParser from "officeparser";
+import { Collection } from "../models/Collection.js";
 
 const mimeToExt = {
     // Documents & Text Files
@@ -96,7 +97,6 @@ const downloadFile = async (url) => {
     }
 };
 export const processFile = async (collectionId, url) => {
-    let result = [];
     try {
         let { tempFilePath, fileType, ext } = await downloadFile(url);
         if (!tempFilePath) throw new Error("Failed to download file");
@@ -126,12 +126,22 @@ export const processFile = async (collectionId, url) => {
             // break;
         }
         await digest(content, url, collectionId);
-        result.push({ url, success: true })
+        await Collection.updateOne(
+            { _id: collectionId, "contents._id": _id },
+            {
+                $push: {
+                    "contents.$.metaData.detailedReport": {
+                        success: true,
+                        url: url
+                    }
+                }
+            }
+        );
         fs.unlinkSync(tempFilePath);
-        return { success: true, data: result }
+        return { success: true, data: null }
     } catch (error) {
         console.error(error);
-        return { success: false, error: error.message || error, data: result }
+        return { success: false, error: error.message || error, data: null }
     }
 }
 

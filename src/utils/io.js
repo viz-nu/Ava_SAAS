@@ -29,7 +29,11 @@ export async function initializeSocket(server) {
 
     // Socket events
     io.on('connection', (socket) => {
-        console.log("User connected:", socket.id);
+
+        const userId = socket.handshake.query.userId;
+        console.log("user connected joining", userId);
+        userId ? socket.join(userId) : null;
+
         socket.on('join', (triggerObject) => {
             const userId = triggerObject.data._id;
             console.log("User joined:", triggerObject.data.name);
