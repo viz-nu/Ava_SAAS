@@ -19,10 +19,10 @@ export const createCollection = errorWrapper(async (req, res) => {
     await business.save();
     (async function processCollection(collection, business) {
         try {
-            receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "processing" } }));
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
                 let result, receivers = business.members
+                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } }));
                 switch (source) {
                     case "website":
                         // Handle website processing here if needed
