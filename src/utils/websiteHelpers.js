@@ -105,6 +105,7 @@ export const fetchUrlsFromSitemap = async (sitemapUrls) => {
   const allFetchedUrls = sitemapUrls.length > 0 ? await Promise.all(sitemapUrls.map(fetchSitemap)) : []
   return allFetchedUrls.flat();
 };
+
 export const FetchUsingDroxy = async (url) => {
   try {
     let response = await fetch("https://api.droxy.ai/auth/login", {

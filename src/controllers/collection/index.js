@@ -25,7 +25,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                     case "website":
                         // Handle website processing here if needed
                         console.log("website process started");
-                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers = [], _id);
+                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers = business.members, _id);
                         break;
                     case "youtube":
                         // urls =[{url:"https....",lang:"en"}]
@@ -37,11 +37,11 @@ export const createCollection = errorWrapper(async (req, res) => {
                         //             data:{"lang": "en"}
                         //         }],
                         // }
-                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls);
+                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receivers = business.members, _id);
                         break;
                     case "file":
                         console.log("file process started");
-                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url);
+                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url, receivers = business.members, _id);
                         break;
                     default:
                         console.warn(`Unknown source type: ${source}`);
