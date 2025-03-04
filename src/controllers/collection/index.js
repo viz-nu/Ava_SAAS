@@ -16,16 +16,16 @@ export const createCollection = errorWrapper(async (req, res) => {
     await collection.save();
     business.collections.push(collection._id);
     await business.save();
-    (async function processCollection(collection) {
+    (async function processCollection(collection, business) {
         try {
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
-                let result
+                let result, receivers = business.members
                 switch (source) {
                     case "website":
                         // Handle website processing here if needed
                         console.log("website process started");
-                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers = business.members, _id);
+                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers, _id);
                         break;
                     case "youtube":
                         // urls =[{url:"https....",lang:"en"}]
@@ -37,11 +37,11 @@ export const createCollection = errorWrapper(async (req, res) => {
                         //             data:{"lang": "en"}
                         //         }],
                         // }
-                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receivers = business.members, _id);
+                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receivers, _id);
                         break;
                     case "file":
                         console.log("file process started");
-                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url, receivers = business.members, _id);
+                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url, receivers, _id);
                         break;
                     default:
                         console.warn(`Unknown source type: ${source}`);
@@ -61,7 +61,7 @@ export const createCollection = errorWrapper(async (req, res) => {
         } catch (error) {
             console.error("Failed to sync collection:", error);
         }
-    })(collection);
+    })(collection, business);
     return { statusCode: 201, message: "Registration successful", data: collection }
 });
 
