@@ -19,6 +19,7 @@ export const createCollection = errorWrapper(async (req, res) => {
     await business.save();
     (async function processCollection(collection, business) {
         try {
+            receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "processing" } }));
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
                 let result, receivers = business.members
@@ -58,7 +59,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                         }
                     }
                 );
-                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-active", data: { collectionId: collection._id, status: result.success } }));
+                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: result.success ? "active" : "failed", } }));
             }
         } catch (error) {
             console.error("Failed to sync collection:", error);
