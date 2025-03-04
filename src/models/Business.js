@@ -3,6 +3,16 @@ import { model, Schema } from 'mongoose';
 const BusinessSchema = new Schema({
     name: String,
     logoURL: String,
+    facts: [String],
+    sector: String,
+    tagline: String,
+    address: String,
+    description: String,
+    contact: {
+        mail: String,
+        phone: String,
+        website: String
+    },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     docData: { type: Schema.Types.Mixed },
     members: [{ type: Schema.Types.ObjectId, ref: 'Users' }],
