@@ -223,7 +223,7 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
 
   try {
     const tasks = [];
-    
+
     for (let i = 0; i < urls.length; i += batchSize) {
       const batch = urls.slice(i, i + batchSize).map(ele => ele.url);
       tasks.push(
@@ -251,7 +251,7 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
     for (const batchResult of results) {
       if (batchResult.status !== "fulfilled") continue; // Skip failed batches
       const batch = batchResult.value;
-      
+
       // Process the batch efficiently
       const updateOps = batch.map(async (ele) => {
         if (ele.success) {
@@ -277,7 +277,11 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
       // Emit progress update
       completed += batch.length;
       const progressData = { total, progress: completed };
-      receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action:"adding-collection",data: progressData }));
+      console.log("receivers", receivers);
+      receivers.forEach(receiver => {
+        console.log("1", receiver.toString());
+        io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData })
+      });
     }
 
     return { success: true };
