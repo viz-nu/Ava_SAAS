@@ -37,6 +37,7 @@ export async function initializeSocket(server) {
         socket.on('join', (triggerObject) => {
             const userId = triggerObject.data._id;
             console.log("User joined:", triggerObject.data.name);
+            console.log(triggerObject);
             if (userId) socket.join(userId);
         });
         socket.on('disconnect', () => { console.log("User disconnected:", socket.id) });
