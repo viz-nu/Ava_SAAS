@@ -57,7 +57,7 @@ export const createCollection = errorWrapper(async (req, res) => {
                         }
                     }
                 );
-                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-active", data: { collectionId: collection._id } }));
+                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-active", data: { collectionId: collection._id, status: result.success } }));
             }
         } catch (error) {
             console.error("Failed to sync collection:", error);
