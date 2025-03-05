@@ -48,11 +48,11 @@ export const editBusiness = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Business updated", data: business }
 });
 export const createActions = errorWrapper(async (req, res) => {
-    const { intent, intentData } = req.body
+    const { intent, intentData, name, webhook } = req.body
     if (!intent || !intentData) return { statusCode: 404, message: "intend or intentData not found", data: null }
     const business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const action = await Action.create({ business: business._id, intent, intentData })
+    const action = await Action.create({ business: business._id, intent, intentData, name, webhook })
     return { statusCode: 201, message: "Action created successfully", data: action }
 })
 export const getActions = errorWrapper(async (req, res) => {
