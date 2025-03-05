@@ -8,7 +8,7 @@ import { Action } from "../../models/Action.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts] = await Promise.all([
+    const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts, actionsData] = await Promise.all([
         business.collections.length > 0
             ? Data.aggregate([
                 { $match: { collection: { $in: business.collections } } },
@@ -28,11 +28,38 @@ export const Dashboard = errorWrapper(async (req, res) => {
             res.reduce((acc, { _id, count }) => {
                 acc[_id] = count;
                 return acc;
-            }, { neutral: 0, like: 0, dislike: 0 }) // Ensure all keys exist
-        )
+            }, { neutral: 0, like: 0, dislike: 0 })
+        ),
+        Message.aggregate([
+            { $unwind: "$Actions" }, // Expand Actions array
+            { $group: { 
+                _id: "$Actions.intent", 
+                count: { $sum: 1 } 
+            } }
+        ]).then(res => {
+            const actionSummary = res.reduce((acc, { _id, count }) => {
+                acc[_id] = count;
+                return acc;
+            }, {});
+            return {
+                totalActionsTriggered: res.reduce((sum, { count }) => sum + count, 0),
+                actionBreakdown: actionSummary
+            };
+        })
     ]);
-    return { statusCode: 200, message: "Dashboard retrieved", data: { user: req.user, business, totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts } };
-})
+    return { 
+        statusCode: 200, 
+        message: "Dashboard retrieved", 
+        data: { 
+            user: req.user, 
+            business, 
+            totalKnowledgeTokensUsed, 
+            totalChatTokensUsed, 
+            reactionCounts, 
+            actionsData 
+        } 
+    };
+});
 export const editBusiness = errorWrapper(async (req, res) => {
     let business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -54,7 +81,7 @@ export const createActions = errorWrapper(async (req, res) => {
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const action = await Action.create({ business: business._id, intent, intentData, name, webhook })
     return { statusCode: 201, message: "Action created successfully", data: action }
-})
+});
 export const getActions = errorWrapper(async (req, res) => {
     const actions = await Action.find({ business: req.user.business });
     return res.status(200).json({ message: "Actions fetched successfully", data: actions });
@@ -74,13 +101,11 @@ export const updateAction = errorWrapper(async (req, res) => {
     if (!action) return res.status(404).json({ message: "Action not found" });
     return res.status(200).json({ message: "Action updated successfully", data: action });
 });
-
 export const deleteAction = errorWrapper(async (req, res) => {
     const action = await Action.findOneAndDelete({ _id: req.params.id, business: req.user.business });
     if (!action) return res.status(404).json({ message: "Action not found" });
     return res.status(200).json({ message: "Action deleted successfully" });
 });
-
 export const raiseTicket = errorWrapper(async (req, res) => {
     const { issueDetails, attachments } = req.body;
     if (!issueDetails) return res.status(400).json({ success: false, message: "Client email, supporter email, and issue details are required." });
