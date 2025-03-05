@@ -9,7 +9,7 @@ import { initialize } from "./utils/dbConnect.js";
 import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
-import { getContext, getContextMain, openai } from "./utils/openai.js";
+import { actions, getContext, getContextMain, openai } from "./utils/openai.js";
 import { MongoClient, ObjectId } from "mongodb";
 import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
@@ -157,7 +157,7 @@ app.post('/v2/chat-bot', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId } = req.body;
         let [agent, business, conversation] = await Promise.all([
-            Agent.findById(agentId),
+            Agent.findById(agentId).populate("actions"),
             Business.findOne({ agents: agentId }),
             conversationId ? Conversation.findById(conversationId) : null
         ]);
@@ -178,20 +178,23 @@ app.post('/v2/chat-bot', async (req, res) => {
         const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
         const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`;
         prevMessages.push({ role: "user", content: userPrompt });
+        let Actions = null;
+        Actions = (agent.actions > 0) ? await actions(prevMessages.shift(), agent.actions.map(action => ({ intent: action.intent, intentData: action.intentData }))) : [];
         const message = {
             query: userMessage,
             response: "",
             embeddingTokens,
             responseTokens: {},
             conversationId: conversation._id,
-            context
+            context,
+            Actions,
         };
         if (!streamOption) {
             const { choices, model, usage } = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages });
             message.responseTokens = { model, usage };
             message.response = choices[0].message.content;
             let msg = await Message.create(message);
-            return res.status(200).json({ success: true, data: message.response, conversationId: conversation._id, messageId: msg._id });
+            return res.status(200).json({ success: true, data: message.response, conversationId: conversation._id, messageId: msg._id, Actions });
         }
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
@@ -210,7 +213,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             }
         }
         await msg.save()
-        res.end(JSON.stringify({ conversationId: conversation._id, chunk: "", messageId: msg._id }))
+        res.end(JSON.stringify({ conversationId: conversation._id, chunk: "", messageId: msg._id, Actions }))
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });

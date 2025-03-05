@@ -13,7 +13,8 @@ const MessagesSchema = new Schema({
         model: String,
         usage: { type: Schema.Types.Mixed }
     },
-    context: Array
+    context: Array,
+    Actions: Array
 }, {
     timestamps: true
 });

@@ -4,6 +4,7 @@ import { Conversation } from "../../models/Conversations.js";
 import { Data } from "../../models/Data.js";
 import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
+import { Action } from "../../models/Action.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -45,6 +46,39 @@ export const editBusiness = errorWrapper(async (req, res) => {
     if (contact) business.contact = contact;
     await business.save();
     return { statusCode: 200, message: "Business updated", data: business }
+});
+export const createActions = errorWrapper(async (req, res) => {
+    const { intent, intentData } = req.body
+    if (!intent || !intentData) return { statusCode: 404, message: "intend or intentData not found", data: null }
+    const business = await Business.findById(req.user.business)
+    if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    const action = await Action.create({ business: business._id, intent, intentData })
+    return { statusCode: 201, message: "Action created successfully", data: action }
+})
+export const getActions = errorWrapper(async (req, res) => {
+    const actions = await Action.find({ business: req.user.business });
+    return res.status(200).json({ message: "Actions fetched successfully", data: actions });
+});
+export const getActionById = errorWrapper(async (req, res) => {
+    const action = await Action.findOne({ _id: req.params.id, business: req.user.business });
+    if (!action) return res.status(404).json({ message: "Action not found" });
+    return res.status(200).json({ message: "Action fetched successfully", data: action });
+});
+export const updateAction = errorWrapper(async (req, res) => {
+    const { intent, intentData } = req.body;
+    const action = await Action.findOneAndUpdate(
+        { _id: req.params.id, business: req.user.business },
+        { intent, intentData },
+        { new: true }
+    );
+    if (!action) return res.status(404).json({ message: "Action not found" });
+    return res.status(200).json({ message: "Action updated successfully", data: action });
+});
+
+export const deleteAction = errorWrapper(async (req, res) => {
+    const action = await Action.findOneAndDelete({ _id: req.params.id, business: req.user.business });
+    if (!action) return res.status(404).json({ message: "Action not found" });
+    return res.status(200).json({ message: "Action deleted successfully" });
 });
 
 export const raiseTicket = errorWrapper(async (req, res) => {
