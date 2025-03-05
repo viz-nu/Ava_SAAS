@@ -1,4 +1,5 @@
 import { errorWrapper } from '../../middleware/errorWrapper.js';
+import { Action } from '../../models/Action.js';
 import { Agent } from '../../models/Agent.js';
 import { Business } from '../../models/Business.js';
 import { Collection } from '../../models/Collection.js';
@@ -13,6 +14,11 @@ export const createAgent = errorWrapper(async (req, res) => {
         const collection = await Collection.findById(id);
         if (!collection) return { statusCode: 404, message: "Collection not found", data: null }
         if (collection.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this collection", data: { collectionId: id } }
+    }
+    for (const id of actions) {
+        const action = await Action.findById(id);
+        if (!action) return { statusCode: 404, message: "action not found", data: null }
+        if (action.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this action", data: { collectionId: id } }
     }
     const agent = await Agent.create({ collections, appearance, personalInfo, actions, business: business._id, createdBy: req.user._id });
     business.agents.push(agent._id)
