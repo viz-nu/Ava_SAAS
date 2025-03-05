@@ -17,6 +17,7 @@ import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 import { createServer } from "http";
 import { initializeSocket, io } from "./utils/io.js";
+import { Action } from "./models/Action.js";
 await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
@@ -157,13 +158,15 @@ app.post('/v2/chat-bot', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId } = req.body;
         let [agent, business, conversation] = await Promise.all([
-            Agent.findById(agentId).populate("actions"),
+            Agent.findById(agentId),
             Business.findOne({ agents: agentId }),
             conversationId ? Conversation.findById(conversationId) : null
         ]);
         if (!agent) return res.status(404).json({ error: 'Agent not found' });
         if (!business) return res.status(404).json({ error: 'Business not found' });
-        let prevMessages = [{ role: "system", content: agent.personalInfo.systemPrompt || "" }];
+        const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
+        let systemPrompt = (agent.personalInfo.systemPrompt || "") + `\nContext: ${data}\n Use this context to generate a clear, precise, and tailored response to the user. If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`
+        let prevMessages = [{ role: "system", content: systemPrompt }];
         if (conversation) {
             const messages = await Message.find({ conversationId }).select("query response");
             prevMessages.push(...messages.flatMap(({ query, response }) => [
@@ -175,11 +178,12 @@ app.post('/v2/chat-bot', async (req, res) => {
             let geoLocation = await getGeoLocation(clientIP);
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
-        const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
-        const userPrompt = `For this query, the system has retrieved the following relevant information from ${business.name}’s database:\n${data}\n\nUsing this institutional data, generate a clear, precise, and tailored response to the following user inquiry: \n${userMessage}\n\nIf the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`;
-        prevMessages.push({ role: "user", content: userPrompt });
-        let Actions = null;
-        Actions = (agent.actions > 0) ? await actions(prevMessages.shift(), agent.actions.map(action => ({ intent: action.intent, intentData: action.intentData }))) : [];
+        prevMessages.push({ role: "user", content: userMessage });
+        let Actions = [];
+        if (agent.actions && agent.actions.length > 0) {
+            agent.actions = await Action.find({ _id: { $in: agent.actions } });
+            Actions = await actions(prevMessages.slice(1), agent.actions.map(action => ({ intent: action.intent, intentData: action.intentData })));
+        }
         const message = {
             query: userMessage,
             response: "",

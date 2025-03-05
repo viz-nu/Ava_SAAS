@@ -130,7 +130,7 @@ export const actions = async (messages, availableActions) => {
         5. If a query implies an intent without stating it explicitly, deduce the intent logically.
         6. If multiple intents exist in a single query, extract them all.
         7. Avoid unnecessary defaults; only return 'request_info' if the user's message aligns with it.`,
-    };
+    };    
     const tools = [
         {
             type: "function",
@@ -167,12 +167,10 @@ export const actions = async (messages, availableActions) => {
     const toolCall = response.choices[0]?.message?.tool_calls?.[0];
     if (toolCall) {
         const toolData = JSON.parse(toolCall.function.arguments);
-
         if (!toolData.actions || !Array.isArray(toolData.actions)) {
             console.error("Tool response does not contain valid actions array.");
             return null;
         }
-
         // Map extracted intents to the available actions
         const matchedActions = toolData.actions
             .map((action) => {
@@ -182,7 +180,6 @@ export const actions = async (messages, availableActions) => {
                     : null;
             })
             .filter(Boolean);
-        console.log("Executing Actions:", matchedActions);
         return matchedActions;
     }
     console.log("No valid tool execution.");
