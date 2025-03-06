@@ -169,7 +169,7 @@ export const actions = async (messages, availableActions) => {
         const toolData = JSON.parse(toolCall.function.arguments);
         if (!toolData.actions || !Array.isArray(toolData.actions)) {
             console.error("Tool response does not contain valid actions array.");
-            return null;
+            return { matchedActions: [], model, usage };
         }
         // Map extracted intents to the available actions
         const matchedActions = toolData.actions.map((action) => {
@@ -178,7 +178,6 @@ export const actions = async (messages, availableActions) => {
         }).filter(Boolean);
         return { matchedActions, model, usage };
     }
-    ;
     console.log("No valid tool execution.");
-    return null;
+    return { matchedActions: [], model, usage };
 }
