@@ -6,7 +6,7 @@ import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
 import { Action } from "../../models/Action.js";
 export const Dashboard = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate("agents members documents").select("collections");
+    const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     // const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts, actionsData, actionTokens] = await Promise.all([
     //     business.collections.length > 0
