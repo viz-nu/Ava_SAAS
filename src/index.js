@@ -179,12 +179,8 @@ app.post('/v2/chat-bot', async (req, res) => {
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
         prevMessages.push({ role: "user", content: userMessage });
-        let Actions = [];
-        if (agent.actions && agent.actions.length > 0) {
-            agent.actions = await Action.find({ _id: { $in: agent.actions } });
-            Actions = await actions(prevMessages.slice(1), agent.actions.map(action => ({ intent: action.intent, intentData: action.intentData })));
-        }
         const message = {
+            business: business._id,
             query: userMessage,
             response: "",
             embeddingTokens,
@@ -192,7 +188,16 @@ app.post('/v2/chat-bot', async (req, res) => {
             conversationId: conversation._id,
             context,
             Actions,
+            actionTokens: {},
         };
+        let Actions = [];
+        if (agent.actions && agent.actions.length > 0) {
+            agent.actions = await Action.find({ _id: { $in: agent.actions } });
+            const { matchedActions, model, usage } = await actions(prevMessages.slice(1), agent.actions.map(action => ({ intent: action.intent, intentData: action.intentData })));
+            message.actionTokens = { model, usage }
+            message.Actions = matchedActions
+            Actions = matchedActions
+        }
         if (!streamOption) {
             const { choices, model, usage } = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages });
             message.responseTokens = { model, usage };
@@ -237,27 +242,13 @@ app.post("/contexts", async (req, res) => {
 })
 app.put("/reaction", async (req, res) => {
     const { messageId, reaction } = req.body;
-
     // Validation for messageId and reaction
-    if (!messageId || !reaction) {
-        return res.status(400).json({ message: "Message ID and reaction are required" });
-    }
-    if (!["neutral", "like", "dislike"].includes(reaction)) {
-        return res.status(400).json({ message: "Undefined reaction" });
-    }
-
+    if (!messageId || !reaction) return res.status(400).json({ message: "Message ID and reaction are required" });
+    if (!["neutral", "like", "dislike"].includes(reaction)) return res.status(400).json({ message: "Undefined reaction" });
     try {
         // Assuming messageId is the _id of the document in the database
-        const updatedMessage = await Message.findByIdAndUpdate(
-            messageId,
-            { $set: { reaction: reaction } },
-            { new: true }  // Option to return the updated document
-        );
-
-        if (!updatedMessage) {
-            return res.status(404).json({ message: "Message not found" });
-        }
-
+        const updatedMessage = await Message.findByIdAndUpdate(messageId, { $set: { reaction: reaction } }, { new: true });
+        if (!updatedMessage) return res.status(404).json({ message: "Message not found" });
         return res.status(200).json({ success: true, message: "message updated" });
     } catch (err) {
         return res.status(500).json({ message: "An error occurred", error: err.message });
@@ -283,10 +274,6 @@ app.post('/send-invite', async (req, res) => {
         const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
         if (!attendees || !Array.isArray(attendees) || attendees.length === 0) return res.status(400).json({ error: 'Attendees list is required' });
         if (!startTime || !endTime || !timezone) return res.status(400).json({ error: 'Start time, end time, and timezone are required' });
-        // const startTime = new Date();
-        // startTime.setHours(startTime.getHours() + 1);
-        // const endTime = new Date();
-        // endTime.setHours(startTime.getHours() + 1);
         const calendar = ical({ name: 'Appointment Invitation' });
         calendar.method(ICalCalendarMethod.REQUEST);
         calendar.createEvent({
@@ -294,8 +281,6 @@ app.post('/send-invite', async (req, res) => {
             end: new Date(endTime),
             timezone: timezone,
             organizer: { name: 'AVA', email: 'no-reply@ava.com' },
-            // created?: ICalDateTimeValue | null;
-            // lastModified?: ICalDateTimeValue | null;
             summary: summary || 'Meeting Invitation',
             description: description || 'You are invited to a meeting.',
             location: location || 'Online',
@@ -325,7 +310,6 @@ app.post('/send-invite', async (req, res) => {
         console.error(error);
         return res.status(500).json({ error: error.message })
     }
-
 });
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
