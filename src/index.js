@@ -187,7 +187,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             responseTokens: {},
             conversationId: conversation._id,
             context,
-            Actions,
+            Actions:{},
             actionTokens: {},
         };
         let Actions = [];

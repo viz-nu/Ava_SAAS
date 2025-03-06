@@ -8,56 +8,108 @@ import { Action } from "../../models/Action.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts, actionsData] = await Promise.all([
+    // const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts, actionsData, actionTokens] = await Promise.all([
+    //     business.collections.length > 0
+    //         ? Data.aggregate([
+    //             { $match: { collection: { $in: business.collections } } },
+    //             { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
+    //         ]).then(res => res[0]?.totalKnowledgeTokensUsed || 0)
+    //         : 0,
+    //     Message.aggregate([
+    //         { $match: { business: business._id } },
+    //         { $group: { _id: null, totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" } } }
+    //     ]).then(res => res[0]?.totalChatTokensUsed || 0),
+    //     Message.aggregate([
+    //         { $match: { business: business._id } },
+    //         { $group: { _id: "$reaction", count: { $sum: 1 } } }
+    //     ]).then(res =>
+    //         res.reduce((acc, { _id, count }) => {
+    //             acc[_id] = count;
+    //             return acc;
+    //         }, { neutral: 0, like: 0, dislike: 0 })
+    //     ),
+    //     Message.aggregate([
+    //         { $match: { business: business._id } },
+    //         { $unwind: "$Actions" },
+    //         {
+    //             $group: {
+    //                 _id: "$Actions.intent",
+    //                 count: { $sum: 1 }
+    //             }
+    //         }
+    //     ]).then(res => {
+    //         const actionSummary = res.reduce((acc, { _id, count }) => {
+    //             acc[_id] = count;
+    //             return acc;
+    //         }, {});
+    //         return {
+    //             totalActionsTriggered: res.reduce((sum, { count }) => sum + count, 0),
+    //             actionBreakdown: actionSummary
+    //         };
+    //     }),
+    //     Message.aggregate([
+    //         { $match: { business: business._id } },
+    //         { $group: { _id: null, totalActionTokensUsed: { $sum: "$actionTokens.usage.total_tokens" } } }
+    //     ]).then(res => res[0]?.totalActionTokensUsed || 0)
+    // ]);
+    const aggregationQueries = [
         business.collections.length > 0
             ? Data.aggregate([
                 { $match: { collection: { $in: business.collections } } },
                 { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
-            ]).then(res => res[0]?.totalKnowledgeTokensUsed || 0)
-            : 0,
-        Conversation.find({ business: req.user.business }, "_id").then(async conversations => {
-            if (conversations.length === 0) return 0;
-            return Message.aggregate([
-                { $match: { conversationId: { $in: conversations.map(c => c._id) } } },
-                { $group: { _id: null, totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" } } }
-            ]).then(res => res[0]?.totalChatTokensUsed || 0);
-        }),
+            ])
+            : Promise.resolve([{ totalKnowledgeTokensUsed: 0 }]),
         Message.aggregate([
+            { $match: { business: business._id } },
+            { $group: { _id: null, totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" } } }
+        ]),
+        Message.aggregate([
+            { $match: { business: business._id } },
             { $group: { _id: "$reaction", count: { $sum: 1 } } }
-        ]).then(res =>
-            res.reduce((acc, { _id, count }) => {
-                acc[_id] = count;
-                return acc;
-            }, { neutral: 0, like: 0, dislike: 0 })
-        ),
+        ]),
         Message.aggregate([
-            { $unwind: "$Actions" }, // Expand Actions array
-            { $group: { 
-                _id: "$Actions.intent", 
-                count: { $sum: 1 } 
-            } }
-        ]).then(res => {
-            const actionSummary = res.reduce((acc, { _id, count }) => {
-                acc[_id] = count;
-                return acc;
-            }, {});
-            return {
-                totalActionsTriggered: res.reduce((sum, { count }) => sum + count, 0),
-                actionBreakdown: actionSummary
-            };
-        })
-    ]);
-    return { 
-        statusCode: 200, 
-        message: "Dashboard retrieved", 
-        data: { 
-            user: req.user, 
-            business, 
-            totalKnowledgeTokensUsed, 
-            totalChatTokensUsed, 
-            reactionCounts, 
-            actionsData 
-        } 
+            { $match: { business: business._id } },
+            { $unwind: "$Actions" },
+            { $group: { _id: "$Actions.intent", count: { $sum: 1 } } }
+        ]),
+        Message.aggregate([
+            { $match: { business: business._id } },
+            { $group: { _id: null, totalActionTokensUsed: { $sum: "$actionTokens.usage.total_tokens" } } }
+        ])
+    ];
+    const [
+        knowledgeTokensRes,
+        chatTokensRes,
+        reactionsRes,
+        actionsRes,
+        actionTokensRes
+    ] = await Promise.all(aggregationQueries);
+    const totalKnowledgeTokensUsed = knowledgeTokensRes[0]?.totalKnowledgeTokensUsed || 0;
+    const totalChatTokensUsed = chatTokensRes[0]?.totalChatTokensUsed || 0;
+    const actionTokens = actionTokensRes[0]?.totalActionTokensUsed || 0;
+
+    const reactionCounts = reactionsRes.reduce((acc, { _id, count }) => {
+        acc[_id] = count;
+        return acc;
+    }, { neutral: 0, like: 0, dislike: 0 });
+
+    const actionsData = actionsRes.reduce((acc, { _id, count }) => {
+        acc[_id] = count;
+        return acc;
+    }, {});
+
+    return {
+        statusCode: 200,
+        message: "Dashboard retrieved",
+        data: {
+            user: req.user,
+            business,
+            totalKnowledgeTokensUsed,
+            totalChatTokensUsed,
+            reactionCounts,
+            actionsData,
+            actionTokens
+        }
     };
 });
 export const editBusiness = errorWrapper(async (req, res) => {
