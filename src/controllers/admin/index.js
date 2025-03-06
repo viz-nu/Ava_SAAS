@@ -5,6 +5,7 @@ import { Data } from "../../models/Data.js";
 import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
 import { Action } from "../../models/Action.js";
+import { analyzeQueries } from "../../utils/nlp.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -75,14 +76,22 @@ export const Dashboard = errorWrapper(async (req, res) => {
         Message.aggregate([
             { $match: { business: business._id } },
             { $group: { _id: null, totalActionTokensUsed: { $sum: "$actionTokens.usage.total_tokens" } } }
-        ])
+        ]),
+        Message.aggregate([
+            { $match: { business: business._id } },
+            { $group: { _id: "$query" } }
+        ]).then(results => {
+            const queries = results.map(result => result._id); // Extract queries from aggregation result
+            return analyzeQueries(queries);
+        })
     ];
     const [
         knowledgeTokensRes,
         chatTokensRes,
         reactionsRes,
         actionsRes,
-        actionTokensRes
+        actionTokensRes,
+        analysis // for all queries do analyzeQueries(queries) and store in the output
     ] = await Promise.all(aggregationQueries);
     const totalKnowledgeTokensUsed = knowledgeTokensRes[0]?.totalKnowledgeTokensUsed || 0;
     const totalChatTokensUsed = chatTokensRes[0]?.totalChatTokensUsed || 0;
@@ -108,7 +117,8 @@ export const Dashboard = errorWrapper(async (req, res) => {
             totalChatTokensUsed,
             reactionCounts,
             actionsData,
-            actionTokens
+            actionTokens,
+            analysis
         }
     };
 });
