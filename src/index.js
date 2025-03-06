@@ -187,7 +187,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             responseTokens: {},
             conversationId: conversation._id,
             context,
-            Actions:{},
+            Actions: {},
             actionTokens: {},
         };
         let Actions = [];
@@ -311,6 +311,21 @@ app.post('/send-invite', async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 });
+app.post('/send-mail', async (req, res) => {
+    try {
+        const { to, subject, text, html } = req.body;
+        await sendMail({
+            to: to,
+            subject: subject,
+            text: text,
+            html: html
+        })
+        res.json({ message: 'mail sent' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message })
+    }
+})
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 
