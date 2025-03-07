@@ -17,6 +17,7 @@ const MessagesSchema = new Schema({
     context: Array,
     Actions: Array,
     actionTokens: Object,
+    contextData:{ type: Schema.Types.Mixed }
 }, {
     timestamps: true
 });
