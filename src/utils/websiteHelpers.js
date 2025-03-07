@@ -166,99 +166,47 @@ export const FetchUsingDroxy = async (url) => {
   }
 }
 
-
-// export const processURLs = async (collectionId, urls, receivers = [], _id) => {
-//   const limit = pLimit(3); // Allows 3 parallel API calls at a time
-//   const batchSize = 3;
-//   let completed = 0;
-//   const total = urls.length;
-//   try {
-//     const tasks = urls.reduce((acc, _, i) => {
-//       if (i % batchSize === 0) {
-//         const batch = urls.slice(i, i + batchSize).map(ele => ele.url);
-//         acc.push(
-//           limit(async () => {
-//             try {
-//               const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
-//               if (!data.results) throw new Error("Invalid response format");
-//               return data.results.map(result => ({
-//                 url: result.url,
-//                 content: result.content,
-//                 success: result.success || false,
-//                 error: result.error || null
-//               }));
-//             } catch (error) {
-//               return batch.map(url => ({ url, success: false, error: error.message || "Unknown error" }));
-//             }
-//           })
-//         );
-//       }
-//       return acc;
-//     }, []);
-//     for await (const results of tasks) {
-//       for (const ele of results) {
-//         if (ele.success) {
-//           await digestMarkdown(ele.content, ele.url, collectionId);
-//           await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: ele.url }, } });
-//         } else {
-//           await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: false, url: ele.url, error: ele.error } } });
-//         }
-//         completed++;
-//         const progressData = { total, progress: completed };
-//         receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { data: progressData }));
-//       }
-//     }
-//     return { success: true };
-//   } catch (error) {
-//     console.error("Error processing URLs:", error);
-//     return { success: false, error: error.message || error };
-//   }
-// };
-
 export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-  const limit = pLimit(3); // Allows up to 3 parallel API calls
+  const limit = pLimit(3); // Limit concurrent API calls
   const batchSize = 3;
   let completed = 0;
   const total = urls.length;
 
-  try {
-    const tasks = [];
+  console.log("Received:", urls.length, "URLs");
+  console.log("CollectionId:", collectionId);
+  console.log("Receivers:", receivers);
+  console.log("ContentsId:", _id);
 
+  async function* generateBatches() {
     for (let i = 0; i < urls.length; i += batchSize) {
-      const batch = urls.slice(i, i + batchSize).map(ele => ele.url);
-      tasks.push(
-        limit(async () => {
-          try {
-            const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
-            if (!data.results) throw new Error("Invalid response format");
-            console.dir(data.results)
-            return data.results.map(result => ({
-              url: result.url,
-              content: result.content,
-              success: result.success || false,
-              error: result.error || null
-            }));
-          } catch (error) {
-            return batch.map(url => ({ url, success: false, error: error.message || "Unknown error" }));
-          }
-        })
-      );
+      yield urls.slice(i, i + batchSize).map(ele => ele.url);
     }
+  }
 
-    // Process all tasks
-    const results = await Promise.allSettled(tasks);
-
-    for (const batchResult of results) {
-      if (batchResult.status !== "fulfilled") continue; // Skip failed batches
-      const batch = batchResult.value;
-
-      // Process the batch efficiently
-      const updateOps = batch.map(async (ele) => {
+  try {
+    for await (const batch of generateBatches()) {
+      // Limit concurrent requests
+      const batchResult = await limit(async () => {
+        try {
+          const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
+          if (!data.results) throw new Error("Invalid response format");
+          return data.results.map(result => ({
+            url: result.url,
+            content: result.content,
+            success: result.success || false,
+            error: result.error || null
+          }));
+        } catch (error) {
+          return batch.map(url => ({ url, success: false, error: error.message || "Unknown error" }));
+        }
+      })();
+      if (!batchResult) continue;
+      // Process batch results one by one to reduce memory usage
+      for (const ele of batchResult) {
         if (ele.success) {
           await digestMarkdown(ele.content, ele.url, collectionId);
         }
-
-        return Collection.updateOne(
+        await Collection.updateOne(
           { _id: collectionId, "contents._id": _id },
           {
             $push: {
@@ -270,22 +218,88 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
             }
           }
         );
-      });
-
-      await Promise.all(updateOps);
-
+      }
       // Emit progress update
       completed += batch.length;
-      const progressData = { total, progress: completed, collectionId: collectionId };
+      const progressData = { total, progress: completed, collectionId };
       console.log(progressData);
       receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
     }
+
     return { success: true };
   } catch (error) {
     console.error("Error processing URLs:", error);
     return { success: false, error: error.message || "Unknown error" };
   }
 };
+
+
+// export const processURLS = async (collectionId, urls, receivers = [], _id) => {
+//   const limit = pLimit(3); // Allows up to 3 parallel API calls
+//   const batchSize = 3;
+//   let completed = 0;
+//   const total = urls.length;
+//   console.log("recieved : " + urls.length + " urls");
+//   console.log("collectionId : " + collectionId);
+//   console.log("receivers: ", receivers);
+//   console.log("contentsId: ", _id);
+//   try {
+//     const tasks = [];
+//     for (let i = 0; i < urls.length; i += batchSize) {
+//       const batch = urls.slice(i, i + batchSize).map(ele => ele.url);
+//       tasks.push(
+//         limit(async () => {
+//           try {
+//             const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
+//             if (!data.results) throw new Error("Invalid response format");
+//             console.dir(data.results)
+//             return data.results.map(result => ({
+//               url: result.url,
+//               content: result.content,
+//               success: result.success || false,
+//               error: result.error || null
+//             }));
+//           } catch (error) {
+//             return batch.map(url => ({ url, success: false, error: error.message || "Unknown error" }));
+//           }
+//         })
+//       );
+//     }
+//     // Process all tasks
+//     for await (const batchResult of Promise.allSettled(tasks)) {
+//       if (batchResult.status !== "fulfilled") continue; // Skip failed batches
+//       const batch = batchResult.value;
+
+//       // Process the batch efficiently
+//       await Promise.all(batch.map(async (ele) => {
+//         if (ele.success) await digestMarkdown(ele.content, ele.url, collectionId);
+//         await Collection.updateOne(
+//           { _id: collectionId, "contents._id": _id },
+//           {
+//             $push: {
+//               "contents.$.metaData.detailedReport": {
+//                 success: ele.success,
+//                 url: ele.url,
+//                 error: ele.success ? undefined : ele.error
+//               }
+//             }
+//           }
+//         );
+//       })
+//       );
+
+//       // Emit progress update
+//       completed += batch.length;
+//       const progressData = { total, progress: completed, collectionId: collectionId };
+//       console.log(progressData);
+//       receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
+//     }
+//     return { success: true };
+//   } catch (error) {
+//     console.error("Error processing URLs:", error);
+//     return { success: false, error: error.message || "Unknown error" };
+//   }
+// };
 export const fetchUrlsUsingLangChain = async (sitemapUrl, visited = new Set()) => {
   try {
     if (visited.has(sitemapUrl)) return [];
