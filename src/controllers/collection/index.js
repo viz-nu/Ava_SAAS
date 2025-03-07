@@ -114,54 +114,54 @@ export const updateCollection = errorWrapper(async (req, res) => {
             return { statusCode: 400, message: "Invalid action", data: null }
     }
     await collection.save();
-    (async function processCollection(collection) {
-        try {
-            for (const content of collection.contents) {
-                if (content.status != "active" && content.status != "failed") {
-                    const { source, metaData, _id } = content;
-                    let result
-                    switch (source) {
-                        case "website":
-                            // Handle website processing here if needed
-                            console.log("website process started");
-                            if (metaData?.urls) result = await processURLS(collection._id, metaData.urls);
-                            break;
-                        case "youtube":
-                            // urls =[{url:"https....",lang:"en"}]
-                            console.log("youtube process started");
-                            // metaData = {
-                            //     "urls": [
-                            //         {
-                            //             "url": "https://www.youtube.com/watch?v=R3l3TvkwIAo&ab_channel=CaffeinatedCameras",
-                            //             data:{"lang": "en"}
-                            //         }],
-                            // }
-                            if (metaData?.urls) result = await processYT(collection._id, metaData.urls);
-                            break;
-                        case "file":
-                            console.log("file process started");
-                            if (metaData?.urls) result = await fileProcessor(collection._id, metaData.urls[0].url);
-                            break;
-                        default:
-                            console.warn(`Unknown source type: ${source}`);
-                            break;
-                    }
-                    await Collection.updateOne(
-                        { _id: collection._id, "contents._id": _id },
-                        {
-                            $set: {
-                                "contents.$.status": result.success ? "active" : "failed",
-                                "contents.$.error": result.success ? null : result.error,
-                                "contents.$.metaData.detailedReport": result.data,
-                            }
-                        }
-                    );
-                }
-            }
-        } catch (error) {
-            console.error("Failed to sync collection:", error);
-        }
-    })(collection);
+    // (async function processCollection(collection) {
+    //     try {
+    //         for (const content of collection.contents) {
+    //             if (content.status != "active" && content.status != "failed") {
+    //                 const { source, metaData, _id } = content;
+    //                 let result
+    //                 switch (source) {
+    //                     case "website":
+    //                         // Handle website processing here if needed
+    //                         console.log("website process started");
+    //                         if (metaData?.urls) result = await processURLS(collection._id, metaData.urls);
+    //                         break;
+    //                     case "youtube":
+    //                         // urls =[{url:"https....",lang:"en"}]
+    //                         console.log("youtube process started");
+    //                         // metaData = {
+    //                         //     "urls": [
+    //                         //         {
+    //                         //             "url": "https://www.youtube.com/watch?v=R3l3TvkwIAo&ab_channel=CaffeinatedCameras",
+    //                         //             data:{"lang": "en"}
+    //                         //         }],
+    //                         // }
+    //                         if (metaData?.urls) result = await processYT(collection._id, metaData.urls);
+    //                         break;
+    //                     case "file":
+    //                         console.log("file process started");
+    //                         if (metaData?.urls) result = await fileProcessor(collection._id, metaData.urls[0].url);
+    //                         break;
+    //                     default:
+    //                         console.warn(`Unknown source type: ${source}`);
+    //                         break;
+    //                 }
+    //                 await Collection.updateOne(
+    //                     { _id: collection._id, "contents._id": _id },
+    //                     {
+    //                         $set: {
+    //                             "contents.$.status": result.success ? "active" : "failed",
+    //                             "contents.$.error": result.success ? null : result.error,
+    //                             "contents.$.metaData.detailedReport": result.data,
+    //                         }
+    //                     }
+    //                 );
+    //             }
+    //         }
+    //     } catch (error) {
+    //         console.error("Failed to sync collection:", error);
+    //     }
+    // })(collection);
     return { statusCode: 200, message: "collection updated", data: collection }
 });
 
