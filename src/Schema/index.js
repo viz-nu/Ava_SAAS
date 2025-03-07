@@ -26,11 +26,12 @@ export const registerSchema = object({
         return true;
     }),
     role: string().oneOf(["admin", "manager"]).required(),
-    BusinessName: string().required().test("unique-org", "Business name must be unique", async (value) => {
-        const existingOrg = await Business.findOne({ name: value });
-        if (!existingOrg) return true
-        throw new ValidationError("Business is already registered with us, talk to customer care for help", value, "BusinessName");
-    })
+    BusinessName: string().required()
+    // .test("unique-org", "Business name must be unique", async (value) => {
+    //     const existingOrg = await Business.findOne({ name: value });
+    //     if (!existingOrg) return true
+    //     throw new ValidationError("Business is already registered with us, talk to customer care for help", value, "BusinessName");
+    // })
 });
 export const collectionSchema = object({
     name: string().required("Name is required"),
