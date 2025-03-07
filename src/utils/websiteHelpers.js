@@ -186,20 +186,20 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
   try {
     for await (const batch of generateBatches()) {
       // Limit concurrent requests
-      const batchResult = await limit(async () => {
+      const batchResult = await Promise.all(batch.map(url => limit(async () => {
         try {
-          const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
+          const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: [url] });
           if (!data.results) throw new Error("Invalid response format");
-          return data.results.map(result => ({
-            url: result.url,
-            content: result.content,
-            success: result.success || false,
-            error: result.error || null
-          }));
+          return {
+            url: data.results[0].url,
+            content: data.results[0].content,
+            success: data.results[0].success || false,
+            error: data.results[0].error || null
+          };
         } catch (error) {
-          return batch.map(url => ({ url, success: false, error: error.message || "Unknown error" }));
+          return { url, success: false, error: error.message || "Unknown error" };
         }
-      })();
+      })));
       if (!batchResult) continue;
       // Process batch results one by one to reduce memory usage
       for (const ele of batchResult) {
