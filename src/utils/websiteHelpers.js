@@ -231,7 +231,7 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
           try {
             const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
             if (!data.results) throw new Error("Invalid response format");
-
+            console.dir(data.results)
             return data.results.map(result => ({
               url: result.url,
               content: result.content,
@@ -277,6 +277,7 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
       // Emit progress update
       completed += batch.length;
       const progressData = { total, progress: completed, collectionId: collectionId };
+      console.log(progressData);
       receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
     }
     return { success: true };
