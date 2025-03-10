@@ -244,7 +244,7 @@ const getEnhancedContext = async (collectionIds, query, conversationHistory, llm
 
             }
             else{
-                
+
             }
             // Store relevant conversation parts for potential later use
             result.relevantConversation = conversationAnalysis.relevantMessages;
@@ -520,5 +520,3 @@ const combinePartialContexts = async (query, partialContexts, relevantConversati
 const generateInsufficientDataResponse = (query) => {
     return `I don't have enough information to fully answer your question about "${query}". Would you like me to elaborate on a specific aspect or provide more details to help me better understand what you're looking for?`;
 };
-
-module.exports = { getEnhancedContext };
