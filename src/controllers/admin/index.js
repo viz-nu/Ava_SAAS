@@ -137,11 +137,11 @@ export const editBusiness = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Business updated", data: business }
 });
 export const createActions = errorWrapper(async (req, res) => {
-    const { intent, dataSchema, name, webhook } = req.body
+    const { intent, dataSchema, name } = req.body
     if (!intent || !dataSchema) return { statusCode: 404, message: "intend or dataSchema not found", data: null }
     const business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const action = await Action.create({ business: business._id, intent, dataSchema, name, webhook })
+    const action = await Action.create({ business: business._id, intent, dataSchema, name })
     return { statusCode: 201, message: "Action created successfully", data: action }
 });
 export const getActions = errorWrapper(async (req, res) => {
