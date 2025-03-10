@@ -9,8 +9,7 @@ import { initialize } from "./utils/dbConnect.js";
 import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
-import { actions, getContext, getContextMain, openai } from "./utils/openai.js";
-import { MongoClient, ObjectId } from "mongodb";
+import { actions, getEnhancedContext, openai } from "./utils/openai.js";
 import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
@@ -56,104 +55,6 @@ app.use(cors());
 app.get("/", (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
-app.get("/client/:clientId", async (req, res) => {
-    try {
-        const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-        let clientDetails = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(req.params.clientId) }, { projection: { businessName: 1, dp: 1, themeId: 1, facts: 1, questions: 1 } });
-        if (!clientDetails) return res.status(404).json({ error: 'Client not found' });
-        await client.close();
-        res.status(200).json({ success: true, message: "Client info", data: clientDetails })
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-})
-// app.post('/chat-bot', async (req, res) => {
-//     try {
-//         const { userMessage, prevMessages = [], clientId, streamOption = false } = req.body;
-//         const client = await MongoClient.connect(process.env.GEN_MONGO_URL);
-//         let { institutionName, businessName, systemPrompt, UserPrompt, tools } = await client.db("Demonstrations").collection("Admin").findOne({ _id: new ObjectId(clientId) });
-//         const message = { "query": userMessage, "response": "", "embeddingTokens": {}, "responseTokens": {}, clientId: new ObjectId(clientId) }
-//         const { context, data, embeddingTokens } = await getContext(institutionName, userMessage)
-//         message.embeddingTokens = embeddingTokens
-//         message.context = context
-//         if (data == "") console.log("Empty context received")
-//         if (!streamOption) {
-//             const { choices, model, usage } = await openai.chat.completions.create({
-//                 // const { choices, model, usage } = await lamaClient.chat.completions.create({
-//                 model: "gpt-4o-mini",
-//                 // model: "llama3.2-3b",
-//                 messages: [
-//                     { "role": "system", "content": systemPrompt },
-//                     ...prevMessages,
-//                     {
-//                         role: "user",
-//                         content: UserPrompt.replace("${contexts}", data).replace("${userMessage}", userMessage).replace("${businessName}", businessName)
-//                     }],
-//                 tools: tools.length > 1 ? tools : null,
-//                 store: tools.length > 1 ? true : null,
-//                 tool_choice: tools.length > 1 ? "auto" : null,
-//             })
-//             message.responseTokens = { model, usage }
-//             message.response = choices[0].message.content
-//             await client.db("Demonstrations").collection("Analysis").insertOne(message);
-//             await client.close();
-//             return res.status(200).send({ success: true, data: choices[0].message.content })  // if tools are used then it works differently
-//         }
-//         const stream = await openai.chat.completions.create({
-//             // const stream = await lamaClient.chat.completions.create({
-//             // model: "llama3.2-3b",
-//             model: "gpt-4o-mini",
-//             messages: [
-//                 { "role": "system", "content": systemPrompt, },
-//                 ...prevMessages,
-//                 {
-//                     role: "user",
-//                     content: UserPrompt.replace("${contexts}", data).replace("${userMessage}", userMessage)
-//                 }],
-//             stream: true,
-//             tools: tools.length > 1 ? tools : null,
-//             store: tools.length > 1 ? true : null,
-//             tool_choice: tools.length > 1 ? "auto" : null,
-//         });
-//         let finalToolCalls = [];
-//         res.setHeader('Content-Type', 'text/plain');
-//         res.setHeader('Transfer-Encoding', 'chunked');
-//         for await (const chunk of stream) {
-//             const { choices } = chunk
-//             if (chunk.choices[0].finish_reason === "stop") {
-//                 const { model, usage } = chunk
-//                 message.responseTokens = { model, usage }
-//             }
-//             const toolCalls = choices[0].delta.tool_calls || [];
-//             for (const toolCall of toolCalls) {
-//                 const { index } = toolCall;
-//                 if (!finalToolCalls[index]) finalToolCalls[index] = toolCall;
-//                 finalToolCalls[index].function.arguments += toolCall.function.arguments;
-//             }
-//             if (choices[0]?.delta?.content !== null && choices[0]?.delta?.content !== undefined) {
-//                 message.response += choices[0]?.delta?.content
-//                 res.write(JSON.stringify({ chunk: choices[0]?.delta?.content, toolResponse: [] }));
-//             }
-//         }
-//         const functionCalls = []
-//         finalToolCalls.forEach(ele => {
-//             let parameters = JSON.parse(ele.function.arguments); // Parse the arguments string
-//             let functionName = ele.function.name; // Get the function name
-//             const result = toolFunctions[functionName](parameters)
-//             functionCalls.push(result)
-//         });
-//         await client.db("Demonstrations").collection("Analysis").insertOne(message);
-//         await client.close();
-//         res.end(JSON.stringify({
-//             chunk: "",
-//             toolResponse: functionCalls
-//         }))
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ error: error.message });
-//     }
-// });
 app.post('/v2/chat-bot', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId } = req.body;
@@ -164,9 +65,7 @@ app.post('/v2/chat-bot', async (req, res) => {
         ]);
         if (!agent) return res.status(404).json({ error: 'Agent not found' });
         if (!business) return res.status(404).json({ error: 'Business not found' });
-        const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
-        let systemPrompt = (agent.personalInfo.systemPrompt || "") + `\nContext: ${data}\n Use this context to generate a clear, precise, and tailored response to the user. If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`
-        let prevMessages = [{ role: "system", content: systemPrompt }];
+        let prevMessages = [];
         if (conversation) {
             const messages = await Message.find({ conversationId }).select("query response");
             prevMessages.push(...messages.flatMap(({ query, response }) => [
@@ -178,6 +77,13 @@ app.post('/v2/chat-bot', async (req, res) => {
             let geoLocation = await getGeoLocation(clientIP);
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
+        const { source, context, answer, embeddingTokens } = await getEnhancedContext(agent.collections, userMessage, prevMessages, 3);
+        if (["error", "insufficient"].includes(source)) {
+            // no information available stop the conversation process and only see if actions work 
+
+        }
+        let systemPrompt = (agent.personalInfo.systemPrompt || "") + `\nContext: ${answer}\n Use this context to generate a clear, precise, and tailored response to the user. If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`
+        prevMessages.unshift({ role: "system", content: systemPrompt });
         prevMessages.push({ role: "user", content: userMessage });
         const message = {
             business: business._id,
@@ -187,8 +93,8 @@ app.post('/v2/chat-bot', async (req, res) => {
             responseTokens: {},
             conversationId: conversation._id,
             context,
-            contextData: data,
-            Actions: {},
+            contextData: answer,
+            Actions: [],
             actionTokens: {},
         };
         let Actions = [];
@@ -235,18 +141,6 @@ app.post('/v2/chat-bot', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-app.post("/contexts", async (req, res) => {
-    try {
-        const { userMessage, agentId, streamOption = false, conversationId } = req.body;
-        let agent = await Agent.findById(agentId);
-        if (!agent) return res.status(404).json({ error: 'Agent not found' });
-        const { context, data, embeddingTokens } = await getContextMain(agent.collections, userMessage);
-        res.status(200).json({ success: true, data: { context, data, embeddingTokens } });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-})
 app.put("/reaction", async (req, res) => {
     const { messageId, reaction } = req.body;
     // Validation for messageId and reaction
