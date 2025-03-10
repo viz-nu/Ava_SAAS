@@ -5,7 +5,10 @@ const ActionSchema = new Schema({
     webhook: Object,
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     intent: String,
-    intentData: Object
+    dataSchema: Object,
+    configData: { id: String, token: String },
+    workingData: Object,
+    UI: Object
 }, {
     timestamps: true
 });

@@ -1,6 +1,7 @@
 import { MongoClient } from "mongodb"
 import OpenAI from "openai";
 import { Data } from "../models/Data.js";
+import { writeFileSync } from "fs";
 export const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
 export const EmbeddingFunct = async (text) => {
     try {
@@ -119,17 +120,17 @@ export const getContextMain = async (collectionIds, text) => {
 export const actions = async (messages, availableActions) => {
     const systemMessage = {
         role: "system",
-        content: `You are an AI assistant designed to dynamically match user queries to predefined actions. 
+        content: `You are an AI assistant designed to dynamically match user queries to predefined actions.
         Your goal is to accurately identify one or more relevant intents and extract structured parameters.
         Follow these rules:
         1. Analyze all previous messages to maintain context.
         2. Identify one or more relevant intents ONLY from the available actions:
            ${JSON.stringify(availableActions, null, 2)}
-        3. Extract all necessary parameters for each intent.
-        4. If a user provides partial information, infer missing details where possible.
+        3. Extract all necessary parameters for each identified intent.
+        4. If some required parameters are missing, attempt to infer them based on context.
         5. If a query implies an intent without stating it explicitly, deduce the intent logically.
         6. If multiple intents exist in a single query, extract them all.
-        7. Avoid unnecessary defaults; only return 'request_info' if the user's message aligns with it.`,
+        7. Only use "request_info" if the user's message explicitly asks for general information.`,
     };
     const tools = [
         {
@@ -147,9 +148,23 @@ export const actions = async (messages, availableActions) => {
                                 type: "object",
                                 properties: {
                                     intent: { type: "string", description: "The identified user intent." },
-                                    intentData: { type: "object", description: "Extracted parameters for the intent." },
+                                    dataSchema: {
+                                        type: "array",
+                                        description: "Extracted parameters for the intent, stored under 'data'.",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                label: { type: "string", description: "Parameter name." },
+                                                data: {
+                                                    type: ["string", "number", "boolean", "null"],
+                                                    description: "Extracted value or null if missing."
+                                                }
+                                            },
+                                            required: ["label", "data"]
+                                        }
+                                    }
                                 },
-                                required: ["intent", "intentData"],
+                                required: ["intent", "dataSchema"],
                             },
                         },
                     },
@@ -158,26 +173,37 @@ export const actions = async (messages, availableActions) => {
             },
         },
     ];
-    const { model, usage, choices } = await openai.chat.completions.create({
-        model: "gpt-4-turbo",  // Use gpt-4-turbo for better reasoning
-        messages: [systemMessage, ...messages],
-        tools,
-        tool_choice: "auto",
-    });
-    const toolCall = choices[0]?.message?.tool_calls?.[0];
-    if (toolCall) {
+    try {
+        const { model, usage, choices } = await openai.chat.completions.create({
+            model: "gpt-4-turbo",
+            messages: [systemMessage, ...messages],
+            tools,
+            tool_choice: "auto",
+            // response_format: { "type": "json_object" }  
+        });
+
+        const toolCall = choices?.[0]?.message?.tool_calls?.[0];
+        if (!toolCall) {
+            console.warn("No valid tool execution.");
+            return { matchedActions: [], model, usage };
+        }
+
         const toolData = JSON.parse(toolCall.function.arguments);
-        if (!toolData.actions || !Array.isArray(toolData.actions)) {
+        if (!Array.isArray(toolData.actions)) {
             console.error("Tool response does not contain valid actions array.");
             return { matchedActions: [], model, usage };
         }
-        // Map extracted intents to the available actions
-        const matchedActions = toolData.actions.map((action) => {
-            const matched = availableActions.find((a) => a.intent === action.intent);
-            return matched ? { ...matched, intentData: { ...matched.intentData, ...action.intentData } } : null;
-        }).filter(Boolean);
+
+        // Map extracted intents to available actions
+        const matchedActions = toolData.actions
+            .map(({ intent, dataSchema }) => {
+                const matched = availableActions.find((a) => a.intent === intent);
+                return matched ? { ...matched, dataSchema: dataSchema ?? [] } : null;
+            })
+            .filter(Boolean);
         return { matchedActions, model, usage };
+    } catch (error) {
+        console.error("Error processing actions:", error);
+        return { matchedActions: [], model: null, usage: null };
     }
-    console.log("No valid tool execution.");
-    return { matchedActions: [], model, usage };
-}
+};
