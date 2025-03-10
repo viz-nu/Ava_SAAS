@@ -207,7 +207,9 @@ app.post('/v2/chat-bot', async (req, res) => {
             message.responseTokens = { model, usage };
             message.response = choices[0].message.content;
             let msg = await Message.create(message);
-            return res.status(200).json({ success: true, data: message.response, conversationId: conversation._id, messageId: msg._id, Actions });
+            res.write(JSON.stringify({ id: "conversation", messageId: msg._id, conversationId: conversation._id, responseType: "full", data: message.response }));
+            if (Actions.length > 0) res.write(JSON.stringify({ id: "data-collection", data: Actions, responseType: "full" }))
+            return res.end(JSON.stringify({ id: "end" }))
         }
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
@@ -217,7 +219,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
                 msg.response += content;
-                res.write(JSON.stringify({ conversationId: conversation._id, chunk: content, messageId: msg._id }));
+                res.write(JSON.stringify({ id: "conversation", messageId: msg._id, conversationId: conversation._id, responseType: "chunk", data: content }));
             }
             if (chunk.choices[0].finish_reason === "stop") {
                 const completion_tokens = tokenSize(chunk.model, msg.response);
@@ -226,7 +228,8 @@ app.post('/v2/chat-bot', async (req, res) => {
             }
         }
         await msg.save()
-        res.end(JSON.stringify({ conversationId: conversation._id, chunk: "", messageId: msg._id, Actions }))
+        if (Actions.length > 0) res.write(JSON.stringify({ id: "data-collection", data: Actions, responseType: "full" }))
+        return res.end(JSON.stringify({ id: "end" }))
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: error.message });
