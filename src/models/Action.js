@@ -5,6 +5,8 @@ const ActionSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     intent: String,
     dataSchema: Object,
+    accessType: { type: String, enum: ["Public", "Private"] },
+    auth: { endpoint: String, dataSchema: Object },
     configData: { id: String, token: String },
     workingData: Object,
     UI: Object
