@@ -1,6 +1,5 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
-import { Conversation } from "../../models/Conversations.js";
 import { Data } from "../../models/Data.js";
 import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
@@ -141,7 +140,7 @@ export const createActions = errorWrapper(async (req, res) => {
     if (!intent || !dataSchema) return { statusCode: 404, message: "intend or dataSchema not found", data: null }
     const business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const action = await Action.create({ business: business._id, intent, dataSchema, name })
+    const action = await Action.create({ business: business._id, ...req.body })
     return { statusCode: 201, message: "Action created successfully", data: action }
 });
 export const getActions = errorWrapper(async (req, res) => {
@@ -154,12 +153,7 @@ export const getActionById = errorWrapper(async (req, res) => {
     return res.status(200).json({ message: "Action fetched successfully", data: action });
 });
 export const updateAction = errorWrapper(async (req, res) => {
-    const { intent, dataSchema } = req.body;
-    const action = await Action.findOneAndUpdate(
-        { _id: req.params.id, business: req.user.business },
-        { intent, dataSchema },
-        { new: true }
-    );
+    const action = await Action.findOneAndUpdate({ _id: req.params.id, business: req.user.business }, { ...req.body }, { new: true });
     if (!action) return res.status(404).json({ message: "Action not found" });
     return res.status(200).json({ message: "Action updated successfully", data: action });
 });

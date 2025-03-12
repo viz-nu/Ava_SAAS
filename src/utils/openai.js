@@ -432,21 +432,17 @@ const getContextMain = async (collectionIds, text, options = {}) => {
                 }
             }
         ]);
-
         // Apply hybrid scoring - normalize vector score and apply BM25-like keyword matching
         const enhancedContext = context.map(doc => {
             // Normalize vector score to 0-1 range
             const normalizedScore = doc.score;
-
             // Simple keyword matching score (0-1 range)
             const keywords = text.toLowerCase().split(/\s+/).filter(w => w.length > 3);
             const contentLower = doc.content.toLowerCase();
             const keywordMatches = keywords.filter(k => contentLower.includes(k)).length;
             const keywordScore = keywords.length > 0 ? keywordMatches / keywords.length : 0;
-
             // Combine scores (70% vector, 30% keyword)
             const hybridScore = normalizedScore * 0.7 + keywordScore * 0.3;
-
             return {
                 ...doc,
                 originalScore: doc.score,

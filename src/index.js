@@ -80,7 +80,6 @@ app.post('/v2/chat-bot', async (req, res) => {
         const { source, context, answer, embeddingTokens } = await getEnhancedContext(agent.collections, userMessage, prevMessages, 3);
         if (["error", "insufficient"].includes(source)) {
             // no information available stop the conversation process and only see if actions work 
-
         }
         let systemPrompt = (agent.personalInfo.systemPrompt || "") + `\nContext: ${answer}\n Use this context to generate a clear, precise, and tailored response to the user. If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`
         prevMessages.unshift({ role: "system", content: systemPrompt });
