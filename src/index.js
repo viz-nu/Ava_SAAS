@@ -78,8 +78,22 @@ app.post('/v2/chat-bot', async (req, res) => {
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
         const { source, context, answer, embeddingTokens } = await getEnhancedContext(agent.collections, userMessage, prevMessages, 3);
+        let Actions = [];
         if (["error", "insufficient"].includes(source)) {
-            // no information available stop the conversation process and only see if actions work 
+            let noinfoAction = agent.actions.find(ele => ele.intent === "$noinfo")
+            const { to = "vishnu.teja101.vt@gmail.com" } = noinfoAction.dataSchema
+            const text = `Hello Support Team,
+                        The following user query lacks clarity, and we need to update our knowledge base accordingly:
+                        User Query: "${userMessage}"
+                        Please review and update the incomplete information.
+                        Thank you.`;
+            const html = `<p>Hello Support Team,</p>
+                        <p>The following user query lacks clarity, and we need to update our knowledge base accordingly:</p>
+                        <blockquote>${userMessage}</blockquote>
+                        <p>Please review and update the incomplete information.</p>
+                        <p>Thank you.</p>`;
+            sendMail({ to: to, subject: 'Unclear User Query - Need More Information', text: text, html: html })
+            Actions.push({ _id: noinfoAction._id, intent: "$noinfo", dataSchema: noinfoAction.dataSchema })
         }
         let systemPrompt = (agent.personalInfo.systemPrompt || "") + `\nContext: ${answer}\n Use this context to generate a clear, precise, and tailored response to the user. If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`
         prevMessages.unshift({ role: "system", content: systemPrompt });
@@ -96,7 +110,6 @@ app.post('/v2/chat-bot', async (req, res) => {
             Actions: [],
             actionTokens: {},
         };
-        let Actions = [];
         if (agent.actions && agent.actions.length > 0) {
             agent.actions = await Action.find({ _id: { $in: agent.actions } });
             const { matchedActions, model, usage } = await actions(prevMessages.slice(1), agent.actions.map(action => ({ intent: action.intent, dataSchema: action.dataSchema })));
