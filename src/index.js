@@ -81,7 +81,7 @@ app.post('/v2/chat-bot', async (req, res) => {
         let Actions = [];
         if (["error", "insufficient"].includes(source)) {
             let noinfoAction = agent.actions.find(ele => ele.intent === "$noinfo")
-            const { to = "vishnu.teja101.vt@gmail.com" } = noinfoAction.dataSchema
+            const { to = "vishnu.teja101.vt@gmail.com" } = noinfoAction.workingData
             const text = `Hello Support Team,
                         The following user query lacks clarity, and we need to update our knowledge base accordingly:
                         User Query: "${userMessage}"
