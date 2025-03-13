@@ -4,7 +4,7 @@ const AgentSchema = new Schema({
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     appearance: { type: Schema.Types.Mixed },
     personalInfo: { type: Schema.Types.Mixed },
-    actions: [{ type: Schema.Types.Mixed }],
+    actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     isPublic: { type: Boolean, default: false },
