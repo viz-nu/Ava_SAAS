@@ -59,7 +59,7 @@ app.post('/v2/chat-bot', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId } = req.body;
         let [agent, business, conversation] = await Promise.all([
-            Agent.findById(agentId),
+            Agent.findById(agentId).populate("actions"),
             Business.findOne({ agents: agentId }),
             conversationId ? Conversation.findById(conversationId) : null
         ]);
@@ -111,7 +111,6 @@ app.post('/v2/chat-bot', async (req, res) => {
             actionTokens: {},
         };
         if (agent.actions && agent.actions.length > 0) {
-            agent.actions = await Action.find({ _id: { $in: agent.actions } });
             const { matchedActions, model, usage } = await actions(prevMessages.slice(1), agent.actions.map(action => ({ intent: action.intent, dataSchema: action.dataSchema })));
             message.actionTokens = { model, usage }
             message.Actions = matchedActions
@@ -156,7 +155,7 @@ app.post('/v2/chat-bot', async (req, res) => {
 app.post("/trigger", async (req, res) => {
     try {
         const { actionId, dataSchema } = req.body
-        
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "internal server error", error: err.message });
