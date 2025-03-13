@@ -57,7 +57,7 @@ app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
 app.post('/v2/chat-bot', async (req, res) => {
     try {
-        const { userMessage, agentId, streamOption = false, conversationId } = req.body;
+        const { userMessage, agentId, streamOption = false, conversationId,geoLocation={}} = req.body;
         let [agent, business, conversation] = await Promise.all([
             Agent.findById(agentId).populate("actions"),
             Business.findOne({ agents: agentId }),
@@ -73,8 +73,6 @@ app.post('/v2/chat-bot', async (req, res) => {
                 { role: "assistant", content: response }
             ]));
         } else {
-            let clientIP = getClientIP(req);
-            let geoLocation = await getGeoLocation(clientIP);
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
         const { source, context, answer, embeddingTokens } = await getEnhancedContext(agent.collections, userMessage, prevMessages, 3);
@@ -191,7 +189,6 @@ app.get("/get-agent", async (req, res) => {
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { tokenSize } from "./utils/tiktoken.js";
-import { getClientIP, getGeoLocation } from "./utils/ipWorker.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
