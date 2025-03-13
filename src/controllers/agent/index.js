@@ -52,9 +52,16 @@ export const updateAgent = errorWrapper(async (req, res) => {
         }
         agent.collections = collections;
     }
+    if (actions) {
+        for (const id of actions) {
+            const action = await Action.findById(id);
+            if (!action) return { statusCode: 404, message: "action not found", data: null }
+            if (action.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this action", data: { actionId: id } }
+        }
+        agent.actions = actions;
+    }
     if (appearance) agent.appearance = appearance;
     if (personalInfo) agent.personalInfo = personalInfo;
-    if (actions) agent.actions = actions;
     await agent.save();
     return { statusCode: 200, message: "Agent updated", data: agent };
 });
