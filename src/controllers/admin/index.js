@@ -145,22 +145,22 @@ export const createActions = errorWrapper(async (req, res) => {
 });
 export const getActions = errorWrapper(async (req, res) => {
     const actions = await Action.find({ business: req.user.business });
-    return res.status(200).json({ message: "Actions fetched successfully", data: actions });
+    return { statusCode: 200, message: "Actions fetched successfully", data: actions }
 });
 export const getActionById = errorWrapper(async (req, res) => {
     const action = await Action.findOne({ _id: req.params.id, business: req.user.business });
     if (!action) return res.status(404).json({ message: "Action not found" });
-    return res.status(200).json({ message: "Action fetched successfully", data: action });
+    return { statusCode: 200, message: "Action fetched successfully", data: action }
 });
 export const updateAction = errorWrapper(async (req, res) => {
     const action = await Action.findOneAndUpdate({ _id: req.params.id, business: req.user.business }, { ...req.body }, { new: true });
     if (!action) return res.status(404).json({ message: "Action not found" });
-    return res.status(200).json({ message: "Action updated successfully", data: action });
+    return { statusCode: 200, message: "Action updated successfully", data: action }
 });
 export const deleteAction = errorWrapper(async (req, res) => {
     const action = await Action.findOneAndDelete({ _id: req.params.id, business: req.user.business });
     if (!action) return res.status(404).json({ message: "Action not found" });
-    return res.status(200).json({ message: "Action deleted successfully" });
+    return { statusCode: 200, message: "Action deleted successfully", data: null }
 });
 export const raiseTicket = errorWrapper(async (req, res) => {
     const { issueDetails, attachments } = req.body;

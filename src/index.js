@@ -153,6 +153,15 @@ app.post('/v2/chat-bot', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+app.post("/trigger", async (req, res) => {
+    try {
+        const { actionId, dataSchema } = req.body
+        
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "internal server error", error: err.message });
+    }
+})
 app.put("/reaction", async (req, res) => {
     const { messageId, reaction } = req.body;
     // Validation for messageId and reaction
