@@ -180,7 +180,14 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
         return result;
     } catch (error) {
         console.error(error);
-        return null;
+        return {
+            context: [],
+            answer: '',
+            embeddingTokens: {
+                model: embeddingResult.model,
+                usage: embeddingResult.usage
+            },
+        };;
     }
 }
 export const ChatCompletion = async (req, res, config) => {
