@@ -3,24 +3,18 @@ export const firecrawlRouter = Router()
 firecrawlRouter.post('/batch-scrape', async (req, res) => {
     try {
         console.log("Webhook received:", req.body);
-        const { event, data } = req.body;
-        switch (event) {
-            case "batch_scrape.started":
-                console.log("🟡 Scrape Started:", data);
-                break;
-            case "batch_scrape.page":
-                console.log("🔵 Page Scraped:", data);
-                break;
-            case "batch_scrape.completed":
-                console.log("✅ Scrape Completed:", data);
-                break;
-            case "batch_scrape.failed":
-                console.log("❌ Scrape Failed:", data);
-                break;
-            default:
-                console.log("⚠️ Unknown Event:", req.body);
-        }
-        // Always acknowledge the webhook
+        // {
+        //     success: true,
+        //     type: 'batch_scrape.page',"batch_scrape.completed",
+        //     id: '455733a8-021a-4b66-86d0-ea0af0b8ccb8',
+        //     data: [
+        //       {
+        //         markdown: 'this is all markdown',
+        //         metadata: { requestId: '1,741,973,406,127' }
+        //       }
+        //     ],
+        //     metadata: { requestId: '1,741,973,406,127' }
+        //   }
         res.status(200).json({ msg: "Webhook received" });
     } catch (error) {
         console.log(error);

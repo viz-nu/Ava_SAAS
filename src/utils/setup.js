@@ -24,7 +24,7 @@ export const digest = async (text, url, collectionId) => {
         await Data.insertMany(responses)
     }
 }
-export const digestMarkdown = async (text, url, collectionId) => {
+export const digestMarkdown = async (text, url, collectionId, extraMetaData={}) => {
     const markdownSplitter = new MarkdownTextSplitter({
         chunkSize: 1000, // Ideal chunk size
         chunkOverlap: 100, // To maintain context
@@ -40,7 +40,7 @@ export const digestMarkdown = async (text, url, collectionId) => {
                 const tokensUsed = tokens.length;
                 const summary = await getSummary(chunk)
                 let embeddingVector = await EmbeddingFunct(summary)
-                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url } }
+                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url, ...extraMetaData } }
             }));
         await Data.insertMany(responses)
     }
