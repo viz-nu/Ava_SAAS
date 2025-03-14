@@ -20,13 +20,13 @@ export const getSummary = async (chunk) => {
         const { choices } = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
-              { 
-                role: "system", 
-                content: "Convert the following content into organized bullet points. Extract: • Main topics • Key facts • All URLs/links • Important terms, dates, and figures. Keep information accurate and concise." 
-              },
-              { role: "user", content: chunk }
+                {
+                    role: "system",
+                    content: "Convert the following content into organized bullet points. Extract: • Main topics • Key facts • All URLs/links • Important terms, dates, and figures. Keep information accurate and concise."
+                },
+                { role: "user", content: chunk }
             ]
-          });
+        });
         return choices[0].message.content
     } catch (error) {
         console.error(error);
@@ -85,7 +85,7 @@ export const actions = async (messages, availableActions) => {
                                                 }
                                             },
                                             required: ["label", "data"],
-                                            additionalProperties: false 
+                                            additionalProperties: false
                                         }
                                     }
                                 },
@@ -213,8 +213,8 @@ export const ChatCompletion = async (req, res, config) => {
             res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
         }
         if (chunk.choices[0].finish_reason === "stop") {
-            const completion_tokens = tokenSize(chunk.model, msg.response);
-            const prompt_tokens = tokenSize(chunk.model, msg.query);
+            const completion_tokens = tokenSize(chunk.model, response);
+            const prompt_tokens = tokenSize(chunk.model, prevMessages.at(-1).content);
             responseTokens = { model: chunk.model, usage: { completion_tokens, prompt_tokens, total_tokens: completion_tokens + prompt_tokens } };
         }
     }
