@@ -20,6 +20,7 @@ const MessagesSchema = new Schema({
     },
     context: Array,
     Actions: Array,
+    analysis:Array,
     actionTokens: Object,
 }, {
     timestamps: true
