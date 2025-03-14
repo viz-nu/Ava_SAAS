@@ -78,6 +78,10 @@ export const Dashboard = errorWrapper(async (req, res) => {
         ]),
         Message.aggregate([
             { $match: { business: business._id } },
+            { $group: { _id: null, totalAnalysisTokensUsed: { $sum: "$analysisTokens.usage.total_tokens" } } }
+        ]),
+        Message.aggregate([
+            { $match: { business: business._id } },
             { $group: { _id: "$query" } }
         ]).then(results => {
             const queries = results.map(result => result._id); // Extract queries from aggregation result
@@ -90,12 +94,13 @@ export const Dashboard = errorWrapper(async (req, res) => {
         reactionsRes,
         actionsRes,
         actionTokensRes,
+        analysisTokensRes,
         analysis // for all queries do analyzeQueries(queries) and store in the output
     ] = await Promise.all(aggregationQueries);
     const totalKnowledgeTokensUsed = knowledgeTokensRes[0]?.totalKnowledgeTokensUsed || 0;
     const totalChatTokensUsed = chatTokensRes[0]?.totalChatTokensUsed || 0;
     const actionTokens = actionTokensRes[0]?.totalActionTokensUsed || 0;
-
+    const analysisTokens = analysisTokensRes[0]?.totalAnalysisTokensUsed || 0
     const reactionCounts = reactionsRes.reduce((acc, { _id, count }) => {
         acc[_id] = count;
         return acc;
@@ -117,6 +122,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
             reactionCounts,
             actionsData,
             actionTokens,
+            analysisTokens,
             analysis
         }
     };

@@ -6,6 +6,10 @@ const MessagesSchema = new Schema({
     query: String,
     response: String,
     reaction: { type: String, default: "neutral", enum: ["neutral", "like", "dislike"] },
+    analysisTokens: {
+        model: String,
+        usage: { type: Schema.Types.Mixed }
+    },
     embeddingTokens: {
         model: String,
         usage: { type: Schema.Types.Mixed }
@@ -17,7 +21,6 @@ const MessagesSchema = new Schema({
     context: Array,
     Actions: Array,
     actionTokens: Object,
-    contextData:{ type: Schema.Types.Mixed }
 }, {
     timestamps: true
 });
