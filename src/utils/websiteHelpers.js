@@ -168,13 +168,19 @@ export const FetchUsingDroxy = async (url) => {
 export const processURLS = async (collectionId, urls, receivers = [], _id) => {
   let completed = 0;
   const total = urls.length;
-  for (const url of urls) {
+  console.log("Received:", urls.length, "URLs");
+  console.log("CollectionId:", collectionId);
+  console.log("Receivers:", receivers);
+  console.log("ContentsId:", _id);
+  for (const { url } of urls) {
     try {
+      console.log("working on :" + url);
       const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
         { "url": url, "formats": ["markdown"], "skipTlsVerification": false, "timeout": 10000, "location": { "country": "US", "languages": ["en-US"] }, "removeBase64Images": true, "blockAds": true, "proxy": "basic" }, {
         headers: { Authorization: `Bearer ${process.env.FIREBASE_API_KEY}`, 'Content-Type': 'application/json' }
       });
       if (data?.data?.markdown) {
+        console.log("digesting");
         await digestMarkdown(data.data.markdown, url, collectionId, data.data.metadata);
         await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } } });
       }
@@ -184,6 +190,7 @@ export const processURLS = async (collectionId, urls, receivers = [], _id) => {
       receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
     }
     catch (error) {
+      console.error(error);
       await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: false, url: url, error: error?.message } } });
     }
   }
