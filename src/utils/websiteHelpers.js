@@ -165,135 +165,89 @@ export const FetchUsingDroxy = async (url) => {
     return { success: false, error: error.message }
   }
 }
-
 export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-  const limit = pLimit(3); // Limit concurrent API calls
-  const batchSize = 3;
   let completed = 0;
   const total = urls.length;
-
-  console.log("Received:", urls.length, "URLs");
-  console.log("CollectionId:", collectionId);
-  console.log("Receivers:", receivers);
-  console.log("ContentsId:", _id);
-
-  async function* generateBatches() {
-    for (let i = 0; i < urls.length; i += batchSize) {
-      yield urls.slice(i, i + batchSize).map(ele => ele.url);
-    }
-  }
-
-  try {
-    for await (const batch of generateBatches()) {
-      // Limit concurrent requests
-      const batchResult = await Promise.all(batch.map(url => limit(async () => {
-        try {
-          const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: [url] });
-          if (!data.results) throw new Error("Invalid response format");
-          return {
-            url: data.results[0].url,
-            content: data.results[0].content,
-            success: data.results[0].success || false,
-            error: data.results[0].error || null
-          };
-        } catch (error) {
-          return { url, success: false, error: error.message || "Unknown error" };
-        }
-      })));
-      if (!batchResult) continue;
-      // Process batch results one by one to reduce memory usage
-      for (const ele of batchResult) {
-        if (ele.success) {
-          await digestMarkdown(ele.content, ele.url, collectionId);
-        }
-        await Collection.updateOne(
-          { _id: collectionId, "contents._id": _id },
-          {
-            $push: {
-              "contents.$.metaData.detailedReport": {
-                success: ele.success,
-                url: ele.url,
-                error: ele.success ? undefined : ele.error
-              }
-            }
-          }
-        );
+  for (const url of urls) {
+    try {
+      const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
+        { "url": url, "formats": ["markdown"], "skipTlsVerification": false, "timeout": 10000, "location": { "country": "US", "languages": ["en-US"] }, "removeBase64Images": true, "blockAds": true, "proxy": "basic" }, {
+        headers: { Authorization: `Bearer ${process.env.FIREBASE_API_KEY}`, 'Content-Type': 'application/json' }
+      });
+      if (data?.data?.markdown) {
+        await digestMarkdown(data.data.markdown, url, collectionId, data.data.metadata);
+        await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } } });
       }
-      // Emit progress update
-      completed += batch.length;
+      completed += 1;
       const progressData = { total, progress: completed, collectionId };
       console.log(progressData);
       receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
     }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error processing URLs:", error);
-    return { success: false, error: error.message || "Unknown error" };
+    catch (error) {
+      await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: false, url: url, error: error?.message } } });
+    }
   }
+  return { success: true };
 };
-
-
 // export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-//   const limit = pLimit(3); // Allows up to 3 parallel API calls
+//   const limit = pLimit(3); // Limit concurrent API calls
 //   const batchSize = 3;
 //   let completed = 0;
 //   const total = urls.length;
-//   console.log("recieved : " + urls.length + " urls");
-//   console.log("collectionId : " + collectionId);
-//   console.log("receivers: ", receivers);
-//   console.log("contentsId: ", _id);
-//   try {
-//     const tasks = [];
+
+//   console.log("Received:", urls.length, "URLs");
+//   console.log("CollectionId:", collectionId);
+//   console.log("Receivers:", receivers);
+//   console.log("ContentsId:", _id);
+
+//   async function* generateBatches() {
 //     for (let i = 0; i < urls.length; i += batchSize) {
-//       const batch = urls.slice(i, i + batchSize).map(ele => ele.url);
-//       tasks.push(
-//         limit(async () => {
-//           try {
-//             const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: batch });
-//             if (!data.results) throw new Error("Invalid response format");
-//             console.dir(data.results)
-//             return data.results.map(result => ({
-//               url: result.url,
-//               content: result.content,
-//               success: result.success || false,
-//               error: result.error || null
-//             }));
-//           } catch (error) {
-//             return batch.map(url => ({ url, success: false, error: error.message || "Unknown error" }));
-//           }
-//         })
-//       );
+//       yield urls.slice(i, i + batchSize).map(ele => ele.url);
 //     }
-//     // Process all tasks
-//     for await (const batchResult of Promise.allSettled(tasks)) {
-//       if (batchResult.status !== "fulfilled") continue; // Skip failed batches
-//       const batch = batchResult.value;
+//   }
 
-//       // Process the batch efficiently
-//       await Promise.all(batch.map(async (ele) => {
-//         if (ele.success) await digestMarkdown(ele.content, ele.url, collectionId);
-//         await Collection.updateOne(
-//           { _id: collectionId, "contents._id": _id },
-//           {
-//             $push: {
-//               "contents.$.metaData.detailedReport": {
-//                 success: ele.success,
-//                 url: ele.url,
-//                 error: ele.success ? undefined : ele.error
-//               }
-//             }
+//   try {
+//     for await (const batch of generateBatches()) {
+//       // Limit concurrent requests
+//       const batchResult = await Promise.all(batch.map(url => limit(async () => {
+//         try {
+//           const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: [url] });
+//           if (!data.results) throw new Error("Invalid response format");
+//           return {
+//             url: data.results[0].url,
+//             content: data.results[0].content,
+//             success: data.results[0].success || false,
+//             error: data.results[0].error || null
+//           };
+//         } catch (error) {
+//           return { url, success: false, error: error.message || "Unknown error" };
+//         }
+//       })));
+//       if (!batchResult) continue;
+//       // Process batch results one by one to reduce memory usage
+//       for (const ele of batchResult) {
+//         if (ele.success) {
+//           await digestMarkdown(ele.content, ele.url, collectionId);
+//         }
+//     await Collection.updateOne(
+//       { _id: collectionId, "contents._id": _id },
+//       {
+//         $push: {
+//           "contents.$.metaData.detailedReport": {
+//             success: ele.success,
+//             url: ele.url,
+//             error: ele.success ? undefined : ele.error
 //           }
-//         );
-//       })
-//       );
-
-//       // Emit progress update
-//       completed += batch.length;
-//       const progressData = { total, progress: completed, collectionId: collectionId };
-//       console.log(progressData);
-//       receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
-//     }
+//         }
+//       }
+//     );
+//   }
+//   // Emit progress update
+//   completed += batch.length;
+//   const progressData = { total, progress: completed, collectionId };
+//   console.log(progressData);
+//   receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
+// }
 //     return { success: true };
 //   } catch (error) {
 //     console.error("Error processing URLs:", error);
