@@ -192,7 +192,7 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
     }
 }
 export const ChatCompletion = async (req, res, config) => {
-    const { streamOption, prevMessages, model = "gpt-4o-mini", messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", temperature = 1 } = config;
+    const { streamOption, prevMessages, model = "gpt-4", messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", temperature = 1 } = config;
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
     let signalDetected = false, responseTokens, response
@@ -204,7 +204,7 @@ export const ChatCompletion = async (req, res, config) => {
         const cleanContent = response.replace(signalKeyword, "");
         res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "full", data: cleanContent }));
     }
-    const stream = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages, temperature, stream: true });
+    const stream = await openai.chat.completions.create({ model, messages: prevMessages, temperature, stream: true });
     for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
