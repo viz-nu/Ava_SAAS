@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { Data } from "../models/Data.js";
 import { tokenSize } from "./tiktoken.js";
+import mongoose from "mongoose";
 export const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
 export const EmbeddingFunct = async (text) => {
     try {
@@ -149,8 +150,8 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
             {
                 $vectorSearch: {
                     "exact": false,
-                    "filter": { "collection": { $in: collectionIds } },
-                    "index": "Data",
+                    "filter": { "collection": { $in: collectionIds.map(ele => new mongoose.Types.ObjectId(ele)) } },
+                    "index": "vector_index",
                     "path": "embeddingVector",
                     "queryVector": embeddingResult.data[0].embedding,
                     "numCandidates": numCandidates,
