@@ -16,7 +16,6 @@ import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 import { createServer } from "http";
 import { initializeSocket, io } from "./utils/io.js";
-import { Action } from "./models/Action.js";
 await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
