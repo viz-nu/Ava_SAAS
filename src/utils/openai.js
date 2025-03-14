@@ -70,9 +70,7 @@ export const actions = async (messages, availableActions) => {
                                     intent: { type: "string", description: "The identified user intent." },
                                     confidence: {
                                         type: "number",
-                                        description: "Confidence score (0 to 1) indicating certainty of intent classification.",
-                                        minimum: 0,
-                                        maximum: 1
+                                        description: "Confidence score (0 to 1) indicating certainty of intent classification."
                                     },
                                     dataSchema: {
                                         type: "array",
