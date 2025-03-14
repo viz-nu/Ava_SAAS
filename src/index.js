@@ -110,7 +110,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             query: userMessage,
             response: "",
             analysisTokens: { model, usage },
-            embeddingTokens,
+            embeddingTokens:{},
             responseTokens: {},
             conversationId: conversation._id,
             context,
