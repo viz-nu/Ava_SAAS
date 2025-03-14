@@ -54,6 +54,7 @@ app.use(cors());
 app.get("/", (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
+app.use("/webhook", webhookRouter)
 app.post('/v2/chat-bot', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
@@ -202,6 +203,7 @@ app.get("/get-agent", async (req, res) => {
 })
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
+import { webhookRouter } from "./webhooks/index.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
