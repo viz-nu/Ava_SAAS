@@ -84,7 +84,8 @@ export const actions = async (messages, availableActions) => {
                                                     description: "Extracted value or null if missing."
                                                 }
                                             },
-                                            required: ["label", "data"]
+                                            required: ["label", "data"],
+                                            additionalProperties: false 
                                         }
                                     }
                                 },
