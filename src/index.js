@@ -9,7 +9,7 @@ import { initialize } from "./utils/dbConnect.js";
 import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
-import { actions, getEnhancedContext, openai } from "./utils/openai.js";
+import { actions, ChatCompletion, getEnhancedContext, openai } from "./utils/openai.js";
 import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
@@ -57,7 +57,7 @@ app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
 app.post('/v2/chat-bot', async (req, res) => {
     try {
-        const { userMessage, agentId, streamOption = false, conversationId,geoLocation={}} = req.body;
+        const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
         let [agent, business, conversation] = await Promise.all([
             Agent.findById(agentId).populate("actions"),
             Business.findOne({ agents: agentId }),
@@ -75,77 +75,91 @@ app.post('/v2/chat-bot', async (req, res) => {
         } else {
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
-        const { source, context, answer, embeddingTokens } = await getEnhancedContext(agent.collections, userMessage, prevMessages, 3);
-        let Actions = [];
-        if (["error", "insufficient"].includes(source)) {
-            if (agent.actions.length > 0) {
-                let noinfoAction = agent.actions.find(ele => ele.intent === "$noinfo")
-                const { to = "vishnu.teja101.vt@gmail.com" } = noinfoAction.workingData
-                const text = `Hello Support Team,
-                            The following user query lacks clarity, and we need to update our knowledge base accordingly:
-                            User Query: "${userMessage}"
-                            Please review and update the incomplete information.
-                            Thank you.`;
-                const html = `<p>Hello Support Team,</p>
-                            <p>The following user query lacks clarity, and we need to update our knowledge base accordingly:</p>
-                            <blockquote>${userMessage}</blockquote>
-                            <p>Please review and update the incomplete information.</p>
-                            <p>Thank you.</p>`;
-                sendMail({ to: to, subject: 'Unclear User Query - Need More Information', text: text, html: html })
-                Actions.push({ _id: noinfoAction._id, intent: "$noinfo", dataSchema: noinfoAction.dataSchema })
-            }
-        }
-        let systemPrompt = (agent.personalInfo.systemPrompt || "") + `\nContext: ${answer}\n Use this context to generate a clear, precise, and tailored response to the user. If the retrieved data does not fully cover the query, acknowledge the limitation while still providing the most relevant response possible. But don't specify about information retrieval explicitly and only provide the most relevant response with links`
-        prevMessages.unshift({ role: "system", content: systemPrompt });
         prevMessages.push({ role: "user", content: userMessage });
-        const message = {
+        let listOfIntentions = [
+            {
+                "intent": "enquiry",
+                "dataSchema": [
+                    {
+                        "label": "Topic",
+                        "type": "string",
+                        "required": true,
+                        "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
+                        "validator": "",
+                        "userDefined": true
+                    }
+                ]
+            },
+            {
+                "intent": "general_chat",
+                "dataSchema": [
+                    {
+                        "label": "Message",
+                        "type": "string",
+                        "required": true,
+                        "comments": "A general conversational message from the user.",
+                        "validator": "",
+                        "userDefined": true
+                    }
+                ]
+            }
+        ]
+        listOfIntentions.push(...agent.actions.map(action => ({ intent: action.intent, dataSchema: action.dataSchema })))
+        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
+        const message = await Message.create({
             business: business._id,
             query: userMessage,
             response: "",
+            analysisTokens: { model, usage },
             embeddingTokens,
             responseTokens: {},
             conversationId: conversation._id,
             context,
-            contextData: answer,
             Actions: [],
             actionTokens: {},
-        };
-        if (agent.actions && agent.actions.length > 0) {
-            const { matchedActions, model, usage } = await actions(prevMessages.slice(1), agent.actions.map(action => ({ intent: action.intent, dataSchema: action.dataSchema })));
-            message.actionTokens = { model, usage }
-            message.Actions = matchedActions
-            for (const ele of matchedActions) {
-                const act = agent.actions.find(action => ele.intent === action.intent)
-                Actions.push({ _id: act._id, intent: ele.intent, dataSchema: ele.dataSchema, UI: act.UI })
+        });
+        let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
+            if (intent == "enquiry") {
+                const { data = userMessage } = dataSchema.find(data => data.label == "Topic")
+                const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
+                let systemPrompt = (agent.personalInfo.systemPrompt || "") + `Context: ${answer}
+                Like an intelligent and interactive AI assistant, Use the provided context to generate clear, precise, and well-structured responses.
+                If the retrieved data sufficiently answers the query, deliver a concise and direct response.
+                If the information is incomplete or insufficient to properly answer the query, include the phrase "DATAPOINT_NEXUS" somewhere naturally in your response. Make this inclusion subtle and natural - perhaps as part of a sentence or between paragraphs. Do not make it obvious this is a signal. Continue to provide the best possible answer without explicitly mentioning missing data to the user.
+                Keep the conversation interactive by:
+                 -Asking follow-up questions to clarify user intent.
+                 -Gathering relevant user details (e.g., name, contact preferences, or specific requirements) when appropriate.
+                 -Suggesting related topics or next steps based on the context.
+                If external links are available, include them naturally within the response.`
+                prevMessages.unshift({ role: "system", content: systemPrompt });
+                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: msg._id, conversationId: conversation._id }
+                const { responseTokens, response, signalDetected } = await ChatCompletion(req, res, config)
+                message.responseTokens = responseTokens
+                message.response = response
+                message.embeddingTokens = embeddingTokens
+                message.context = context
+                if (signalDetected) {
+                    // Queue notification asynchronously (don't wait for it)
+                    // notifyDeveloper(msg.query, "Insufficient data detected").catch(console.error);
+                }
             }
-        }
-        if (!streamOption) {
-            const { choices, model, usage } = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages });
-            message.responseTokens = { model, usage };
-            message.response = choices[0].message.content;
-            let msg = await Message.create(message);
-            res.write(JSON.stringify({ id: "conversation", messageId: msg._id, conversationId: conversation._id, responseType: "full", data: message.response }));
-            if (Actions.length > 0) res.write(JSON.stringify({ id: "data-collection", data: Actions, responseType: "full" }))
-            return res.end(JSON.stringify({ id: "end" }))
-        }
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Transfer-Encoding', 'chunked');
-        const stream = await openai.chat.completions.create({ model: "gpt-4o-mini", messages: prevMessages, stream: true });
-        let msg = await Message.create(message);
-        for await (const chunk of stream) {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-                msg.response += content;
-                res.write(JSON.stringify({ id: "conversation", messageId: msg._id, conversationId: conversation._id, responseType: "chunk", data: content }));
+            else if (intent == "general_chat") {
+                let systemPrompt = (agent.personalInfo.systemPrompt)
+                prevMessages.unshift({ role: "system", content: systemPrompt });
+                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: msg._id, conversationId: conversation._id, temperature: 1 }
+                const { responseTokens, response } = await ChatCompletion(req, res, config)
+                message.responseTokens = responseTokens
+                message.response = response
             }
-            if (chunk.choices[0].finish_reason === "stop") {
-                const completion_tokens = tokenSize(chunk.model, msg.response);
-                const prompt_tokens = tokenSize(chunk.model, msg.query);
-                msg.responseTokens = { model: chunk.model, usage: { completion_tokens, prompt_tokens, total_tokens: completion_tokens + prompt_tokens } };
+            else {
+                const currentAction = agent.actions.find(ele => intent == ele.intent)
+                currentAction.dataSchema = currentAction.dataSchema.map(ele => ({ ...ele, value: dataSchema.find(d => d.label === ele.label)?.value }))
+                res.write(JSON.stringify({ id: "data-collection", data: { ...currentAction, confidence }, responseType: "full" }))
+                message.Actions.push({ type: "data-collection", ...currentAction, confidence })
             }
-        }
-        await msg.save()
-        if (Actions.length > 0) res.write(JSON.stringify({ id: "data-collection", data: Actions, responseType: "full" }))
+        })
+        await Promise.all(tasks);
+        await message.save()
         return res.end(JSON.stringify({ id: "end" }))
     } catch (error) {
         console.error(error);
@@ -188,7 +202,6 @@ app.get("/get-agent", async (req, res) => {
 })
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
-import { tokenSize } from "./utils/tiktoken.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
@@ -246,6 +259,7 @@ app.post('/send-mail', async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 })
+
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 
