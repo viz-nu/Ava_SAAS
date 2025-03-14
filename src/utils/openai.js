@@ -90,7 +90,8 @@ export const actions = async (messages, availableActions) => {
                                         }
                                     }
                                 },
-                                required: ["intent", "confidence", "dataSchema"]
+                                required: ["intent", "confidence", "dataSchema"],
+                                additionalProperties: false
                             },
                         },
                     },
