@@ -131,7 +131,7 @@ app.post('/v2/chat-bot', async (req, res) => {
                  -Suggesting related topics or next steps based on the context.
                 If external links are available, include them naturally within the response.`
                 prevMessages.unshift({ role: "system", content: systemPrompt });
-                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: msg._id, conversationId: conversation._id }
+                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: message._id, conversationId: conversation._id }
                 const { responseTokens, response, signalDetected } = await ChatCompletion(req, res, config)
                 message.responseTokens = responseTokens
                 message.response = response
@@ -145,7 +145,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             else if (intent == "general_chat") {
                 let systemPrompt = (agent.personalInfo.systemPrompt)
                 prevMessages.unshift({ role: "system", content: systemPrompt });
-                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: msg._id, conversationId: conversation._id, temperature: 1 }
+                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: message._id, conversationId: conversation._id, temperature: 1 }
                 const { responseTokens, response } = await ChatCompletion(req, res, config)
                 message.responseTokens = responseTokens
                 message.response = response
