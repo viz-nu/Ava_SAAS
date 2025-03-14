@@ -113,7 +113,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             embeddingTokens:{},
             responseTokens: {},
             conversationId: conversation._id,
-            context,
+            context:[],
             Actions: [],
             actionTokens: {},
         });
