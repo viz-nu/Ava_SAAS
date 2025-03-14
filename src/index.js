@@ -109,6 +109,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             business: business._id,
             query: userMessage,
             response: "",
+            analysis: matchedActions,
             analysisTokens: { model, usage },
             embeddingTokens: {},
             responseTokens: {},
