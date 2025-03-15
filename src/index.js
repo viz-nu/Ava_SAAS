@@ -121,7 +121,7 @@ app.post('/v2/chat-bot', async (req, res) => {
         });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
-                const { data = userMessage } = dataSchema.find(data => data.label == "Topic")
+                const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                 let systemPrompt = (agent.personalInfo.systemPrompt || "") + `Context: ${answer}
                 Like an intelligent and interactive AI assistant, Use the provided context to generate clear, precise, and well-structured responses.
