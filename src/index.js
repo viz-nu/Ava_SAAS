@@ -164,7 +164,8 @@ app.post('/v2/chat-bot', async (req, res) => {
         return res.end(JSON.stringify({ id: "end" }))
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: error.message });
+        return res.end(JSON.stringify({ id: "error" }))
+        // res.status(500).json({ error: error.message });
     }
 });
 app.post("/trigger", async (req, res) => {
