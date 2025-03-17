@@ -8,50 +8,6 @@ import { analyzeQueries } from "../../utils/nlp.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    // const [totalKnowledgeTokensUsed, totalChatTokensUsed, reactionCounts, actionsData, actionTokens] = await Promise.all([
-    //     business.collections.length > 0
-    //         ? Data.aggregate([
-    //             { $match: { collection: { $in: business.collections } } },
-    //             { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
-    //         ]).then(res => res[0]?.totalKnowledgeTokensUsed || 0)
-    //         : 0,
-    //     Message.aggregate([
-    //         { $match: { business: business._id } },
-    //         { $group: { _id: null, totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" } } }
-    //     ]).then(res => res[0]?.totalChatTokensUsed || 0),
-    //     Message.aggregate([
-    //         { $match: { business: business._id } },
-    //         { $group: { _id: "$reaction", count: { $sum: 1 } } }
-    //     ]).then(res =>
-    //         res.reduce((acc, { _id, count }) => {
-    //             acc[_id] = count;
-    //             return acc;
-    //         }, { neutral: 0, like: 0, dislike: 0 })
-    //     ),
-    //     Message.aggregate([
-    //         { $match: { business: business._id } },
-    //         { $unwind: "$Actions" },
-    //         {
-    //             $group: {
-    //                 _id: "$Actions.intent",
-    //                 count: { $sum: 1 }
-    //             }
-    //         }
-    //     ]).then(res => {
-    //         const actionSummary = res.reduce((acc, { _id, count }) => {
-    //             acc[_id] = count;
-    //             return acc;
-    //         }, {});
-    //         return {
-    //             totalActionsTriggered: res.reduce((sum, { count }) => sum + count, 0),
-    //             actionBreakdown: actionSummary
-    //         };
-    //     }),
-    //     Message.aggregate([
-    //         { $match: { business: business._id } },
-    //         { $group: { _id: null, totalActionTokensUsed: { $sum: "$actionTokens.usage.total_tokens" } } }
-    //     ]).then(res => res[0]?.totalActionTokensUsed || 0)
-    // ]);
     const aggregationQueries = [
         business.collections.length > 0
             ? Data.aggregate([
@@ -86,7 +42,22 @@ export const Dashboard = errorWrapper(async (req, res) => {
         ]).then(results => {
             const queries = results.map(result => result._id); // Extract queries from aggregation result
             return analyzeQueries(queries);
-        })
+        }),
+        Message.aggregate([
+            { $match: { business: business._id } },
+            { $unwind: "$analysis" }, // Expand the analysis array,
+            {
+                $facet: {
+                    intentFrequency: [{
+                        $group: {
+                            _id: "$analysis.intent",
+                            count: { $sum: 1 }
+                        }
+                    }, { $sort: { count: -1 } }
+                    ]
+                }
+            }
+        ])
     ];
     const [
         knowledgeTokensRes,
@@ -95,7 +66,8 @@ export const Dashboard = errorWrapper(async (req, res) => {
         actionsRes,
         actionTokensRes,
         analysisTokensRes,
-        analysis // for all queries do analyzeQueries(queries) and store in the output
+        analysis, // for all queries do analyzeQueries(queries) and store in the output
+        NewAnalysis,
     ] = await Promise.all(aggregationQueries);
     const totalKnowledgeTokensUsed = knowledgeTokensRes[0]?.totalKnowledgeTokensUsed || 0;
     const totalChatTokensUsed = chatTokensRes[0]?.totalChatTokensUsed || 0;
@@ -123,10 +95,42 @@ export const Dashboard = errorWrapper(async (req, res) => {
             actionsData,
             actionTokens,
             analysisTokens,
-            analysis
+            analysis,
+            NewAnalysis: NewAnalysis[0]
         }
     };
 });
+export const DetailedAnalysis = errorWrapper(async (req, res) => {
+    // const { selectedIntents } = req.body;
+     const selectedIntents = ["enquiry", "complaint"];
+    if (!selectedIntents || selectedIntents.length === 0) return { statusCode: 400, message: "Please provide intents to analyze", data: null }
+    const business = await Business.findById(req.user.business);
+    if (!business) return { statusCode: 404, message: "Business not found", data: null }
+
+    const analysis = await Message.aggregate([
+        { $match: { business: business._id } },
+        { $unwind: "$analysis" },
+        { $match: { "analysis.intent": { $in: selectedIntents } } },
+        {
+            $project: {
+                _id: 0,
+                intent: "$analysis.intent",
+                dataSchema: {
+                    $map: {
+                        input: "$analysis.dataSchema",
+                        as: "schema",
+                        in: {
+                            label: "$$schema.label",
+                            data: "$$schema.data"
+                        }
+                    }
+                }
+            }
+        }
+    ])
+    return { statusCode: 200, message: 'queries based on intents', data: analysis }
+    // const selectedIntents = ["enquiry", "complaint"];
+})
 export const editBusiness = errorWrapper(async (req, res) => {
     let business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -142,7 +146,7 @@ export const editBusiness = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Business updated", data: business }
 });
 export const createActions = errorWrapper(async (req, res) => {
-    const { intent, dataSchema, name } = req.body
+    const { intent, dataSchema } = req.body
     if (!intent || !dataSchema) return { statusCode: 404, message: "intend or dataSchema not found", data: null }
     const business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
