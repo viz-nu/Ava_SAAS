@@ -104,7 +104,7 @@ app.post('/v2/chat-bot', async (req, res) => {
                 ]
             }
         ]
-        listOfIntentions.push(...agent.actions.map(action => ({ intent: action.intent, dataSchema: action.dataSchema })))
+        listOfIntentions.push(...agent.actions.filter(action => action.type === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
         const message = await Message.create({
             business: business._id,
