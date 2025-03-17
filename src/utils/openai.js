@@ -201,7 +201,7 @@ export const ChatCompletion = async (req, res, config) => {
         responseTokens = { model, usage };
         response = choices[0].message.content;
         if (response.includes(signalKeyword) && !signalDetected) signalDetected = true;
-        const cleanContent = response.replace(signalKeyword, "");
+        const cleanContent = response.replace(signalKeyword, "") || content;
         res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "full", data: cleanContent }));
     }
     const stream = await openai.chat.completions.create({ model, messages: prevMessages, temperature, stream: true });
@@ -209,7 +209,7 @@ export const ChatCompletion = async (req, res, config) => {
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
             if (content.includes(signalKeyword) && !signalDetected) signalDetected = true;
-            const cleanContent = content.replace(signalKeyword, "");
+            const cleanContent = content.replace(signalKeyword, "") || content;
             response += cleanContent;
             res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
         }
