@@ -104,21 +104,9 @@ app.post('/v2/chat-bot', async (req, res) => {
                 ]
             }
         ]
-        listOfIntentions.push(...agent.actions.filter(action => action.type === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
+        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
-        const message = await Message.create({
-            business: business._id,
-            query: userMessage,
-            response: "",
-            analysis: matchedActions,
-            analysisTokens: { model, usage },
-            embeddingTokens: {},
-            responseTokens: {},
-            conversationId: conversation._id,
-            context: [],
-            Actions: [],
-            actionTokens: {},
-        });
+        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
@@ -154,9 +142,11 @@ app.post('/v2/chat-bot', async (req, res) => {
             }
             else {
                 const currentAction = agent.actions.find(ele => intent == ele.intent)
-                currentAction.dataSchema = currentAction.dataSchema.map(ele => ({ ...ele, value: dataSchema.find(d => d.label === ele.label)?.value }))
-                res.write(JSON.stringify({ id: "data-collection", data: { ...currentAction, confidence }, responseType: "full" }))
-                message.Actions.push({ type: "data-collection", ...currentAction, confidence })
+                currentAction.dataSchema = currentAction.dataSchema.map(schemaItem => {
+                    const matchingData = dataSchema.find(dataItem => dataItem.label === schemaItem.label); return { ...schemaItem, data: matchingData ? matchingData.data : null };
+                });
+                res.write(JSON.stringify({ id: "data-collection", data: { action: currentAction._doc, confidence }, responseType: "full" }))
+                message.Actions.push({ type: "data-collection", data: { action: currentAction._doc, confidence }, confidence })
             }
         })
         await Promise.all(tasks);
