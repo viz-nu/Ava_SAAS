@@ -221,3 +221,34 @@ export const ChatCompletion = async (req, res, config) => {
     }
     return { responseTokens, response, signalDetected }
 }
+export const AssistantResponse = async (req, res, config) => {
+    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS" } = config;
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    const thread = await openai.beta.threads.create({ messages: prevMessages });
+    const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
+    let signalDetected = false, responseTokens, response = "", model = ""
+    for await (const chunk of stream) {
+        switch (chunk.event) {
+            case "thread.message.delta":
+                const content = chunk.data.delta.content[0]?.text?.value || "";
+                if (content) {
+                    if (content.includes(signalKeyword) && !signalDetected) signalDetected = true;
+                    const cleanContent = content.replace(signalKeyword, "") || content;
+                    response += cleanContent;
+                    res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
+                }
+                break;
+            case "thread.run.completed":
+                console.log("Completed thread run:", response);
+                await openai.beta.threads.del(chunk.data.data.thread_id);
+                model = chunk.data.data.model;
+                const completion_tokens = tokenSize(model, response);
+                const prompt_tokens = tokenSize(model, prevMessages.at(-1).content);
+                responseTokens = { model: chunk.model, usage: { completion_tokens, prompt_tokens, total_tokens: completion_tokens + prompt_tokens } };
+                console.log(`Thread deleted`);
+                break;
+        }
+    }
+    return { responseTokens, response, signalDetected }
+}

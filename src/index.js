@@ -158,6 +158,97 @@ app.post('/v2/chat-bot', async (req, res) => {
         // res.status(500).json({ error: error.message });
     }
 });
+app.post('/v1/agent', async (req, res) => {
+    try {
+        const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
+        let [agent, business, conversation] = await Promise.all([
+            Agent.findById(agentId).populate("actions"),
+            Business.findOne({ agents: agentId }),
+            conversationId ? Conversation.findById(conversationId) : null
+        ]);
+        if (!agent) return res.status(404).json({ error: 'Agent not found' });
+        if (!business) return res.status(404).json({ error: 'Business not found' });
+        let prevMessages = [];
+        if (conversation) {
+            const messages = await Message.find({ conversationId }).select("query response");
+            prevMessages.push(...messages.flatMap(({ query, response }) => [
+                { role: "user", content: query },
+                { role: "assistant", content: response }
+            ]));
+        } else {
+            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
+        }
+        prevMessages.push({ role: "user", content: userMessage });
+        let listOfIntentions = [
+            {
+                "intent": "enquiry",
+                "dataSchema": [
+                    {
+                        "label": "Topic",
+                        "type": "string",
+                        "required": true,
+                        "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
+                        "validator": "",
+                        "userDefined": true
+                    }
+                ]
+            },
+            {
+                "intent": "general_chat",
+                "dataSchema": [
+                    {
+                        "label": "Message",
+                        "type": "string",
+                        "required": true,
+                        "comments": "A general conversational message from the user.",
+                        "validator": "",
+                        "userDefined": true
+                    }
+                ]
+            }
+        ]
+        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
+        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
+        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
+        let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
+            if (intent == "enquiry") {
+                const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
+                const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
+                let config = { additional_instructions: `Context: ${answer || null}`, assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id }
+                const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
+                message.responseTokens = responseTokens``
+                message.response = response
+                message.embeddingTokens = embeddingTokens
+                message.context = context
+                if (signalDetected) {
+                    // Queue notification asynchronously (don't wait for it)
+                    // notifyDeveloper(msg.query, "Insufficient data detected").catch(console.error);
+                }
+            }
+            else if (intent == "general_chat") {
+                let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id }
+                const { responseTokens, response } = await AssistantResponse(req, res, config)
+                message.responseTokens = responseTokens
+                message.response = response
+            }
+            else {
+                const currentAction = agent.actions.find(ele => intent == ele.intent)
+                currentAction.dataSchema = currentAction.dataSchema.map(schemaItem => {
+                    const matchingData = dataSchema.find(dataItem => dataItem.label === schemaItem.label); return { ...schemaItem, data: matchingData ? matchingData.data : null };
+                });
+                res.write(JSON.stringify({ id: "data-collection", data: { action: currentAction._doc, confidence }, responseType: "full" }))
+                message.Actions.push({ type: "data-collection", data: { action: currentAction._doc, confidence }, confidence })
+            }
+        })
+        await Promise.all(tasks);
+        await message.save()
+        return res.end(JSON.stringify({ id: "end" }))
+    } catch (error) {
+        console.error(error);
+        return res.end(JSON.stringify({ id: "error" }))
+        // res.status(500).json({ error: error.message });
+    }
+});
 app.post("/trigger", async (req, res) => {
     try {
         // const { } = req.body
