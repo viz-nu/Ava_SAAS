@@ -1,12 +1,12 @@
 import axios from 'axios';
 import { parseStringPromise } from "xml2js";
 import https from "https";
-import pLimit from "p-limit";
+// import pLimit from "p-limit";
 import { digestMarkdown } from './setup.js';
 import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
 import { io } from './io.js';
 import { Collection } from '../models/Collection.js';
-
+import { urlProcessingQueue } from "./bull.js";
 export const sitemapGenerator = async (mainUrl) => {
   try {
     // Attempt to fetch robots.txt
@@ -166,34 +166,36 @@ export const FetchUsingDroxy = async (url) => {
   }
 }
 export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-  let completed = 0;
-  const total = urls.length;
-  console.log("Received:", urls.length, "URLs");
-  console.log("CollectionId:", collectionId);
-  console.log("Receivers:", receivers);
-  console.log("ContentsId:", _id);
-  for (const { url } of urls) {
-    try {
-      console.log("working on :" + url);
-      const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
-        { "url": url, "formats": ["markdown"], "skipTlsVerification": false, "timeout": 10000, "location": { "country": "US", "languages": ["en-US"] }, "removeBase64Images": true, "blockAds": true, "proxy": "basic" }, {
-        headers: { Authorization: `Bearer ${process.env.FIREBASE_API_KEY}`, 'Content-Type': 'application/json' }
-      });
-      if (data?.data?.markdown) {
-        console.log("digesting");
-        await digestMarkdown(data.data.markdown, url, collectionId, data.data.metadata);
-        await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } } });
-      }
-      completed += 1;
-      const progressData = { total, progress: completed, collectionId };
-      console.log(progressData);
-      receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
-    }
-    catch (error) {
-      console.error(error);
-      await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: false, url: url, error: error?.message } } });
-    }
-  }
+  // let completed = 0;
+  // const total = urls.length;
+  // console.log("Received:", urls.length, "URLs");
+  // console.log("CollectionId:", collectionId);
+  // console.log("Receivers:", receivers);
+  // console.log("ContentsId:", _id);
+  // for (const { url } of urls) {
+  //   try {
+  //     console.log("working on :" + url);
+  //     const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
+  //       { "url": url, "formats": ["markdown"], "skipTlsVerification": false, "timeout": 10000, "location": { "country": "US", "languages": ["en-US"] }, "removeBase64Images": true, "blockAds": true, "proxy": "basic" }, {
+  //       headers: { Authorization: `Bearer ${process.env.FIREBASE_API_KEY}`, 'Content-Type': 'application/json' }
+  //     });
+  //     if (data?.data?.markdown) {
+  //       console.log("digesting");
+  //       await digestMarkdown(data.data.markdown, url, collectionId, data.data.metadata);
+  //       await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } } });
+  //     }
+  //     completed += 1;
+  //     const progressData = { total, progress: completed, collectionId };
+  //     console.log(progressData);
+  //     receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
+  //   }
+  //   catch (error) {
+  //     console.error(error);
+  //     await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: false, url: url, error: error?.message } } });
+  //   }
+  // }
+  const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receivers, _id })));
+  await Promise.all(jobs);
   return { success: true };
 };
 // export const processURLS = async (collectionId, urls, receivers = [], _id) => {
