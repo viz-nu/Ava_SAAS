@@ -4,7 +4,7 @@ import { Agent } from '../../models/Agent.js';
 import { Business } from '../../models/Business.js';
 import { Collection } from '../../models/Collection.js';
 import { agentSchema } from '../../Schema/index.js';
-
+import { openai } from '../../utils/openai.js';
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
     const { collections, appearance, personalInfo, actions } = req.body
@@ -20,6 +20,8 @@ export const createAgent = errorWrapper(async (req, res) => {
         if (!action) return { statusCode: 404, message: "action not found", data: null }
         if (action.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this action", data: { collectionId: id } }
     }
+    let assistant = await openai.beta.assistants.create({ name: personalInfo.name || 'Custom Assistant', instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
+    personalInfo.assistantId = assistant.id;
     const agent = await Agent.create({ collections, appearance, personalInfo, actions, business: business._id, createdBy: req.user._id });
     business.agents.push(agent._id)
     await business.save()
@@ -61,7 +63,18 @@ export const updateAgent = errorWrapper(async (req, res) => {
         agent.actions = actions;
     }
     if (appearance) agent.appearance = appearance;
-    if (personalInfo) agent.personalInfo = personalInfo;
+    if (personalInfo) {
+        const { name, systemPrompt, role, temperature, model, welcomeMessage, quickQuestions, facts } = personalInfo
+        if (name) agent.personalInfo.name = name;
+        if (systemPrompt) agent.personalInfo.systemPrompt = systemPrompt;
+        if (temperature) agent.personalInfo.temperature = temperature;
+        if (model) agent.personalInfo.model = model;
+        if (role) agent.personalInfo.role = role;
+        if (welcomeMessage) agent.personalInfo.welcomeMessage = welcomeMessage;
+        if (quickQuestions) agent.personalInfo.quickQuestions = quickQuestions;
+        if (facts) agent.personalInfo.facts = facts;
+        if (name || systemPrompt || temperature || model) await openai.beta.assistants.update(personalInfo.assistantId, { name: personalInfo.name, instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
+    }
     await agent.save();
     return { statusCode: 200, message: "Agent updated", data: agent };
 });
@@ -73,11 +86,10 @@ export const deleteAgent = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     if (!business.agents.includes(req.params.id)) return { statusCode: 404, message: "You are not authorized to delete this collection", data: null }
-    business.agents = business.agents.filter(id => id.toString() !== req.params.id);
-    // Delete the collection
     await Promise.all([
+        openai.beta.assistants.del(agent.personalInfo.assistantId),
         Agent.findByIdAndDelete(req.params.id),
-        business.save()
+        Business.updateMany({ agents: req.params.id }, { $pull: { agents: req.params.id } })
     ])
     return { statusCode: 200, message: "Agent deleted successfully" };
 });

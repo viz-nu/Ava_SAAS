@@ -5,6 +5,7 @@ import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
 import { Action } from "../../models/Action.js";
 import { analyzeQueries } from "../../utils/nlp.js";
+import { Agent } from "../../models/Agent.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -102,7 +103,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
 });
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;
-     const selectedIntents = ["enquiry", "complaint"];
+    const selectedIntents = ["enquiry", "complaint"];
     if (!selectedIntents || selectedIntents.length === 0) return { statusCode: 400, message: "Please provide intents to analyze", data: null }
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -168,8 +169,13 @@ export const updateAction = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Action updated successfully", data: action }
 });
 export const deleteAction = errorWrapper(async (req, res) => {
-    const action = await Action.findOneAndDelete({ _id: req.params.id, business: req.user.business });
+    const action = await Action.findById(req.params.id);
     if (!action) return res.status(404).json({ message: "Action not found" });
+    await Promise.all([
+        Action.findByIdAndDelete(req.params.id),
+        Business.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } }),
+        Agent.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
+    ]);
     return { statusCode: 200, message: "Action deleted successfully", data: null }
 });
 export const raiseTicket = errorWrapper(async (req, res) => {
