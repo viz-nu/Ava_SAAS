@@ -9,7 +9,7 @@ import { initialize } from "./utils/dbConnect.js";
 import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
-import { actions, ChatCompletion, getContextMain } from "./utils/openai.js";
+import { actions, AssistantResponse, ChatCompletion, getContextMain } from "./utils/openai.js";
 import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
