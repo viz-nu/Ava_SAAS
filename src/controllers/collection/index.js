@@ -25,20 +25,11 @@ export const createCollection = errorWrapper(async (req, res) => {
                 receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } }));
                 switch (source) {
                     case "website":
-                        // Handle website processing here if needed
                         console.log("website process started");
                         if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers, _id);
                         break;
                     case "youtube":
-                        // urls =[{url:"https....",lang:"en"}]
                         console.log("youtube process started");
-                        // metaData = {
-                        //     "urls": [
-                        //         {
-                        //             "url": "https://www.youtube.com/watch?v=R3l3TvkwIAo&ab_channel=CaffeinatedCameras",
-                        //             data:{"lang": "en"}
-                        //         }],
-                        // }
                         if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receivers, _id);
                         break;
                     case "file":
