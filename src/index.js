@@ -76,35 +76,32 @@ app.post('/v2/chat-bot', async (req, res) => {
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
         prevMessages.push({ role: "user", content: userMessage });
-        let listOfIntentions = [
-            {
-                "intent": "enquiry",
-                "dataSchema": [
-                    {
-                        "label": "Topic",
-                        "type": "string",
-                        "required": true,
-                        "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
-                        "validator": "",
-                        "userDefined": true
-                    }
-                ]
-            },
-            {
-                "intent": "general_chat",
-                "dataSchema": [
-                    {
-                        "label": "Message",
-                        "type": "string",
-                        "required": true,
-                        "comments": "A general conversational message from the user.",
-                        "validator": "",
-                        "userDefined": true
-                    }
-                ]
-            }
-        ]
-        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
+        let listOfIntentions = [{
+            "intent": "enquiry",
+            "dataSchema": [{
+                "label": "Topic",
+                "type": "dynamic",
+                "dataType": "string",
+                "required": true,
+                "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
+                "validator": "",
+                "data": "",
+                "userDefined": true
+            }]
+        },
+        {
+            "intent": "general_chat", "dataSchema": [{
+                "label": "Message",
+                "type": "dynamic",
+                "dataType": "string",
+                "required": true,
+                "comments": "A general conversational message from the user.",
+                "validator": "",
+                "data": "",
+                "userDefined": true
+            }]
+        }]
+        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
         const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
@@ -142,9 +139,7 @@ app.post('/v2/chat-bot', async (req, res) => {
             }
             else {
                 const currentAction = agent.actions.find(ele => intent == ele.intent)
-                currentAction.dataSchema = currentAction.dataSchema.map(schemaItem => {
-                    const matchingData = dataSchema.find(dataItem => dataItem.label === schemaItem.label); return { ...schemaItem, data: matchingData ? matchingData.data : null };
-                });
+                currentAction.dataSchema = currentAction.dataSchema.map(schemaItem => { const matchingData = dataSchema.find(dataItem => dataItem.label === schemaItem.label); return { ...schemaItem, data: matchingData ? matchingData.data : null }; });
                 res.write(JSON.stringify({ id: "data-collection", data: { action: currentAction._doc, confidence }, responseType: "full" }))
                 message.Actions.push({ type: "data-collection", data: { action: currentAction._doc, confidence }, confidence })
             }
@@ -155,7 +150,6 @@ app.post('/v2/chat-bot', async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.end(JSON.stringify({ id: "error" }))
-        // res.status(500).json({ error: error.message });
     }
 });
 app.post('/v1/agent', async (req, res) => {
@@ -289,11 +283,13 @@ import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
 app.post('/send-invite', async (req, res) => {
     try {
-        const { attendees, summary, startTime, endTime, timezone, description, location, url } = req.body;
+        const { attendees, startTime, timezone, summary, description, location, url } = req.body;
         if (!attendees || !Array.isArray(attendees) || attendees.length === 0) return res.status(400).json({ error: 'Attendees list is required' });
-        if (!startTime || !endTime || !timezone) return res.status(400).json({ error: 'Start time, end time, and timezone are required' });
+        if (!startTime || !timezone) return res.status(400).json({ error: 'Start time, and timezone are required' });
         const calendar = ical({ name: 'Appointment Invitation' });
         calendar.method(ICalCalendarMethod.REQUEST);
+        let endTime = new Date(startTime);
+        endTime.setMinutes(endTime.getMinutes() + 30);
         calendar.createEvent({
             start: new Date(startTime),
             end: new Date(endTime),
