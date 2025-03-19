@@ -241,7 +241,7 @@ export const AssistantResponse = async (req, res, config) => {
                 break;
             case "thread.run.completed":
                 console.log("Completed thread run:", response);
-                await openai.beta.threads.del(chunk.data.data.thread_id);
+                await openai.beta.threads.del(thread.id);
                 model = chunk.data.data.model;
                 const completion_tokens = tokenSize(model, response);
                 const prompt_tokens = tokenSize(model, prevMessages.at(-1).content);
