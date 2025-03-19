@@ -11,7 +11,7 @@ export const Login = errorWrapper(async (req, res) => {
     const { newAccessToken, newRefreshToken } = await generateTokens(user._id, req.headers['user-agent'])
     res.cookie("AVA_RT", newRefreshToken, {
         secure: true,
-        // httpOnly: true,
+        httpOnly: true,
         sameSite: 'strict'
     })
     // req.AccessToken = newAccessToken
