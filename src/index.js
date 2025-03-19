@@ -198,8 +198,8 @@ app.post('/v1/agent', async (req, res) => {
                 "userDefined": true
             }]
         }]
-        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
-        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
+        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
+        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
@@ -223,9 +223,7 @@ app.post('/v1/agent', async (req, res) => {
             }
             else {
                 const currentAction = agent.actions.find(ele => intent == ele.intent)
-                currentAction.dataSchema = currentAction.dataSchema.map(schemaItem => {
-                    const matchingData = dataSchema.find(dataItem => dataItem.label === schemaItem.label); return { ...schemaItem, data: matchingData ? matchingData.data : null };
-                });
+                currentAction._doc.workingData.body.childSchema = populateBodyStructure(currentAction._doc.workingData.body.childSchema, { intent, dataSchema, confidence });
                 res.write(JSON.stringify({ id: "data-collection", data: { action: currentAction._doc, confidence }, responseType: "full" }))
                 message.Actions.push({ type: "data-collection", data: { action: currentAction._doc, confidence }, confidence })
             }
@@ -277,6 +275,7 @@ app.get("/get-agent", async (req, res) => {
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
+import { populateBodyStructure } from "./utils/tools.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, startTime, timezone, summary, description, location, url } = req.body;
