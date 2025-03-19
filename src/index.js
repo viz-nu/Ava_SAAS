@@ -173,34 +173,31 @@ app.post('/v1/agent', async (req, res) => {
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
         }
         prevMessages.push({ role: "user", content: userMessage });
-        let listOfIntentions = [
-            {
-                "intent": "enquiry",
-                "dataSchema": [
-                    {
-                        "label": "Topic",
-                        "type": "string",
-                        "required": true,
-                        "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
-                        "validator": "",
-                        "userDefined": true
-                    }
-                ]
-            },
-            {
-                "intent": "general_chat",
-                "dataSchema": [
-                    {
-                        "label": "Message",
-                        "type": "string",
-                        "required": true,
-                        "comments": "A general conversational message from the user.",
-                        "validator": "",
-                        "userDefined": true
-                    }
-                ]
-            }
-        ]
+        let listOfIntentions = [{
+            "intent": "enquiry",
+            "dataSchema": [{
+                "label": "Topic",
+                "type": "dynamic",
+                "dataType": "string",
+                "required": true,
+                "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
+                "validator": "",
+                "data": "",
+                "userDefined": true
+            }]
+        },
+        {
+            "intent": "general_chat", "dataSchema": [{
+                "label": "Message",
+                "type": "dynamic",
+                "dataType": "string",
+                "required": true,
+                "comments": "A general conversational message from the user.",
+                "validator": "",
+                "data": "",
+                "userDefined": true
+            }]
+        }]
         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
         const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
