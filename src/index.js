@@ -73,7 +73,7 @@ app.post('/v2/chat-bot', async (req, res) => {
                 { role: "assistant", content: response }
             ]));
         } else {
-            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
+            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data });
         }
         prevMessages.push({ role: "user", content: userMessage });
         let listOfIntentions = [{
@@ -170,7 +170,7 @@ app.post('/v1/agent', async (req, res) => {
                 { role: "assistant", content: response }
             ]));
         } else {
-            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation });
+            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data });
         }
         prevMessages.push({ role: "user", content: userMessage });
         let listOfIntentions = [{
