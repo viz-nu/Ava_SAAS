@@ -227,7 +227,7 @@ export const AssistantResponse = async (req, res, config) => {
     res.setHeader('Transfer-Encoding', 'chunked');
     const thread = await openai.beta.threads.create({ messages: prevMessages });
     const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
-    let signalDetected = false, responseTokens, response = "", model = ""
+    let signalDetected = false, responseTokens, response = ""
     for await (const chunk of stream) {
         switch (chunk.event) {
             case "thread.message.delta":
@@ -240,12 +240,9 @@ export const AssistantResponse = async (req, res, config) => {
                 }
                 break;
             case "thread.run.completed":
-                console.log("Completed thread run:", response);
                 await openai.beta.threads.del(thread.id);
-                model = chunk.data.data.model;
-                const completion_tokens = tokenSize(model, response);
-                const prompt_tokens = tokenSize(model, prevMessages.at(-1).content);
-                responseTokens = { model: chunk.model, usage: { completion_tokens, prompt_tokens, total_tokens: completion_tokens + prompt_tokens } };
+                const { usage, model } = chunk.data
+                responseTokens = { usage, model };
                 console.log(`Thread deleted`);
                 break;
         }

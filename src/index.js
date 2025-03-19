@@ -199,8 +199,7 @@ app.post('/v1/agent', async (req, res) => {
             }]
         }]
         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, dataSchema }) => ({ intent, dataSchema })));
-        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
-        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
+        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
