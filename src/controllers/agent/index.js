@@ -64,7 +64,8 @@ export const updateAgent = errorWrapper(async (req, res) => {
     }
     if (appearance) agent.appearance = appearance;
     if (personalInfo) {
-        const { name, systemPrompt, role, temperature, model, welcomeMessage, quickQuestions, facts } = personalInfo
+        const { name, systemPrompt, role, temperature, model, welcomeMessage, quickQuestions, facts, noDataMail } = personalInfo
+        if (noDataMail) agent.personalInfo.noDataMail = noDataMail;
         if (name) agent.personalInfo.name = name;
         if (systemPrompt) agent.personalInfo.systemPrompt = systemPrompt;
         if (temperature) agent.personalInfo.temperature = temperature;

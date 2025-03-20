@@ -210,9 +210,62 @@ app.post('/v1/agent', async (req, res) => {
                 message.response = response
                 message.embeddingTokens = embeddingTokens
                 message.context = context
-                if (signalDetected) {
-                    // Queue notification asynchronously (don't wait for it)
-                    // notifyDeveloper(msg.query, "Insufficient data detected").catch(console.error);
+                if (signalDetected && agent.personalInfo.noDataMail) {
+                    try {
+                        let text = `Dear [Support Team],
+                        While interacting with the chatbot, it failed to fetch content related to "${data}". This issue is affecting the user experience and needs immediate attention.
+                        Please investigate and resolve the issue as soon as possible.
+                        Best regards,
+                        Team Avakado`
+                        let html = `<!DOCTYPE html>
+                        <html>
+                        <head>
+                        <meta charset="UTF-8">
+                        <title>Chatbot Content Fetch Issue</title>
+                        <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            background-color: #f4f4f4;
+                            padding: 20px;
+                            }
+                        .container {
+                        background: #ffffff;
+                        padding: 20px;
+                        border-radius: 8px;
+                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                        }
+                        h2 {
+                            color: #d9534f;
+                        }
+                        p {
+                            color: #333;
+                        }
+                        .footer {
+                            margin-top: 20px;
+                            font-size: 12px;
+                            color: #777;
+                        }
+                        </style>
+                        </head>
+                        <body>
+                        <div class="container">
+                        <p>Dear <strong>Support Team</strong>,</p>
+                        <p>While interacting with the chatbot, it failed to retrieve content related to <strong>${data}</strong>. This issue is impacting the user experience and requires immediate attention.</p>
+                        <p>Please investigate and resolve the issue as soon as possible.</p>
+                        <p>Best regards,</p>
+                        <p><strong>Team Avakado</strong><br>
+                        <div class="footer">
+                            <p>This is an automated email. Please do not reply directly.</p>
+                        </div>
+                        </div>
+                        </body>
+                        </html>`
+                        sendMail({ to: agent.personalInfo.noDataMail, subject: "Urgent: Missing information for AVA", text, html })
+                        res.json({ message: 'mail sent' });
+                    } catch (error) {
+                        console.error(error);
+                        return res.status(500).json({ error: error.message })
+                    }
                 }
             }
             else if (intent == "general_chat") {
@@ -223,9 +276,11 @@ app.post('/v1/agent', async (req, res) => {
             }
             else {
                 const currentAction = agent.actions.find(ele => intent == ele.intent)
-                currentAction._doc.workingData.body.childSchema = populateBodyStructure(currentAction._doc.workingData.body.childSchema, { intent, dataSchema, confidence });
-                res.write(JSON.stringify({ id: "data-collection", data: { action: currentAction._doc, confidence }, responseType: "full" }))
-                message.Actions.push({ type: "data-collection", data: { action: currentAction._doc, confidence }, confidence })
+                const dataMap = new Map();
+                dataSchema.forEach(item => { dataMap.set(item.label, item.data) });
+                let respDataSchema = populateStructure(currentAction._doc.workingData.body, dataMap);
+                res.write(JSON.stringify({ id: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence }, responseType: "full" }))
+                message.Actions.push({ type: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence } })
             }
         })
         await Promise.all(tasks);
@@ -275,7 +330,7 @@ app.get("/get-agent", async (req, res) => {
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
-import { populateBodyStructure } from "./utils/tools.js";
+import { populateStructure } from "./utils/tools.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, startTime, timezone, summary, description, location, url } = req.body;

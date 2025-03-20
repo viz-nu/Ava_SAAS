@@ -17,7 +17,8 @@ const AgentSchema = new Schema({
         welcomeMessage: String,
         model: { type: String, default: "gpt-4o-mini" },
         temperature: { type: Number, default: 1 },
-        assistantId: String
+        assistantId: String,
+        noDataMail: { type: String, default: "vishnu@campusroot.com" },
     },
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },

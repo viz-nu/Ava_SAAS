@@ -1,20 +1,13 @@
-export const populateBodyStructure = (bodyStructure, input) => {
-    // Create a map for quick lookup by label
-    const dataMap = new Map();
-    input.dataSchema.forEach(item => { dataMap.set(item.label, item.data) });
-    // Helper function to update nested fields
-    function updateField(field) {
-        // Handle fields with childSchema (nested objects)
-        if (field.childSchema && Array.isArray(field.childSchema)) {
-            field.childSchema = field.childSchema.map(childField => updateField(childField));
-            return field;
+export const populateStructure = (child, dataMap, parentPath = "") => {
+    const result = []
+    if (child.dataType == "object") child.childSchema.forEach(ele => result.push(...populateStructure(ele, data, parentPath + "/" + child.key)))
+    else {
+        if (child.userDefined) {
+            const obj = { ...child, fieldPath: parentPath + "/" + child.key }
+            const value = dataMap.get(child.label);
+            if (value !== undefined) obj.data = value || null;
+            result.push(obj)
         }
-        // Handle non-nested fields
-        const value = dataMap.get(field.label);
-        if (value !== undefined) field.data = value;
-        return field;
     }
-
-    // Process and return the updated structure
-    return bodyStructure.map(field => updateField(field));
+    return result
 }
