@@ -40,17 +40,6 @@ export const createCollection = errorWrapper(async (req, res) => {
                         console.warn(`Unknown source type: ${source}`);
                         break;
                 }
-                await Collection.updateOne(
-                    { _id: collection._id, "contents._id": _id },
-                    {
-                        $set: {
-                            "contents.$.status": result.success ? "active" : "failed",
-                            "contents.$.error": result.success ? null : result.error,
-                            // "contents.$.metaData.detailedReport": result.data,
-                        }
-                    }
-                );
-                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: result.success ? "active" : "failed", } }));
             }
         } catch (error) {
             console.error("Failed to sync collection:", error);
