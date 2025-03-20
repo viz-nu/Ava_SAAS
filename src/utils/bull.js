@@ -15,11 +15,6 @@ export const urlProcessingQueue = new Queue('url-processing', {
 });
 urlProcessingQueue.process(async (job) => {
     const { url, collectionId, receivers, _id } = job.data;
-
-    let completed = (await job.queue.getCompleted()).length;
-    const waiting = (await job.queue.getWaiting()).length;
-    const active = (await job.queue.getActive()).length;
-    const total = waiting + active + completed;
     try {
         console.log("working on :" + url);
         const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
@@ -48,10 +43,6 @@ urlProcessingQueue.process(async (job) => {
                 { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } } }
             );
         }
-        completed += 1;
-        const progressData = { total, progress: completed, collectionId };
-        console.log(progressData);
-        receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
         return { success: true };
     } catch (error) {
         console.error(error);
@@ -64,8 +55,28 @@ urlProcessingQueue.process(async (job) => {
 });
 
 // Handle completed jobs
-urlProcessingQueue.on('completed', (job) => {
-    console.log(`Job ${job.id} completed for URL: ${job.data.url}`);
+urlProcessingQueue.on('completed', async (job) => {
+    const { url, collectionId, receivers, _id } = job.data;
+    console.log(`Job ${job.id} completed for URL: ${url} (Collection: ${collectionId})`);
+    const allCompletedJobs = await job.queue.getCompleted();
+    const allWaitingJobs = await job.queue.getWaiting();
+    const allActiveJobs = await job.queue.getActive();
+    const completedJobs = allCompletedJobs.filter(j => j.data.collectionId === collectionId).length;
+    const waitingJobs = allWaitingJobs.filter(j => j.data.collectionId === collectionId).length;
+    const activeJobs = allActiveJobs.filter(j => j.data.collectionId === collectionId).length;
+    const totalJobs = completedJobs + waitingJobs + activeJobs;
+    const progressData = { total: totalJobs, progress: completedJobs, collectionId };
+    console.log(`Progress Update:`, progressData);
+    if (receivers && receivers.length) {
+        receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }); });
+    }
+    if (completedJobs === totalJobs) {
+        console.log(`All jobs completed for Collection ID: ${collectionId}`);
+        receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: "active" } }) });
+    }
+    await Collection.updateOne(
+        { _id: collectionId, "contents._id": _id },
+        { $set: { "contents.$.status": result.success ? "active" : "failed", "contents.$.error": result.success ? null : result.error, } });
 });
 
 // Handle failed jobs
