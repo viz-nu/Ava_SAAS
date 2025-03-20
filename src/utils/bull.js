@@ -8,13 +8,18 @@ export const urlProcessingQueue = new Queue('url-processing', {
         host: process.env.REDIS_HOST || 'localhost',
         port: process.env.REDIS_PORT || 6379,
         password: process.env.REDIS_PASSWORD || undefined
+    },
+    settings: {
+        maxStalledCount: 3 // Increase retries before failing
     }
 });
 urlProcessingQueue.process(async (job) => {
     const { url, collectionId, receivers, _id } = job.data;
-    let completed = job.queue.getCompleted().length;
-    const total = job.queue.getWaiting().length + job.queue.getActive().length + completed;
 
+    let completed = (await job.queue.getCompleted()).length;
+    const waiting = (await job.queue.getWaiting()).length;
+    const active = (await job.queue.getActive()).length;
+    const total = waiting + active + completed;
     try {
         console.log("working on :" + url);
         const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
@@ -67,3 +72,6 @@ urlProcessingQueue.on('completed', (job) => {
 urlProcessingQueue.on('failed', (job, error) => {
     console.error(`Job ${job.id} failed for URL: ${job.data.url}:`, error);
 });
+// await urlProcessingQueue.obliterate({ force: true });
+// const activeJobs = await urlProcessingQueue.getActive();
+// console.log('Currently processing jobs:', activeJobs.map(j => j.id));
