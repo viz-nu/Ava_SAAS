@@ -83,6 +83,6 @@ urlProcessingQueue.on('completed', async (job) => {
 urlProcessingQueue.on('failed', (job, error) => {
     console.error(`Job ${job.id} failed for URL: ${job.data.url}:`, error);
 });
-// await urlProcessingQueue.obliterate({ force: true });
-// const activeJobs = await urlProcessingQueue.getActive();
-// console.log('Currently processing jobs:', activeJobs.map(j => j.id));
+await urlProcessingQueue.obliterate({ force: true });
+const activeJobs = await urlProcessingQueue.getActive();
+console.log('Currently processing jobs:', activeJobs.map(j => j.id));
