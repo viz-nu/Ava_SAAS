@@ -3,6 +3,7 @@ import { Business } from "../../models/Business.js";
 import { Collection } from "../../models/Collection.js";
 import { Data } from "../../models/Data.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
+import { urlProcessingQueue } from "../../utils/bull.js";
 import { processFile } from "../../utils/fileHelper.js";
 import { io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
@@ -156,10 +157,12 @@ export const deleteCollection = errorWrapper(async (req, res) => {
     if (!business.collections.includes(req.params.id)) return { statusCode: 404, message: "You are not authorized to delete this collection", data: null }
     business.collections = business.collections.filter(id => id.toString() !== req.params.id);
     // Delete the collection
+    const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
     await Promise.all([
-        Collection.findByIdAndDelete(req.params.id),
+        Collection.deleteOne(req.params.id),
         Data.deleteMany({ collection: req.params.id }),
-        business.save()
+        business.save(),
+        ...jobs.filter(job => job.data.collectionId === id).map(job => job.remove())
     ])
     return { statusCode: 200, message: "Collection deleted successfully", data: null }
 });
