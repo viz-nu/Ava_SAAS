@@ -84,7 +84,7 @@ app.post('/v2/chat-bot', async (req, res) => {
         let listOfIntentions = [{
             "intent": "enquiry",
             "dataSchema": [{
-                "label": "Topic",
+                "key": "Topic",
                 "type": "dynamic",
                 "dataType": "string",
                 "required": true,
@@ -96,7 +96,7 @@ app.post('/v2/chat-bot', async (req, res) => {
         },
         {
             "intent": "general_chat", "dataSchema": [{
-                "label": "Message",
+                "key": "Message",
                 "type": "dynamic",
                 "dataType": "string",
                 "required": true,
@@ -111,7 +111,7 @@ app.post('/v2/chat-bot', async (req, res) => {
         const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
-                const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
+                const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                 let systemPrompt = (agent.personalInfo.systemPrompt || "") + `Context: ${answer}
                 Like an intelligent and interactive AI assistant, Use the provided context to generate clear, precise, and well-structured responses.
@@ -184,7 +184,7 @@ app.post('/v1/agent', async (req, res) => {
         let listOfIntentions = [{
             "intent": "enquiry",
             "dataSchema": [{
-                "label": "Topic",
+                "key": "Topic",
                 "type": "dynamic",
                 "dataType": "string",
                 "required": true,
@@ -196,7 +196,7 @@ app.post('/v1/agent', async (req, res) => {
         },
         {
             "intent": "general_chat", "dataSchema": [{
-                "label": "Message",
+                "key": "Message",
                 "type": "dynamic",
                 "dataType": "string",
                 "required": true,
@@ -210,7 +210,7 @@ app.post('/v1/agent', async (req, res) => {
         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
-                const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
+                const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                 let config = { additional_instructions: `Today:${new Date()} \n Context: ${answer || null}`, assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
@@ -286,9 +286,9 @@ app.post('/v1/agent', async (req, res) => {
             else {
                 const currentAction = agent.actions.find(ele => intent == ele.intent)
                 const dataMap = new Map();
-                dataSchema.forEach(item => { dataMap.set(item.label, item.data) });
+                dataSchema.forEach(item => { dataMap.set(item.key, item.data) });
                 let respDataSchema = populateStructure(currentAction._doc.workingData.body, dataMap);
-                res.write(JSON.stringify({ id: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence }, responseType: "full" }))
+                res.write(JSON.stringify({ id: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence }, responseType: "full", conversationId: conversation._id }))
                 message.Actions.push({ type: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence } })
             }
         })
@@ -303,76 +303,18 @@ app.post('/v1/agent', async (req, res) => {
 });
 app.post("/trigger", async (req, res) => {
     try {
-        // const { actionId, collectedData } = req.body
-        // const action = await Action.findById(actionId);
-        // if (!action) return res.status(404).json({ message: "Action not found" });
-
-
-        // // action
-
-
-        // function dataBaker(schema, collectedData) {
-        //     let dataBaked = {};
-        //     switch (schema.dataType) {
-        //         case "string":
-        //             dataBaked = collectedData.find(item => item.id == schema.sessionId)?.value;
-        //             break;
-        //         case "number":
-        //             dataBaked = collectedData.find(item => item.id == schema.sessionId)?.value;
-        //             break;
-        //         case "object":
-        //             let temp2 = new Object();
-        //             const obj = new Object();
-        //             schema.childSchema.forEach(element => {
-        //                 let temp = dataBaker(element);
-        //                 temp2 = { ...temp2, ...temp };
-        //             });
-        //             obj[schema.key] = temp2
-        //             dataBaked = obj;
-        //             break;
-        //         case "array":
-        //             break;
-        //     }
-        //     //console.log("Baked",schema.label,dataBaked)
-        //     return dataBaked
-        // }
-
-
-
-        // const { dataSchema } = action._doc.workingData;
-        // const collectedDataObj = collectedData.reduce((acc, curr) => {
-        //     const label = curr.key;
-        //     const value = curr.value;
-        //     const item = dataSchema.find(item => item.label === label);
-        //     if (item) {
-        //         if (item.type === "dynamic") {
-        //             if (!acc[item.label]) acc[item.label] = [];
-        //             acc[item.label].push(value);
-        //         } else {
-        //             acc[item.label] = value;
-        //         }
-        //     }
-        //     return acc;
-        // }, {});
-
-        // {
-        //     actionId: '67dd26e19c754156a3c8cccf',
-        //         collectedData: [
-        //             { key: 'First Name', value: 'Rohith'},
-        //             { key: 'Last Name', value: 'Kumar' },
-        //             { key: 'Mobile Number', value: '9999999999' },
-        //             { key: 'Requirement', value: 'Hair Cut' },
-        //             { key: 'Date', value: '2025/03/21' }
-        //         ]
-        // }
-
-
-
-
-
-
-
-        res.status(200).json({ success: true, message: "received submit request", data: req.body })
+        const { actionId, collectedData, conversationId } = req.body
+        const action = await Action.findById(actionId);
+        if (!action) return res.status(404).json({ message: "Action not found" });
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+        await updateSession(conversationId, { actionId, collectedData })
+        let body = await dataBaker(action.workingData.body, actionId, conversationId)
+        console.log(action.workingData.body);
+        
+        let headers = await dataBaker(action.workingData.headers, actionId, conversationId)
+        let url = await dataBaker(action.workingData.url, actionId, conversationId)
+        return res.status(200).json({ success: true, message: "received submit request", data: { body, headers, url } })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "internal server error", error: err.message });
@@ -406,13 +348,15 @@ app.get("/get-agent", async (req, res) => {
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
-import { populateStructure } from "./utils/tools.js";
+import { dataBaker, populateStructure, updateSession } from "./utils/tools.js";
 import { Action } from "./models/Action.js";
+import { DateTime } from "luxon";
 app.post('/send-invite', async (req, res) => {
     try {
-        const { attendees, startTime, timezone, summary, description, location, url } = req.body;
-        if (!attendees || !Array.isArray(attendees) || attendees.length === 0) return res.status(400).json({ error: 'Attendees list is required' });
-        if (!startTime || !timezone) return res.status(400).json({ error: 'Start time, and timezone are required' });
+        const { host, attendees, startTime, timezone, summary, description, location, url } = req.body;
+        attendees = attendees.push(host)
+        if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
+        if (!startTime) return res.status(400).json({ error: 'Start time required' });
         const calendar = ical({ name: 'Appointment Invitation' });
         calendar.method(ICalCalendarMethod.REQUEST);
         let endTime = new Date(startTime);
@@ -420,7 +364,7 @@ app.post('/send-invite', async (req, res) => {
         calendar.createEvent({
             start: new Date(startTime),
             end: new Date(endTime),
-            timezone: timezone,
+            timezone: timezone || DateTime.fromISO(new Date(startTime), { setZone: true }).zoneName,
             organizer: { name: 'AVA', email: 'no-reply@ava.com' },
             summary: summary || 'Meeting Invitation',
             description: description || 'You are invited to a meeting.',
