@@ -37,7 +37,6 @@ const corsOptions = {
 };
 app.set('trust proxy', 1) // trust first proxy
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
@@ -50,7 +49,6 @@ app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
 app.use(ExpressMongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use(express.json());
-app.use(cors());
 app.get("/", (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
