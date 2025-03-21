@@ -1,6 +1,6 @@
 export const populateStructure = (child, dataMap, parentPath = "") => {
     const result = []
-    if (child.dataType == "object") child.childSchema.forEach(ele => result.push(...populateStructure(ele, data, parentPath + "/" + child.key)))
+    if (child.dataType == "object") child.childSchema.forEach(ele => result.push(...populateStructure(ele, dataMap, parentPath + "/" + child.key)))
     else {
         if (child.userDefined) {
             const obj = { ...child, fieldPath: parentPath + "/" + child.key }
