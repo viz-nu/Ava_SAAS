@@ -18,7 +18,8 @@ export const authMiddleware = async (req, res, next) => {
             res.cookie("AVA_RT", refreshToken, {
                 secure: true,
                 httpOnly: true,
-                sameSite: 'strict'
+                sameSite: "None",      // Allows cross-origin requests
+                maxAge: 3600000
             })
             req.AccessToken = accessToken;
         }
