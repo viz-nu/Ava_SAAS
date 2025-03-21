@@ -37,10 +37,21 @@ const corsOptions = {
     optionsSuccessStatus: 204
 };
 
-// Apply CORS before routes
 app.use(cors(corsOptions));
-// Explicitly handle preflight requests
-app.options("*", cors(corsOptions));
+// 4. Explicitly handle OPTIONS requests
+app.options('*', cors(corsOptions));
+// 5. Add a middleware to ensure CORS headers are present on all responses
+app.use((req, res, next) => {
+    // Set the origin based on the request
+    const origin = req.headers.origin;
+    if (origin && whitelist.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    next();
+});
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
@@ -50,7 +61,10 @@ app.use(helmet({
     frameguard: { action: 'sameorigin' },
     noSniff: true,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    permittedCrossDomainPolicies: { permittedPolicies: 'none' }
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Add this line
+    crossOriginOpenerPolicy: false, // Add this line
+    crossOriginEmbedderPolicy: false // Add this line
 }));
 app.use(ExpressMongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
