@@ -80,13 +80,13 @@ export const actions = async (messages, availableActions) => {
                                         items: {
                                             type: "object",
                                             properties: {
-                                                label: { type: "string", description: "Parameter name." },
+                                                key: { type: "string", description: "Parameter name." },
                                                 data: {
                                                     type: ["string", "number", "boolean", "null"],
                                                     description: "Extracted value or null if missing."
                                                 }
                                             },
-                                            required: ["label", "data"],
+                                            required: ["key", "data"],
                                             additionalProperties: false
                                         }
                                     }
@@ -125,13 +125,13 @@ export const actions = async (messages, availableActions) => {
                 const transformedActions = [];
                 // If we got a flattened object like {Topic: "something"} instead of proper structure
                 if (typeof toolData === 'object' && !Array.isArray(toolData)) {
-                    const dataSchema = Object.entries(toolData).map(([label, data]) => ({ label, data }));
+                    const dataSchema = Object.entries(toolData).map(([key, data]) => ({ key, data }));
                     transformedActions.push({ intent: "enquiry", confidence: 0.7, dataSchema });
                 } else if (Array.isArray(toolData)) toolData = { actions: toolData };
                 if (transformedActions.length > 0) toolData = { actions: transformedActions };
             }
             // Validate each action has required fields
-            toolData.actions = toolData.actions.map(action => { return { intent: action.intent || "enquiry", confidence: typeof action.confidence === 'number' ? action.confidence : 0.7, dataSchema: Array.isArray(action.dataSchema) ? action.dataSchema : [{ "label": "Topic", "data": messages.at(-1) }] }; });
+            toolData.actions = toolData.actions.map(action => { return { intent: action.intent || "enquiry", confidence: typeof action.confidence === 'number' ? action.confidence : 0.7, dataSchema: Array.isArray(action.dataSchema) ? action.dataSchema : [{ "key": "Topic", "data": messages.at(-1) }] }; });
         } catch (error) {
             console.warn("Error parsing tool call arguments:", error);
             toolData = { actions: [] };
