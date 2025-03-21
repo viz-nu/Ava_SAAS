@@ -163,10 +163,13 @@ app.post('/v1/agent', async (req, res) => {
         let prevMessages = [];
         if (conversation) {
             const messages = await Message.find({ conversationId }).select("query response");
-            prevMessages.push(...messages.flatMap(({ query, response }) => [
-                { role: "user", content: query },
-                { role: "assistant", content: response }
-            ]));
+            prevMessages.push(...messages.flatMap(({ query, response }) => {
+                const entries = [];
+                if (query) entries.push({ role: "user", content: query });
+                if (response) entries.push({ role: "assistant", content: response });
+                return entries;
+            }));
+
         } else {
             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data });
         }
