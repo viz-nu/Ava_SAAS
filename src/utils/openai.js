@@ -39,6 +39,7 @@ export const actions = async (messages, availableActions) => {
         role: "system",
         content: `You are an AI assistant designed to analyze all previous messages to maintain context, classify user intents, and extract structured data for predefined actions.
         Your goal is to accurately identify one or more relevant intents and extract structured parameters.
+        Today:${new Date()}
         Your task is to:
         1️⃣ Identify one or more relevant intents ONLY from the available actions:
            ${JSON.stringify(availableActions, null, 2)}
