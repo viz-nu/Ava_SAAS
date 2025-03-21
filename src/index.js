@@ -213,6 +213,7 @@ app.post('/v1/agent', async (req, res) => {
                 message.context = context
                 if (signalDetected && agent.personalInfo.noDataMail) {
                     try {
+                        console.log("sending mail",{to:agent.personalInfo.noDataMail,topic: data});
                         let text = `Dear [Support Team],
                         While interacting with the chatbot, it failed to fetch content related to "${data}". This issue is affecting the user experience and needs immediate attention.
                         Please investigate and resolve the issue as soon as possible.
