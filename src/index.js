@@ -212,7 +212,7 @@ app.post('/v1/agent', async (req, res) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.label == "Topic") || {}
                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
-                let config = { additional_instructions: `Context: ${answer || null}`, assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id }
+                let config = { additional_instructions: `Today:${new Date()} \n Context: ${answer || null}`, assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                 message.responseTokens = responseTokens
                 message.response = response
@@ -303,8 +303,75 @@ app.post('/v1/agent', async (req, res) => {
 });
 app.post("/trigger", async (req, res) => {
     try {
-        // const { } = req.body
-        console.log(req.body);
+        // const { actionId, collectedData } = req.body
+        // const action = await Action.findById(actionId);
+        // if (!action) return res.status(404).json({ message: "Action not found" });
+
+
+        // // action
+
+
+        // function dataBaker(schema, collectedData) {
+        //     let dataBaked = {};
+        //     switch (schema.dataType) {
+        //         case "string":
+        //             dataBaked = collectedData.find(item => item.id == schema.sessionId)?.value;
+        //             break;
+        //         case "number":
+        //             dataBaked = collectedData.find(item => item.id == schema.sessionId)?.value;
+        //             break;
+        //         case "object":
+        //             let temp2 = new Object();
+        //             const obj = new Object();
+        //             schema.childSchema.forEach(element => {
+        //                 let temp = dataBaker(element);
+        //                 temp2 = { ...temp2, ...temp };
+        //             });
+        //             obj[schema.key] = temp2
+        //             dataBaked = obj;
+        //             break;
+        //         case "array":
+        //             break;
+        //     }
+        //     //console.log("Baked",schema.label,dataBaked)
+        //     return dataBaked
+        // }
+
+
+
+        // const { dataSchema } = action._doc.workingData;
+        // const collectedDataObj = collectedData.reduce((acc, curr) => {
+        //     const label = curr.key;
+        //     const value = curr.value;
+        //     const item = dataSchema.find(item => item.label === label);
+        //     if (item) {
+        //         if (item.type === "dynamic") {
+        //             if (!acc[item.label]) acc[item.label] = [];
+        //             acc[item.label].push(value);
+        //         } else {
+        //             acc[item.label] = value;
+        //         }
+        //     }
+        //     return acc;
+        // }, {});
+
+        // {
+        //     actionId: '67dd26e19c754156a3c8cccf',
+        //         collectedData: [
+        //             { key: 'First Name', value: 'Rohith'},
+        //             { key: 'Last Name', value: 'Kumar' },
+        //             { key: 'Mobile Number', value: '9999999999' },
+        //             { key: 'Requirement', value: 'Hair Cut' },
+        //             { key: 'Date', value: '2025/03/21' }
+        //         ]
+        // }
+
+
+
+
+
+
+
         res.status(200).json({ success: true, message: "received submit request", data: req.body })
     } catch (error) {
         console.error(error);
@@ -340,6 +407,7 @@ import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
 import { populateStructure } from "./utils/tools.js";
+import { Action } from "./models/Action.js";
 app.post('/send-invite', async (req, res) => {
     try {
         const { attendees, startTime, timezone, summary, description, location, url } = req.body;
