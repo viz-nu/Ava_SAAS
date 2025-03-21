@@ -20,7 +20,7 @@ await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
 await initializeSocket(server);
-// const whitelist = ["https://ava.campusroot.com", "http://localhost:5174"];
+const whitelist = ["https://www.avakado.ai", "http://localhost:5174"];
 // const corsOptions = {
 //     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
 //     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -29,7 +29,7 @@ await initializeSocket(server);
 //     optionsSuccessStatus: 200
 // };
 const corsOptions = {
-    origin: '*', // Allows all origins
+    origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     credentials: true, // Be careful: This should not be used with '*'
