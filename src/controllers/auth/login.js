@@ -12,7 +12,8 @@ export const Login = errorWrapper(async (req, res) => {
     res.cookie("AVA_RT", newRefreshToken, {
         secure: true,
         httpOnly: true,
-        sameSite: 'strict'
+        sameSite: "None",      // Allows cross-origin requests
+        maxAge: 3600000   
     })
     // req.AccessToken = newAccessToken
     return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role } }
