@@ -20,23 +20,25 @@ await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
 await initializeSocket(server);
+app.set('trust proxy', 1) // trust first proxy
 const whitelist = ["https://www.avakado.ai", "http://localhost:5174"];
-// const corsOptions = {
-//     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
-//     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-//     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],  // Add necessary headers
-//     credentials: true,
-//     optionsSuccessStatus: 200
-// };
 const corsOptions = {
-    origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error(`Origin ${origin} is not allowed by CORS`)),
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-    credentials: true, // Be careful: This should not be used with '*'
+    origin: (origin, callback) => {
+        if (!origin || whitelist.includes(origin)) {
+            callback(null, origin); // Allow the origin
+        } else {
+            callback(new Error(`Origin ${origin} is not allowed by CORS`));
+        }
+    },
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    credentials: true,
     optionsSuccessStatus: 200
 };
-app.set('trust proxy', 1) // trust first proxy
+// Apply CORS before routes
 app.use(cors(corsOptions));
+// Explicitly handle preflight requests
+app.options("*", cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
