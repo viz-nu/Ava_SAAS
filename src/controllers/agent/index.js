@@ -74,7 +74,7 @@ export const updateAgent = errorWrapper(async (req, res) => {
         if (welcomeMessage) agent.personalInfo.welcomeMessage = welcomeMessage;
         if (quickQuestions) agent.personalInfo.quickQuestions = quickQuestions;
         if (facts) agent.personalInfo.facts = facts;
-        if (name || systemPrompt || temperature || model) await openai.beta.assistants.update(personalInfo.assistantId, { name: personalInfo.name, instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
+        if (name || systemPrompt || temperature || model) await openai.beta.assistants.update(agent.personalInfo.assistantId, { name: personalInfo.name, instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
     }
     await agent.save();
     return { statusCode: 200, message: "Agent updated", data: agent };
@@ -94,5 +94,3 @@ export const deleteAgent = errorWrapper(async (req, res) => {
     ])
     return { statusCode: 200, message: "Agent deleted successfully" };
 });
-
-
