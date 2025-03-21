@@ -31,27 +31,14 @@ const corsOptions = {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     credentials: true,
-    optionsSuccessStatus: 204
+    optionsSuccessStatus: 204,
+    preflightContinue: false
 };
 
 app.use(cors(corsOptions));
-// 4. Explicitly handle OPTIONS requests
-app.options('*', cors(corsOptions));
-// 5. Add a middleware to ensure CORS headers are present on all responses
-app.use((req, res, next) => {
-    // Set the origin based on the request
-    const origin = req.headers.origin;
-    if (origin && whitelist.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    }
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-    next();
-});
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
