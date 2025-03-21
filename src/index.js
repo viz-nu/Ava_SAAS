@@ -21,7 +21,7 @@ const app = express();
 const server = createServer(app); // Create HTTP server
 await initializeSocket(server);
 app.set('trust proxy', 1) // trust first proxy
-const whitelist = ["https://www.avakado.ai", "http://localhost:5174"];
+const whitelist = ["https://www.avakado.ai", "http://localhost:5174", "https://avakado.ai"];
 const corsOptions = {
     origin: (origin, callback) => {
         if (!origin || whitelist.includes(origin)) {
@@ -43,21 +43,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(helmet.contentSecurityPolicy());
-app.use(helmet.frameguard({ action: 'sameorigin' }));
-app.use(helmet.noSniff());
-app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
-app.use(helmet.permittedCrossDomainPolicies({ permittedPolicies: 'none' }));
+app.use(helmet({
+    contentSecurityPolicy: false, // Temporarily disable CSP
+    frameguard: { action: 'sameorigin' },
+    noSniff: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    permittedCrossDomainPolicies: { permittedPolicies: 'none' }
+}));
 app.use(ExpressMongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use(express.json());
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", req.headers.origin);
-    res.header("Access-Control-Allow-Credentials", "true");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-    next();
-});
 app.get("/", (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
@@ -222,7 +217,7 @@ app.post('/v1/agent', async (req, res) => {
                 message.context = context
                 if (signalDetected && agent.personalInfo.noDataMail) {
                     try {
-                        console.log("sending mail",{to:agent.personalInfo.noDataMail,topic: data});
+                        console.log("sending mail", { to: agent.personalInfo.noDataMail, topic: data });
                         let text = `Dear [Support Team],
                         While interacting with the chatbot, it failed to fetch content related to "${data}". This issue is affecting the user experience and needs immediate attention.
                         Please investigate and resolve the issue as soon as possible.
