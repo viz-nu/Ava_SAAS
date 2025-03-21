@@ -23,18 +23,20 @@ await initializeSocket(server);
 app.set('trust proxy', 1) // trust first proxy
 const whitelist = ["https://www.avakado.ai", "http://localhost:5174", "https://avakado.ai"];
 const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || whitelist.includes(origin)) {
-            callback(null, origin); // Allow the origin
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl requests)
+        if (!origin || whitelist.indexOf(origin) !== -1) {
+            callback(null, true);
         } else {
-            callback(new Error(`Origin ${origin} is not allowed by CORS`));
+            callback(new Error('Not allowed by CORS'));
         }
     },
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 204
 };
+
 // Apply CORS before routes
 app.use(cors(corsOptions));
 // Explicitly handle preflight requests
