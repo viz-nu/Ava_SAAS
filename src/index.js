@@ -9,7 +9,7 @@ import { initialize } from "./utils/dbConnect.js";
 import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
-import { actions, AssistantResponse, ChatCompletion, getContextMain } from "./utils/openai.js";
+import { actions, AssistantResponse, getContextMain } from "./utils/openai.js";
 import { Agent } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
@@ -250,15 +250,15 @@ app.get("/get-agent", async (req, res) => {
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
-import { dataBaker, populateStructure, updateSession } from "./utils/tools.js";
+import { dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
 import { Action } from "./models/Action.js";
 import { DateTime } from "luxon";
 app.post('/send-invite', async (req, res) => {
     try {
-        let { host, attendees, startTime, timezone, summary, description, location, url } = req.body;
-        attendees = [attendees, host]
+        let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Inviation") } = req.body;
         if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
         if (!startTime) return res.status(400).json({ error: 'Start time required' });
+        attendees = [attendees, host]
         const calendar = ical({ name: 'Appointment Invitation' });
         calendar.method(ICalCalendarMethod.REQUEST);
         let endTime = new Date(startTime);
@@ -268,10 +268,10 @@ app.post('/send-invite', async (req, res) => {
             end: new Date(endTime),
             timezone: timezone || DateTime.fromISO(new Date(startTime), { setZone: true }).zoneName,
             organizer: { name: 'AVA', email: 'no-reply@ava.com' },
-            summary: summary || 'Meeting Invitation',
-            description: description || 'You are invited to a meeting.',
-            location: location || 'Online',
-            url: url || 'http://example.com',
+            summary: summary,
+            description: description,
+            location: location,
+            url: url,
             attendees: attendees.map(email => ({ email }))
         });
         await sendMail({
