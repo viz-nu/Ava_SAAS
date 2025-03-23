@@ -82,7 +82,7 @@ export const actions = async (messages, availableActions) => {
                                             properties: {
                                                 key: { type: "string", description: "Parameter name." },
                                                 data: {
-                                                    type: ["string", "number", "boolean", "null", "object"],
+                                                    type: ["string", "number", "boolean", "null"],
                                                     description: "Extracted value or null if missing. maintain same structure"
                                                 }
                                             },
