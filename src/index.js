@@ -255,8 +255,8 @@ import { Action } from "./models/Action.js";
 import { DateTime } from "luxon";
 app.post('/send-invite', async (req, res) => {
     try {
-        const { host, attendees, startTime, timezone, summary, description, location, url } = req.body;
-        attendees = attendees.push(host)
+        let { host, attendees, startTime, timezone, summary, description, location, url } = req.body;
+        attendees = [attendees, host]
         if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
         if (!startTime) return res.status(400).json({ error: 'Start time required' });
         const calendar = ical({ name: 'Appointment Invitation' });
