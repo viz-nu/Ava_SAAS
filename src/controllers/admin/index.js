@@ -101,6 +101,12 @@ export const Dashboard = errorWrapper(async (req, res) => {
         }
     };
 });
+export const geoLocationsData = errorWrapper(async (req, res) => {
+    const business = await Business.findById(req.user.business).populate({ path: "agents", select: "personalInfo.name" });
+    if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    return { statusCode: 200, message: "Business", data: business.agents };
+
+})
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;
     const selectedIntents = ["enquiry", "complaint"];
@@ -171,12 +177,12 @@ export const updateAction = errorWrapper(async (req, res) => {
 export const deleteAction = errorWrapper(async (req, res) => {
     const action = await Action.findById(req.params.id);
     if (!action) return res.status(404).json({ message: "Action not found" });
-    await Promise.all([
+    const [deletedAction, updatedBusiness, updatedAgents] = await Promise.all([
         Action.findByIdAndDelete(req.params.id),
-        Business.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } }),
+        Business.updateOne({ actions: req.params.id }, { $pull: { actions: req.params.id } }),
         Agent.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
     ]);
-    return { statusCode: 200, message: "Action deleted successfully", data: null }
+    return { statusCode: 200, message: "Action deleted successfully", data: { deletedAction, updatedBusiness, updatedAgents } }
 });
 export const raiseTicket = errorWrapper(async (req, res) => {
     const { issueDetails, attachments } = req.body;
