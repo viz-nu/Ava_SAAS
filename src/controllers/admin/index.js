@@ -6,6 +6,7 @@ import { sendMail } from "../../utils/sendEmail.js";
 import { Action } from "../../models/Action.js";
 import { analyzeQueries } from "../../utils/nlp.js";
 import { Agent } from "../../models/Agent.js";
+import { Conversation } from "../../models/Conversations.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -58,7 +59,19 @@ export const Dashboard = errorWrapper(async (req, res) => {
                     ]
                 }
             }
-        ])
+        ]),
+        (async () => {
+            const locations = [];
+            for (const ele of business.agents) {
+                const facets = await Conversation.aggregate([
+                    { $match: { business: req.user.business, agent: ele._id } },
+                    { $group: { _id: "$geoLocation.city", count: { $sum: 1 } } },
+                    { $sort: { count: -1 } }
+                ]);
+                locations.push({ agent: { _id: ele._id, name: ele.personalInfo.name }, data: facets });
+            }
+            return locations;
+        })()
     ];
     const [
         knowledgeTokensRes,
@@ -69,6 +82,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
         analysisTokensRes,
         analysis, // for all queries do analyzeQueries(queries) and store in the output
         NewAnalysis,
+        locations
     ] = await Promise.all(aggregationQueries);
     const totalKnowledgeTokensUsed = knowledgeTokensRes[0]?.totalKnowledgeTokensUsed || 0;
     const totalChatTokensUsed = chatTokensRes[0]?.totalChatTokensUsed || 0;
@@ -97,16 +111,11 @@ export const Dashboard = errorWrapper(async (req, res) => {
             actionTokens,
             analysisTokens,
             analysis,
-            NewAnalysis: NewAnalysis[0]
+            NewAnalysis: NewAnalysis[0],
+            locations
         }
     };
 });
-export const geoLocationsData = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate({ path: "agents", select: "personalInfo.name" });
-    if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    return { statusCode: 200, message: "Business", data: business.agents };
-
-})
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;
     const selectedIntents = ["enquiry", "complaint"];
