@@ -65,3 +65,24 @@ export const dataBaker = async (schema, actionId, conversationId, parentPath = "
     }
     return obj
 }
+export const generateMeetingUrl = (meetingName) => {
+    // Clean up and format the meeting name for use in URL
+    const cleanName = meetingName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    // Add random string for uniqueness
+    const randomString = Math.random().toString(36).substring(2, 8);
+
+    // Create a Jitsi Meet URL (completely free, no API keys needed)
+    const roomName = `${cleanName}-${randomString}`;
+    const meetingUrl = `https://meet.jit.si/${roomName}`;
+    return meetingUrl
+    // return {
+    //     url: meetingUrl,
+    //     provider: "Jitsi Meet",
+    //     roomName: roomName
+    // };
+}
