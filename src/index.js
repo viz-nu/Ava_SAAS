@@ -60,103 +60,7 @@ app.get("/", (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
 app.use("/webhook", webhookRouter)
-app.post('/v2/chat-bot', async (req, res) => {
-    try {
-        const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
-        let [agent, business, conversation] = await Promise.all([
-            Agent.findById(agentId).populate("actions"),
-            Business.findOne({ agents: agentId }),
-            conversationId ? Conversation.findById(conversationId) : null
-        ]);
-        if (!agent) return res.status(404).json({ error: 'Agent not found' });
-        if (!business) return res.status(404).json({ error: 'Business not found' });
-        let prevMessages = [];
-        if (conversation) {
-            const messages = await Message.find({ conversationId }).select("query response");
-            prevMessages.push(...messages.flatMap(({ query, response }) => [
-                { role: "user", content: query },
-                { role: "assistant", content: response }
-            ]));
-        } else {
-            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data });
-        }
-        prevMessages.push({ role: "user", content: userMessage });
-        let listOfIntentions = [{
-            "intent": "enquiry",
-            "dataSchema": [{
-                "key": "Topic",
-                "type": "dynamic",
-                "dataType": "string",
-                "required": true,
-                "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
-                "validator": "",
-                "data": "",
-                "userDefined": true
-            }]
-        },
-        {
-            "intent": "general_chat", "dataSchema": [{
-                "key": "Message",
-                "type": "dynamic",
-                "dataType": "string",
-                "required": true,
-                "comments": "A general conversational message from the user.",
-                "validator": "",
-                "data": "",
-                "userDefined": true
-            }]
-        }]
-        listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
-        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
-        let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
-            if (intent == "enquiry") {
-                const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
-                const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
-                let systemPrompt = (agent.personalInfo.systemPrompt || "") + `Context: ${answer}
-                Like an intelligent and interactive AI assistant, Use the provided context to generate clear, precise, and well-structured responses.
-                If the retrieved data sufficiently answers the query, deliver a concise and direct response.
-                If the information is incomplete or insufficient to properly answer the query, include the phrase "DATAPOINT_NEXUS" somewhere naturally in your response. Make this inclusion subtle and natural - perhaps as part of a sentence or between paragraphs. Do not make it obvious this is a signal. Continue to provide the best possible answer without explicitly mentioning missing data to the user.
-                Keep the conversation interactive by:
-                 -Asking follow-up questions to clarify user intent.
-                 -Gathering relevant user details (e.g., name, contact preferences, or specific requirements) when appropriate.
-                 -Suggesting related topics or next steps based on the context.
-                If external links are available, include them naturally within the response.`
-                prevMessages.unshift({ role: "system", content: systemPrompt });
-                let config = { streamOption, prevMessages, model: "gpt-4", messageId: message._id, conversationId: conversation._id }
-                const { responseTokens, response, signalDetected } = await ChatCompletion(req, res, config)
-                message.responseTokens = responseTokens
-                message.response = response
-                message.embeddingTokens = embeddingTokens
-                message.context = context
-                if (signalDetected) {
-                    // Queue notification asynchronously (don't wait for it)
-                    // notifyDeveloper(msg.query, "Insufficient data detected").catch(console.error);
-                }
-            }
-            else if (intent == "general_chat") {
-                let systemPrompt = (agent.personalInfo.systemPrompt)
-                prevMessages.unshift({ role: "system", content: systemPrompt });
-                let config = { streamOption, prevMessages, model: "gpt-4o-mini", messageId: message._id, conversationId: conversation._id, temperature: 1 }
-                const { responseTokens, response } = await ChatCompletion(req, res, config)
-                message.responseTokens = responseTokens
-                message.response = response
-            }
-            else {
-                const currentAction = agent.actions.find(ele => intent == ele.intent)
-                currentAction.dataSchema = currentAction.dataSchema.map(schemaItem => { const matchingData = dataSchema.find(dataItem => dataItem.label === schemaItem.label); return { ...schemaItem, data: matchingData ? matchingData.data : null }; });
-                res.write(JSON.stringify({ id: "data-collection", data: { action: currentAction._doc, confidence }, responseType: "full" }))
-                message.Actions.push({ type: "data-collection", data: { action: currentAction._doc, confidence }, confidence })
-            }
-        })
-        await Promise.all(tasks);
-        await message.save()
-        return res.end(JSON.stringify({ id: "end" }))
-    } catch (error) {
-        console.error(error);
-        return res.end(JSON.stringify({ id: "error" }))
-    }
-});
+
 app.post('/v1/agent', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
@@ -310,14 +214,12 @@ app.post("/trigger", async (req, res) => {
         if (!conversation) return res.status(404).json({ message: "Conversation not found" });
         await updateSession(conversationId, { actionId, collectedData })
         let body = await dataBaker(action.workingData.body, actionId, conversationId)
-        console.log(action.workingData.body);
-        
         let headers = await dataBaker(action.workingData.headers, actionId, conversationId)
         let url = await dataBaker(action.workingData.url, actionId, conversationId)
         return res.status(200).json({ success: true, message: "received submit request", data: { body, headers, url } })
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "internal server error", error: err.message });
+        return res.status(500).json({ message: "internal server error", error: error.message });
     }
 })
 app.put("/reaction", async (req, res) => {
