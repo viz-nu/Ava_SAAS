@@ -255,7 +255,7 @@ import { Action } from "./models/Action.js";
 import { DateTime } from "luxon";
 app.post('/send-invite', async (req, res) => {
     try {
-        let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Inviation") } = req.body;
+        let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = req.body;
         if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
         if (!startTime) return res.status(400).json({ error: 'Start time required' });
         attendees = [attendees, host]
@@ -292,7 +292,7 @@ app.post('/send-invite', async (req, res) => {
                 contentType: 'text/calendar'
             }]
         })
-        res.json({ message: 'Invitation sent' });
+        res.status(200).json({ success: true, message: 'Appointment Scheduled Successfully' });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: error.message })
@@ -317,6 +317,6 @@ app.post('/send-mail', async (req, res) => {
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 // app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
