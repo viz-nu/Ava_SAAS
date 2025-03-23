@@ -147,7 +147,7 @@ export const editBusiness = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Business updated", data: business }
 });
 export const createActions = errorWrapper(async (req, res) => {
-    const { intent,workingData } = req.body
+    const { intent, workingData } = req.body
     if (!intent || !workingData) return { statusCode: 404, message: "intend or workingData not found", data: null }
     const business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }

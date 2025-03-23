@@ -216,7 +216,7 @@ app.post("/trigger", async (req, res) => {
         let body = await dataBaker(action.workingData.body, actionId, conversationId)
         let headers = await dataBaker(action.workingData.headers, actionId, conversationId)
         let url = await dataBaker(action.workingData.url, actionId, conversationId)
-        return res.status(200).json({ success: true, message: "received submit request", data: { body, headers, url } })
+        return res.status(200).json({ success: true, message: "received submit request", data: { body: body.body, headers, url: url.url } })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "internal server error", error: error.message });
