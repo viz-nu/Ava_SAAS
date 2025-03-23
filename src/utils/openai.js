@@ -76,13 +76,13 @@ export const actions = async (messages, availableActions) => {
                                     },
                                     dataSchema: {
                                         type: "array",
-                                        description: "Extracted parameters for the intent, stored under 'data'.",
+                                        description: "Extracted parameters for the intent, stored under 'data', based on given json of actions.",
                                         items: {
                                             type: "object",
                                             properties: {
                                                 key: { type: "string", description: "Parameter name." },
                                                 data: {
-                                                    type: ["string", "number", "boolean", "null","array", "object"],
+                                                    type: ["string", "number", "boolean", "null", "object"],
                                                     description: "Extracted value or null if missing. maintain same structure"
                                                 }
                                             },
