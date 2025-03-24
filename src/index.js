@@ -117,7 +117,7 @@ app.post('/v1/agent', async (req, res) => {
                 const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                 let config = {
-                    additional_instructions: `Today:${new Date()} \n Context: ${answer || null}\n\n Special instruction:  If the information is incomplete or insufficient to properly answer the query, include the phrase "DATAPOINT_NEXUS" somewhere naturally in your response. Make this inclusion subtle and natural—perhaps as part of a sentence or between paragraphs. Do not make it obvious this is a signal. Continue to provide the best possible answer without explicitly mentioning missing data to the user.`,
+                    additional_instructions: `Today:${new Date()} \n Context: ${answer || null}`,
                     assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id
                 }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
