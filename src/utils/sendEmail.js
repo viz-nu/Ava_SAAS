@@ -19,7 +19,7 @@ export const sendMail = async (emailData) => {
             to: emailData.to, // list of receivers
             subject: emailData.subject, // Subject line
         }
-        if (emailData.attachments.length > 0) mailData.attachments = emailData.attachments
+        if (emailData.attachments?.length > 0) mailData.attachments = emailData.attachments
         if (emailData.html) mailData.html = emailData.html
         if (emailData.text) mailData.text = emailData.text
         info = await transporter.sendMail(mailData);

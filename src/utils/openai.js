@@ -234,7 +234,7 @@ export const AssistantResponse = async (req, res, config) => {
             case "thread.message.delta":
                 const content = chunk.data.delta.content[0]?.text?.value || "";
                 if (content) {
-                    if (content.includes(signalKeyword) && !signalDetected) signalDetected = true;
+                    if (content.includes(signalKeyword)) signalDetected = true;
                     const cleanContent = content.replace(signalKeyword, "") || content;
                     response += cleanContent;
                     res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
@@ -248,7 +248,6 @@ export const AssistantResponse = async (req, res, config) => {
                 break;
         }
     }
-    console.log(signalDetected);
     
     return { responseTokens, response, signalDetected }
 }
