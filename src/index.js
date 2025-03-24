@@ -117,8 +117,18 @@ app.post('/v1/agent', async (req, res) => {
                 const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                 let config = {
-                    additional_instructions: `Today:${new Date()} \n Context: ${answer || null}`,
-                    assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id
+                    additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
+**DATA COMPLETENESS PROTOCOL - CRITICAL:**
+When you do not have enough information to provide a complete and accurate answer to ANY query, you MUST begin your response with exactly "DATAPOINT_NEXUS" followed by your regular response. This applies to:
+- Any specific information not included in the context provided
+- Questions where context is missing, incomplete, or unclear
+- Requests for details that would require additional data
+- Any query where you cannot give a confident and complete answer
+Example:
+User: "What is the history of..."
+Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about the history you're asking about. However, I can tell you that... [continue with what you do know]"
+`,
+                    assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS"
                 }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                 message.responseTokens = responseTokens
@@ -176,8 +186,8 @@ app.post('/v1/agent', async (req, res) => {
                         </div>
                         </body>
                         </html>`
-                        sendMail({ to: agent.personalInfo.noDataMail, subject: "Urgent: Missing information for AVA", text, html })
-                        res.json({ message: 'mail sent' });
+                        await sendMail({ to: agent.personalInfo.noDataMail, subject: "Urgent: Missing information for AVA", text, html })
+                        return res.end(JSON.stringify({ id: "end" }))
                     } catch (error) {
                         console.error(error);
                         return res.status(500).json({ error: error.message })
