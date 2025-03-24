@@ -248,5 +248,7 @@ export const AssistantResponse = async (req, res, config) => {
                 break;
         }
     }
+    console.log(signalDetected);
+    
     return { responseTokens, response, signalDetected }
 }
