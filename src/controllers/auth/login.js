@@ -13,7 +13,7 @@ export const Login = errorWrapper(async (req, res) => {
         secure: true,
         httpOnly: true,
         sameSite: "None",      // Allows cross-origin requests
-        maxAge: 3600000   
+        expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365) 
     })
     // req.AccessToken = newAccessToken
     return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role } }
