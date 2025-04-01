@@ -10,12 +10,16 @@ telegramRouter.post('/:botId', async (req, res) => {
         const botId = req.params.botId;
         const update = req.body;
         const chatId = update?.message?.chat?.id;
+        console.log("input", JSON.stringify({ body: req.body, params: req.params }, null, 2));
         if (!update || (!update.message && !update.callback_query)) return res.status(400).json({ error: "Invalid update format" });
-
         // Retrieve or initialize user state
         if (!userState.has(chatId)) userState.set(chatId, { contact: null, location: null, messages: [] });
         let user = userState.get(chatId);
         // Handle contact sharing
+        const agent = await getBotDetails(botId);
+        if (!agent) return res.status(404).json({ error: "Bot not found" });
+        const bot = new Telegraf(agent.personalInfo.telegram.botToken);
+        await bot.telegram.sendChatAction(chatId, 'typing');
         if (update.message.contact) {
             const { phone_number, first_name } = update.message.contact;
             console.log(`Received contact: ${phone_number}, ${first_name}`);
