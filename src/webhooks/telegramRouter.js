@@ -80,6 +80,8 @@ telegramRouter.post('/:botId', async (req, res) => {
             // Save updated user data
             userState.set(chatId, user);
         }
+        console.log("userState",JSON.stringify(userState,null,2));
+        
         res.status(200).json({ success: true });
     } catch (error) {
         console.error("Webhook error:", error);
