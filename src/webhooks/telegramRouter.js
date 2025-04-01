@@ -12,9 +12,9 @@ telegramRouter.post('/:botId', async (req, res) => {
         const agent = await getBotDetails(botId);
         if (!agent) return res.status(404).json({ error: "Bot not found" });
         const bot = new Telegraf(agent.personalInfo.telegram.botToken);
-        await bot.telegram.sendChatAction(chatId, 'typing');
         const chatId = update.message?.chat?.id;
         if (!chatId) return res.status(200).json({ success: false, error: "Invalid chat data" });
+        await bot.telegram.sendChatAction(chatId, 'typing');
         let locationShared = !!update.message?.location;
         let contactShared = !!update.message?.contact;
         let userMessage = update.message?.text;
