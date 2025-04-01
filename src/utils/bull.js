@@ -55,34 +55,50 @@ urlProcessingQueue.process(async (job) => {
 });
 
 // Handle completed jobs
-urlProcessingQueue.on('completed', async (job) => {
+urlProcessingQueue.on('completed', async (job, result) => {
     const { url, collectionId, receivers, _id } = job.data;
     console.log(`Job ${job.id} completed for URL: ${url} (Collection: ${collectionId})`);
-    const allCompletedJobs = await job.queue.getCompleted();
-    const allWaitingJobs = await job.queue.getWaiting();
-    const allActiveJobs = await job.queue.getActive();
-    const completedJobs = allCompletedJobs.filter(j => j.data.collectionId === collectionId).length;
-    const waitingJobs = allWaitingJobs.filter(j => j.data.collectionId === collectionId).length;
-    const activeJobs = allActiveJobs.filter(j => j.data.collectionId === collectionId).length;
-    const totalJobs = completedJobs + waitingJobs + activeJobs;
-    const progressData = { total: totalJobs, progress: completedJobs, collectionId };
-    console.log(`Progress Update:`, progressData);
-    if (receivers && receivers.length) {
-        receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }); });
-    }
-    if (completedJobs === totalJobs) {
+    const [allCompletedJobs, allWaitingJobs, allActiveJobs, allFailedJobs] = await Promise.all([job.queue.getCompleted(), job.queue.getWaiting(), job.queue.getActive(), job.queue.getFailed()])
+    const [completedJobs, waitingJobs, activeJobs, failedJobs] = await Promise.all([Promise.resolve(allCompletedJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allWaitingJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allActiveJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allFailedJobs.filter(j => j.data.collectionId === collectionId).length)]);
+    const totalJobs = completedJobs + waitingJobs + activeJobs + failedJobs;
+    const progressData = { total: totalJobs, progress: completedJobs + failedJobs, collectionId };
+    if (receivers && receivers.length) receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }); });
+    if (waitingJobs == 0 && activeJobs == 0) {
         console.log(`All jobs completed for Collection ID: ${collectionId}`);
+        await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs <= failedJobs ? "failed" : "active" } })
         receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: "active" } }) });
     }
-    await Collection.updateOne(
-        { _id: collectionId, "contents._id": _id },
-        { $set: { "contents.$.status": result.success ? "active" : "failed", "contents.$.error": result.success ? null : result.error, } });
 });
 
 // Handle failed jobs
-urlProcessingQueue.on('failed', (job, error) => {
-    console.error(`Job ${job.id} failed for URL: ${job.data.url}:`, error);
+urlProcessingQueue.on('failed', async (job, error) => {
+    const { url, collectionId, receivers, _id } = job.data;
+    console.error(`Job ${job.id} failed for URL: ${url}:`, error);
+    const [allCompletedJobs, allWaitingJobs, allActiveJobs, allFailedJobs] = await Promise.all([job.queue.getCompleted(), job.queue.getWaiting(), job.queue.getActive(), job.queue.getFailed()])
+    const [completedJobs, waitingJobs, activeJobs, failedJobs] = await Promise.all([Promise.resolve(allCompletedJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allWaitingJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allActiveJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allFailedJobs.filter(j => j.data.collectionId === collectionId).length)]);
+    const totalJobs = completedJobs + waitingJobs + activeJobs + failedJobs;
+    const progressData = { total: totalJobs, progress: completedJobs + failedJobs, collectionId };
+    if (receivers && receivers.length) receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }); });
+    if (waitingJobs == 0 && activeJobs == 0) {
+        console.log(`All jobs completed for Collection ID: ${collectionId}`);
+        await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs < failedJobs ? "failed" : "active", "contents.$.error": completedJobs <= failedJobs ? error : null } })
+        receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } }) });
+    }
 });
+urlProcessingQueue.on('stalled', async (job) => {
+    const { url, collectionId, receivers, _id } = job.data;
+    console.error(`Job ${job.id} stalled for URL: ${url}`);
+    const [allCompletedJobs, allWaitingJobs, allActiveJobs, allFailedJobs] = await Promise.all([job.queue.getCompleted(), job.queue.getWaiting(), job.queue.getActive(), job.queue.getFailed()])
+    const [completedJobs, waitingJobs, activeJobs, failedJobs] = await Promise.all([Promise.resolve(allCompletedJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allWaitingJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allActiveJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allFailedJobs.filter(j => j.data.collectionId === collectionId).length)]);
+    const totalJobs = completedJobs + waitingJobs + activeJobs + failedJobs;
+    const progressData = { total: totalJobs, progress: completedJobs + failedJobs, collectionId };
+    if (receivers && receivers.length) receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }); });
+    if (waitingJobs == 0 && activeJobs == 0) {
+        console.log(`All jobs completed for Collection ID: ${collectionId}`);
+        await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs < failedJobs ? "failed" : "active", "contents.$.error": "stalled" } })
+        receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } }) });
+    }
+})
 // await urlProcessingQueue.obliterate({ force: true });
 // const activeJobs = await urlProcessingQueue.getActive();
 // console.log('Currently processing jobs:', activeJobs.map(j => j.id));
