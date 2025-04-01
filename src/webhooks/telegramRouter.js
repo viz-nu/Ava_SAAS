@@ -11,6 +11,70 @@ telegramRouter.post('/:botId', async (req, res) => {
         const update = req.body;
         const chatId = update?.message?.chat?.id;
         console.log("input", JSON.stringify({ body: req.body, params: req.params }, null, 2));
+
+        // 0|Ava_SAAS  | input {
+        //     0|Ava_SAAS  |   "body": {
+        //     0|Ava_SAAS  |     "update_id": 150016505,
+        //     0|Ava_SAAS  |     "message": {
+        //     0|Ava_SAAS  |       "message_id": 79,
+        //     0|Ava_SAAS  |       "from": {
+        //     0|Ava_SAAS  |         "id": 6233054381,
+        //     0|Ava_SAAS  |         "is_bot": false,
+        //     0|Ava_SAAS  |         "first_name": "Vishnu",
+        //     0|Ava_SAAS  |         "language_code": "en"
+        //     0|Ava_SAAS  |       },
+        //     0|Ava_SAAS  |       "chat": {
+        //     0|Ava_SAAS  |         "id": 6233054381,
+        //     0|Ava_SAAS  |         "first_name": "Vishnu",
+        //     0|Ava_SAAS  |         "type": "private"
+        //     0|Ava_SAAS  |       },
+        //     0|Ava_SAAS  |       "date": 1743542564,
+        //     0|Ava_SAAS  |       "contact": {
+        //     0|Ava_SAAS  |         "phone_number": "919959964639",
+        //     0|Ava_SAAS  |         "first_name": "Vishnu",
+        //     0|Ava_SAAS  |         "user_id": 6233054381
+        //     0|Ava_SAAS  |       }
+        //     0|Ava_SAAS  |     }
+        //     0|Ava_SAAS  |   },
+        //     0|Ava_SAAS  |   "params": {
+        //     0|Ava_SAAS  |     "botId": "7584917188"
+        //     0|Ava_SAAS  |   }
+        //     0|Ava_SAAS  | }
+
+
+
+        // input {
+        //     0|Ava_SAAS  |   "body": {
+        //     0|Ava_SAAS  |     "update_id": 150016507,
+        //     0|Ava_SAAS  |     "message": {
+        //     0|Ava_SAAS  |       "message_id": 84,
+        //     0|Ava_SAAS  |       "from": {
+        //     0|Ava_SAAS  |         "id": 6233054381,
+        //     0|Ava_SAAS  |         "is_bot": false,
+        //     0|Ava_SAAS  |         "first_name": "Vishnu",
+        //     0|Ava_SAAS  |         "language_code": "en"
+        //     0|Ava_SAAS  |       },
+        //     0|Ava_SAAS  |       "chat": {
+        //     0|Ava_SAAS  |         "id": 6233054381,
+        //     0|Ava_SAAS  |         "first_name": "Vishnu",
+        //     0|Ava_SAAS  |         "type": "private"
+        //     0|Ava_SAAS  |       },
+        //     0|Ava_SAAS  |       "date": 1743542598,
+        //     0|Ava_SAAS  |       "location": {
+        //     0|Ava_SAAS  |         "latitude": 17.365977,
+        //     0|Ava_SAAS  |         "longitude": 78.532945
+        //     0|Ava_SAAS  |       }
+        //     0|Ava_SAAS  |     }
+        //     0|Ava_SAAS  |   },
+        //     0|Ava_SAAS  |   "params": {
+        //     0|Ava_SAAS  |     "botId": "7584917188"
+        //     0|Ava_SAAS  |   }
+        //     0|Ava_SAAS  | }
+        //     0|Ava_SAAS  | Received location: 17.365977, 78.532945
+
+
+
+
         // if (!update || (!update.message && !update.callback_query)) return res.status(400).json({ error: "Invalid update format" });
         // Retrieve or initialize user state
         if (!userState.has(chatId)) userState.set(chatId, { contact: null, location: null, messages: [] });
@@ -80,7 +144,7 @@ telegramRouter.post('/:botId', async (req, res) => {
             // Save updated user data
             userState.set(chatId, user);
         }
-        console.log("userState",JSON.stringify(userState,null,2)); 
+        console.log("userState", JSON.stringify(userState, null, 2));
         res.status(200).json({ success: true });
     } catch (error) {
         console.error("Webhook error:", error);
