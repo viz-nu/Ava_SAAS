@@ -39,31 +39,120 @@ telegramRouter.post('/:botId', async (req, res) => {
     try {
         const botId = req.params.botId;
         const update = req.body;
-
+        let locationShared = false;
+        let contactShared = false;
         console.log("input", JSON.stringify({ body: update, params: botId }, null, 2));
 
+        // update ={
+        //     "update_id": 150016471,
+        //     "message": {
+        //         "message_id": 27,
+        //         "from": {
+        //             "id": 6233054381,
+        //             "is_bot": false,
+        //             "first_name": "Vishnu",
+        //             "language_code": "en"
+        //         },
+        //         "chat": {
+        //             "id": 6233054381,
+        //             "first_name": "Vishnu",
+        //             "type": "private"
+        //         },
+        //         "date": 1743537520,
+        //         "text": "Hey who are you?"
+        //     }
+        // }
         // Handle different types of updates
         if (!update || (!update.message && !update.callback_query)) return res.status(400).json({ error: "Invalid update format" });
-
+        if (update.message.location) {
+            const { latitude, longitude } = update.message.location;
+            console.log(`Received location: ${latitude}, ${longitude}`);
+            // await bot.telegram.sendMessage(chatId, `Thank you for sharing your location!`);
+            locationShared = true;
+        }
+        if (update.message.contact) {
+            const { phone_number, first_name, last_name } = update.message.contact;
+            console.log(`Received contact: ${phone_number}, ${first_name} ${last_name || ''}`);
+            // await bot.telegram.sendMessage(chatId, `Thank you for sharing your contact information!`);
+            contactShared = true;
+        }
+        if ((locationShared || contactShared) && !update.message.text) return;
         // Fetch bot details from database
         const agent = await getBotDetails(botId);
         if (!agent) return res.status(404).json({ error: "Bot not found" });
         const bot = new Telegraf(agent.personalInfo.telegram.botToken);
-
         // Handle the incoming message
         if (update.message && update.message.text) {
             const chatId = update.message.chat.id;
             const userMessage = update.message.text;
 
-            // Get bot personality from agent data
-            const botPersonality = "A helpful assistant on behalf of viz -a backend engineer, based out of India";
 
-            // Generate AI response
-            const aiResponse = await generateAIResponse(userMessage, botPersonality);
+            try {
+                if (userMessage.toLowerCase() === '/start') {
+                    await bot.telegram.sendMessage(chatId, "Welcome! I'm your assistant. How can I help you today?");
+                    return;
+                }
+                const botPersonality = "A helpful assistant on behalf of viz -a backend engineer, based out of India";
+                const aiResponse = await generateAIResponse(userMessage, botPersonality);
+                // Create an array for our messages to send
+                const messagesToSend = [];
 
-            // Send response back to user
-            await bot.telegram.sendMessage(chatId, aiResponse);
-            console.log("response sent: ", aiResponse);
+                // Add AI response
+                messagesToSend.push({ text: aiResponse, options: {} });
+                // Ask for location if not shared yet
+                if (!locationShared) {
+                    messagesToSend.push({
+                        text: "To provide you with more personalized assistance, could you share your location?",
+                        options: {
+                            reply_markup: {
+                                keyboard: [
+                                    [{ text: "📍 Share my location", request_location: true }]
+                                ],
+                                resize_keyboard: true,
+                                one_time_keyboard: true
+                            }
+                        }
+                    });
+                }
+
+                // Ask for contact if not shared yet
+                if (!contactShared) {
+                    messagesToSend.push({
+                        text: "Also, sharing your contact information would help me assist you better.",
+                        options: {
+                            reply_markup: {
+                                keyboard: [
+                                    [{ text: "📞 Share my contact", request_contact: true }]
+                                ],
+                                resize_keyboard: true,
+                                one_time_keyboard: true
+                            }
+                        }
+                    });
+                }
+                // Send all messages
+                for (const message of messagesToSend) await bot.telegram.sendMessage(chatId, message.text, message.options);
+                console.log("response sent: ", aiResponse);
+            }
+            catch (error) {
+                console.error("Error generating response:", error);
+                await bot.telegram.sendMessage(chatId, "Sorry, I encountered an error while processing your request.");
+            }
+        }
+        else if (update.message && (update.message.location || update.message.contact)) {
+            const chatId = update.message.chat.id;
+
+            if (update.message.location) {
+                const { latitude, longitude } = update.message.location;
+                console.log(`User shared location: ${latitude}, ${longitude}`);
+                await bot.telegram.sendMessage(chatId, "Thank you for sharing your location! How can I assist you today?");
+            }
+
+            if (update.message.contact) {
+                const { phone_number, first_name } = update.message.contact;
+                console.log(`User shared contact: ${phone_number}, ${first_name}`);
+                await bot.telegram.sendMessage(chatId, "Thank you for sharing your contact information! How can I assist you today?");
+            }
         }
 
         // Handle callback queries (for button clicks)
