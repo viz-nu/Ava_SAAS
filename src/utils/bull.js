@@ -53,7 +53,6 @@ urlProcessingQueue.process(async (job) => {
         throw error; // Re-throw so Bull knows this job failed
     }
 });
-
 // Handle completed jobs
 urlProcessingQueue.on('completed', async (job, result) => {
     const { url, collectionId, receivers, _id } = job.data;
@@ -69,7 +68,6 @@ urlProcessingQueue.on('completed', async (job, result) => {
         receivers.forEach(receiver => { io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: "active" } }) });
     }
 });
-
 // Handle failed jobs
 urlProcessingQueue.on('failed', async (job, error) => {
     const { url, collectionId, receivers, _id } = job.data;
