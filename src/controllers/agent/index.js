@@ -5,6 +5,7 @@ import { Business } from '../../models/Business.js';
 import { Collection } from '../../models/Collection.js';
 import { agentSchema } from '../../Schema/index.js';
 import { openai } from '../../utils/openai.js';
+import { Telegraf } from "telegraf";
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
     const { collections, appearance, personalInfo, actions } = req.body
@@ -19,6 +20,28 @@ export const createAgent = errorWrapper(async (req, res) => {
         const action = await Action.findById(id);
         if (!action) return { statusCode: 404, message: "action not found", data: null }
         if (action.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this action", data: { collectionId: id } }
+    }
+    if (personalInfo?.telegramToken) {
+        const bot = new Telegraf(personalInfo.telegramToken);
+        let botInfo
+        try {
+            botInfo = await bot.telegram.getMe(); // Fetch bot details 
+        } catch (error) {
+            return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
+        }
+        const webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
+        try {
+            await bot.telegram.setWebhook(webhookUrl);; // Fetch bot details 
+        } catch (error) {
+            return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
+        }
+        console.log(`Webhook set for bot: ${botInfo.id} -> ${webhookUrl}`);
+        personalInfo.telegram = {
+            userName: botInfo.username,
+            id: botInfo.id,
+            webhookUrl,
+            botToken: telegramToken
+        }
     }
     let assistant = await openai.beta.assistants.create({ name: personalInfo.name || 'Custom Assistant', instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
     personalInfo.assistantId = assistant.id;
@@ -64,7 +87,7 @@ export const updateAgent = errorWrapper(async (req, res) => {
     }
     if (appearance) agent.appearance = appearance;
     if (personalInfo) {
-        const { name, systemPrompt, role, temperature, model, welcomeMessage, quickQuestions, facts, noDataMail } = personalInfo
+        const { name, systemPrompt, role, temperature, model, welcomeMessage, quickQuestions, facts, noDataMail, telegramToken } = personalInfo
         if (noDataMail) agent.personalInfo.noDataMail = noDataMail;
         if (name) agent.personalInfo.name = name;
         if (systemPrompt) agent.personalInfo.systemPrompt = systemPrompt;
@@ -74,6 +97,41 @@ export const updateAgent = errorWrapper(async (req, res) => {
         if (welcomeMessage) agent.personalInfo.welcomeMessage = welcomeMessage;
         if (quickQuestions) agent.personalInfo.quickQuestions = quickQuestions;
         if (facts) agent.personalInfo.facts = facts;
+        if (telegramToken) {
+            if (agent.personalInfo?.telegram?.botToken) {
+                const existingBotToken = agent.personalInfo.telegram.botToken;
+                const existingBot = new Telegraf(existingBotToken);
+                await existingBot.telegram.deleteWebhook();
+                delete agent.personalInfo.telegram;
+            }
+            else {
+                const bot = new Telegraf(telegramToken);
+                let botInfo
+                try {
+                    botInfo = await bot.telegram.getMe(); // Fetch bot details 
+                } catch (error) {
+                    console.log(error);
+                    return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
+                }
+                console.log("botInfo", JSON.stringify(botInfo, null, 2))
+                const webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
+                // const webhookUrl = `https://chatapi.campusroot.com/webhook/telegram/${botInfo.id}`;
+                try {
+                    let afterWebhook = await bot.telegram.setWebhook(webhookUrl); // Fetch bot details 
+                    console.log("afterWebhook", JSON.stringify(afterWebhook, null, 2))
+                } catch (error) {
+                    console.log(error);
+                    return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
+                }
+                console.log(`Webhook set for bot: ${botInfo.id} -> ${webhookUrl}`);
+                agent.personalInfo.telegram = {
+                    userName: botInfo.username,
+                    id: botInfo.id,
+                    webhookUrl,
+                    botToken: telegramToken
+                }
+            }
+        }
         if (name || systemPrompt || temperature || model) await openai.beta.assistants.update(agent.personalInfo.assistantId, { name: personalInfo.name, instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
     }
     await agent.save();
