@@ -7,12 +7,12 @@ telegramRouter.post('/:botId', async (req, res) => {
     try {
         const botId = req.params.botId;
         const update = req.body;
-        await bot.telegram.sendChatAction(chatId, 'typing');
         if (!update || (!update.message && !update.callback_query)) return res.status(400).json({ error: "Invalid update format" });
         console.log("Received Update:", JSON.stringify({ body: update, params: botId }, null, 2));
         const agent = await getBotDetails(botId);
         if (!agent) return res.status(404).json({ error: "Bot not found" });
         const bot = new Telegraf(agent.personalInfo.telegram.botToken);
+        await bot.telegram.sendChatAction(chatId, 'typing');
         const chatId = update.message?.chat?.id;
         if (!chatId) return res.status(200).json({ success: false, error: "Invalid chat data" });
         let locationShared = !!update.message?.location;
