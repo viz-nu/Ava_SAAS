@@ -31,7 +31,7 @@ export const createAgent = errorWrapper(async (req, res) => {
         }
         const webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
         try {
-            await bot.telegram.setWebhook(webhookUrl);; // Fetch bot details 
+            await bot.telegram.setWebhook(webhookUrl);
         } catch (error) {
             return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
         }
@@ -113,17 +113,14 @@ export const updateAgent = errorWrapper(async (req, res) => {
                     console.log(error);
                     return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
                 }
-                console.log("botInfo", JSON.stringify(botInfo, null, 2))
                 const webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
                 // const webhookUrl = `https://chatapi.campusroot.com/webhook/telegram/${botInfo.id}`;
                 try {
-                    let afterWebhook = await bot.telegram.setWebhook(webhookUrl); // Fetch bot details 
-                    console.log("afterWebhook", JSON.stringify(afterWebhook, null, 2))
+                    await bot.telegram.setWebhook(webhookUrl);
                 } catch (error) {
                     console.log(error);
                     return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
                 }
-                console.log(`Webhook set for bot: ${botInfo.id} -> ${webhookUrl}`);
                 agent.personalInfo.telegram = {
                     userName: botInfo.username,
                     id: botInfo.id,

@@ -251,3 +251,28 @@ export const AssistantResponse = async (req, res, config) => {
     
     return { responseTokens, response, signalDetected }
 }
+export const generateAIResponse = async (message, botPersonality) => {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini-2024-07-18", // You can change this to a different model if needed
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a Telegram bot with the following personality: ${botPersonality}. 
+                     Respond concisely and helpfully to user messages.`
+                },
+                {
+                    role: "user",
+                    content: message
+                }
+            ],
+            max_tokens: 500,
+            temperature:0.7
+        });
+
+        return completion.choices[0].message.content;
+    } catch (error) {
+        console.error("Error generating AI response:", error);
+        return "Sorry, I couldn't process your request at the moment.";
+    }
+}
