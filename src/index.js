@@ -16,6 +16,12 @@ import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 import { createServer } from "http";
 import { initializeSocket, io } from "./utils/io.js";
+import ical, { ICalCalendarMethod } from 'ical-generator';
+import { sendMail } from "./utils/sendEmail.js";
+import { webhookRouter } from "./webhooks/index.js";
+import { dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
+import { Action } from "./models/Action.js";
+import { DateTime } from "luxon";
 await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
@@ -37,7 +43,6 @@ const corsOptions = {
     optionsSuccessStatus: 204,
     preflightContinue: false
 };
-
 app.use(cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -60,7 +65,6 @@ app.get("/", (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", emailConformation)
 app.use("/api/v1", indexRouter)
 app.use("/webhook", webhookRouter)
-
 app.post('/v1/agent', async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
@@ -260,12 +264,6 @@ app.get("/get-agent", async (req, res) => {
         res.status(500).json({ message: "An error occurred", error: error.message });
     }
 })
-import ical, { ICalCalendarMethod } from 'ical-generator';
-import { sendMail } from "./utils/sendEmail.js";
-import { webhookRouter } from "./webhooks/index.js";
-import { dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
-import { Action } from "./models/Action.js";
-import { DateTime } from "luxon";
 app.post('/send-invite', async (req, res) => {
     try {
         let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = req.body;
@@ -326,10 +324,8 @@ app.post('/send-mail', async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 })
-
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
-
 const PORT = process.env.PORT || 3000;
 // app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

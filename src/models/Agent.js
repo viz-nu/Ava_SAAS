@@ -18,6 +18,7 @@ const AgentSchema = new Schema({
         model: { type: String, default: "gpt-4o-mini" },
         temperature: { type: Number, default: 1 },
         assistantId: String,
+        telegram: { botToken: String, webhookUrl: String, id: String, userName: String },
         noDataMail: { type: String, default: "vishnu@campusroot.com" },
     },
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
