@@ -10,7 +10,7 @@ telegramRouter.post('/:botId', async (req, res) => {
     try {
         const botId = req.params.botId;
         const { update } = req.body;
-        console.log("update", JSON.stringify(update, null, 2));
+        console.log("req.body", JSON.stringify(req.body, null, 2));
         
         const chatId = update?.message?.chat?.id;
         const { latitude, longitude } = update?.message?.location;
