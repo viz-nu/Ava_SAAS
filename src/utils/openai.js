@@ -223,10 +223,19 @@ export const ChatCompletion = async (req, res, config) => {
     return { responseTokens, response, signalDetected }
 }
 export const AssistantResponse = async (req, res, config) => {
-    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS" } = config;
+    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOptions = true } = config;
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
     const thread = await openai.beta.threads.create({ messages: prevMessages });
+    if (!streamOptions) {
+        const { choices, usage } = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: false });
+        let response = choices[0].message.content;
+        if (response.includes(signalKeyword) && !signalDetected) {
+            signalDetected = true;
+            response = response.replace(signalKeyword, "")
+        }
+        return { responseTokens: { model, usage }, response, signalDetected }
+    }
     const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
     let signalDetected = false, responseTokens, response = ""
     for await (const chunk of stream) {
@@ -248,7 +257,7 @@ export const AssistantResponse = async (req, res, config) => {
                 break;
         }
     }
-    
+
     return { responseTokens, response, signalDetected }
 }
 export const generateAIResponse = async (message, botPersonality) => {
@@ -267,7 +276,7 @@ export const generateAIResponse = async (message, botPersonality) => {
                 }
             ],
             max_tokens: 500,
-            temperature:0.7
+            temperature: 0.7
         });
 
         return completion.choices[0].message.content;
