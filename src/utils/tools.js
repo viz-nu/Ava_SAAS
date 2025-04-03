@@ -97,3 +97,214 @@ export const getLocation = async (latitude, longitude) => {
         return { latitude, longitude }
     }
 }
+
+
+
+// const update = req.body;
+
+// // Process the update based on its type
+// if (update.message) {
+//     await handleMessage(update.message);
+// } else if (update.callback_query) {
+//     await handleCallbackQuery(update.callback_query);
+// } else if (update.inline_query) {
+//     await handleInlineQuery(update.inline_query);
+// }
+
+
+// Handle various types of messages (text, commands, etc.)
+// export const handleMessage = async (message) => {
+//     const chatId = message.chat.id;
+
+//     // Handle commands (messages starting with '/')
+
+
+//     // Handle regular text messages
+//     if (message.text) {
+//         await handleTextMessage(message);
+//         return;
+//     }
+
+//     // Handle other message types (photos, documents, etc.)
+//     if (message.photo) {
+//         await sendTextMessage(chatId, "I received your photo!");
+//     } else if (message.document) {
+//         await sendTextMessage(chatId, "I received your document!");
+//     } else if (message.voice) {
+//         await sendTextMessage(chatId, "I received your voice message!");
+//     } else if (message.sticker) {
+//         await sendTextMessage(chatId, "Nice sticker!");
+//     } else {
+//         await sendTextMessage(chatId, "I received your message but I'm not sure how to process it.");
+//     }
+// }
+
+// Handle text commands (messages starting with '/')
+
+
+// Handle regular text messages (not commands)
+// async function handleTextMessage(message) {
+//     const chatId = message.chat.id;
+//     const text = message.text.toLowerCase();
+
+//     // Example of simple text pattern matching
+//     if (text.includes('hello') || text.includes('hi')) {
+//         await sendTextMessage(chatId, `Hello ${message.from.first_name}!`);
+//     } else if (text.includes('bye')) {
+//         await sendTextMessage(chatId, "Goodbye! Come back soon.");
+//     } else if (text.includes('help')) {
+//         await sendTextMessage(chatId, "Try using the /help command for assistance.");
+//     } else {
+//         // Echo the message (or implement more complex logic here)
+//         await sendTextMessage(chatId, `You said: ${message.text}`);
+//     }
+// }
+
+// // Handle callback queries (button presses)
+// async function handleCallbackQuery(callbackQuery) {
+//     const chatId = callbackQuery.message.chat.id;
+//     const messageId = callbackQuery.message.message_id;
+//     const data = callbackQuery.data;
+
+//     // Acknowledge the callback query
+//     await answerCallbackQuery(callbackQuery.id);
+
+//     // Process based on callback data
+//     if (data.startsWith('settings_')) {
+//         const setting = data.split('_')[1];
+
+//         switch (setting) {
+//             case 'notifications':
+//                 await editMessageText(
+//                     chatId,
+//                     messageId,
+//                     'Notification Settings:',
+//                     [
+//                         [
+//                             { text: 'All Messages', callback_data: 'notify_all' },
+//                             { text: 'Mentions Only', callback_data: 'notify_mentions' }
+//                         ],
+//                         [
+//                             { text: 'None', callback_data: 'notify_none' },
+//                             { text: '← Back', callback_data: 'back_to_settings' }
+//                         ]
+//                     ]
+//                 );
+//                 break;
+
+//             case 'language':
+//                 await editMessageText(
+//                     chatId,
+//                     messageId,
+//                     'Select Language:',
+//                     [
+//                         [
+//                             { text: 'English', callback_data: 'lang_en' },
+//                             { text: 'Spanish', callback_data: 'lang_es' }
+//                         ],
+//                         [
+//                             { text: 'French', callback_data: 'lang_fr' },
+//                             { text: '← Back', callback_data: 'back_to_settings' }
+//                         ]
+//                     ]
+//                 );
+//                 break;
+
+//             case 'profile':
+//                 await editMessageText(
+//                     chatId,
+//                     messageId,
+//                     'Profile Settings:',
+//                     [
+//                         [
+//                             { text: 'Edit Name', callback_data: 'profile_name' },
+//                             { text: 'Edit Bio', callback_data: 'profile_bio' }
+//                         ],
+//                         [
+//                             { text: '← Back', callback_data: 'back_to_settings' }
+//                         ]
+//                     ]
+//                 );
+//                 break;
+//         }
+//     } else if (data === 'back_to_settings') {
+//         await editMessageText(
+//             chatId,
+//             messageId,
+//             'What would you like to change?',
+//             [
+//                 [
+//                     { text: 'Notification Settings', callback_data: 'settings_notifications' },
+//                     { text: 'Language', callback_data: 'settings_language' }
+//                 ],
+//                 [
+//                     { text: 'Profile', callback_data: 'settings_profile' }
+//                 ]
+//             ]
+//         );
+//     } else if (data.startsWith('notify_')) {
+//         const option = data.split('_')[1];
+//         await sendTextMessage(chatId, `Notification settings updated to: ${option}`);
+//     } else if (data.startsWith('lang_')) {
+//         const language = data.split('_')[1];
+//         await sendTextMessage(chatId, `Language updated to: ${language}`);
+//     } else if (data.startsWith('profile_')) {
+//         const section = data.split('_')[1];
+//         await sendTextMessage(chatId, `To update your ${section}, please send me the new value.`);
+//     }
+// }
+
+// // Handle inline queries
+// async function handleInlineQuery(inlineQuery) {
+//     // Implementation for handling inline queries (if needed)
+//     // This is when users type @yourbot in any chat
+// }
+
+// // Helper function to send text messages
+// async function sendTextMessage(chatId, text) {
+//     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+//         chat_id: chatId,
+//         text: text
+//     });
+// }
+
+// // Helper function to send messages with inline keyboards
+// async function sendInlineKeyboard(chatId, text, keyboard) {
+//     await axios.post(`${TELEGRAM_API}/sendMessage`, {
+//         chat_id: chatId,
+//         text: text,
+//         reply_markup: {
+//             inline_keyboard: keyboard
+//         }
+//     });
+// }
+
+// // Helper function to edit messages (used for inline keyboards)
+// async function editMessageText(chatId, messageId, text, keyboard = null) {
+//     const payload = {
+//         chat_id: chatId,
+//         message_id: messageId,
+//         text: text
+//     };
+
+//     if (keyboard) {
+//         payload.reply_markup = {
+//             inline_keyboard: keyboard
+//         };
+//     }
+
+//     await axios.post(`${TELEGRAM_API}/editMessageText`, payload);
+// }
+
+// // Helper function to acknowledge callback queries
+// async function answerCallbackQuery(callbackQueryId, text = null) {
+//     const payload = {
+//         callback_query_id: callbackQueryId
+//     };
+
+//     if (text) {
+//         payload.text = text;
+//     }
+
+//     await axios.post(`${TELEGRAM_API}/answerCallbackQuery`, payload);
+// }
