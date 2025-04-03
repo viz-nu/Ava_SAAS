@@ -3,7 +3,7 @@ import { getBotDetails } from "../utils/telegraf.js";
 import { Telegraf } from "telegraf";
 import { actions, AssistantResponse, getContextMain } from "../utils/openai.js";
 import { Conversation } from "../models/Conversations.js";
-import { getLocation,  populateStructure } from "../utils/tools.js";
+import { getLocation, populateStructure } from "../utils/tools.js";
 import { Message } from "../models/Messages.js";
 import { sendMail } from "../utils/sendEmail.js";
 export const telegramRouter = Router()
@@ -134,7 +134,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                     listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
                     const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions)
                     const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
-                    let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
+                    for (const { intent, dataSchema, confidence } of matchedActions) {
+                        console.log("intentions", intent);
                         if (intent == "enquiry") {
                             const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
                             const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
@@ -223,15 +224,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                         }
                         else {
                             await bot.telegram.sendMessage(chatId, "Action supposed to fire");
-                            // const currentAction = agent.actions.find(ele => intent == ele.intent)
-                            // const dataMap = new Map();
-                            // dataSchema.forEach(item => { dataMap.set(item.key, item.data) });
-                            // let respDataSchema = populateStructure(currentAction._doc.workingData.body, dataMap);
-                            // res.write(JSON.stringify({ id: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence }, responseType: "full", conversationId: conversation._id }))
-                            // message.Actions.push({ type: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence } })
                         }
-                    })
-                    await Promise.all(tasks);
+                    }
                     await message.save()
                 }
                 // Ask for missing details
