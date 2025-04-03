@@ -77,7 +77,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                         }]
                     }]
                     listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-                    const [{ matchedActions, model, usage }, message] = await Promise.all[actions(prevMessages, listOfIntentions), Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} })];
+                    const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions)
+                    const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                     let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
                         if (intent == "enquiry") {
                             const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
