@@ -2,6 +2,8 @@ import { model, Schema } from 'mongoose';
 
 const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+    telegramChatId: String,
+    contact: Object,
     agent: { type: Schema.Types.ObjectId, ref: 'Agent' },
     analysis: { type: Schema.Types.Mixed },
     session: Object,
