@@ -86,3 +86,13 @@ export const generateMeetingUrl = (meetingName) => {
     //     roomName: roomName
     // };
 }
+export const getLocation = async (latitude, longitude) => {
+    try {
+        const { data } = await axios.get(`https://us1.locationiq.com/v1/reverse?key=${process.env.LOCATIONIQ_API_KEY}&lat=${latitude}&lon=${longitude}&format=json`)
+        const reqFields = { city: data.address.city || data.address.town || data.address.village, country_name: data.address.country, region: data.address.state, postal: data.address.postcode }
+        return { latitude, longitude, ...data, ...reqFields }
+    } catch (error) {
+        console.log(error);
+        return { latitude, longitude }
+    }
+}

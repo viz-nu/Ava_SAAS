@@ -4,19 +4,8 @@ import { Telegraf } from "telegraf";
 import { generateAIResponse } from "../utils/openai.js";
 import { Conversation } from "../models/Conversations.js";
 import axios from "axios";
+import { getLocation } from "../utils/tools.js";
 export const telegramRouter = Router()
-const userState = new Map(); // Store user data in-memory (consider Redis/DB for long-term storage)
-
-const getLocation = async (latitude, longitude) => {
-    try {
-        const { data } = await axios.get(`https://us1.locationiq.com/v1/reverse?key=${process.env.LOCATIONIQ_API_KEY}&lat=${latitude}&lon=${longitude}&format=json`)
-        const reqFields = { city: data.address.city || data.address.town || data.address.village, country_name: data.address.country, region: data.address.state, postal: data.address.postcode }
-        return { latitude, longitude, ...data, ...reqFields }
-    } catch (error) {
-        console.log(error);
-        return { latitude, longitude }
-    }
-}
 telegramRouter.post('/:botId', async (req, res) => {
     try {
         const botId = req.params.botId;
