@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { getBotDetails } from "../utils/telegraf.js";
 import { Telegraf } from "telegraf";
-import { generateAIResponse } from "../utils/openai.js";
+import { actions, AssistantResponse, getContextMain } from "../utils/openai.js";
 import { Conversation } from "../models/Conversations.js";
-import axios from "axios";
-import { getLocation } from "../utils/tools.js";
+import { getLocation, populateStructure } from "../utils/tools.js";
+import { Message } from "../models/Messages.js";
+import { sendMail } from "../utils/sendEmail.js";
 export const telegramRouter = Router()
 
 telegramRouter.post('/:botId', async (req, res) => {
@@ -25,7 +26,6 @@ telegramRouter.post('/:botId', async (req, res) => {
             try {
                 const agent = await getBotDetails(botId);
                 if (!agent || !agent.personalInfo?.telegram?.botToken) return;
-
                 const bot = new Telegraf(agent.personalInfo.telegram.botToken);
                 const conversation = await Conversation.findOneAndUpdate(
                     { telegramChatId: chatId },
@@ -36,31 +36,154 @@ telegramRouter.post('/:botId', async (req, res) => {
                     },
                     { upsert: true, new: true }
                 );
-                console.log("conversation", JSON.stringify(conversation, null, 2));
-
                 // Update conversation
                 const needLocation = !conversation.geoLocation && !latitude && !longitude;
                 const needContact = !conversation.contact && !(phone_number && first_name && user_id);
+                await bot.telegram.sendChatAction(chatId, 'typing');
+                // Handle text messages
+                if (text) {
+                    let prevMessages = []
+                    const messages = await Message.find({ conversationId: conversation._id }).select("query response");
+                    prevMessages.push(...messages.flatMap(({ query, response }) => {
+                        const entries = [];
+                        if (query) entries.push({ role: "user", content: query });
+                        if (response) entries.push({ role: "assistant", content: response });
+                        return entries;
+                    }));
+                    prevMessages.push({ role: "user", content: text });
+                    let listOfIntentions = [{
+                        "intent": "enquiry",
+                        "dataSchema": [{
+                            "key": "Topic",
+                            "type": "dynamic",
+                            "dataType": "string",
+                            "required": true,
+                            "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
+                            "validator": "",
+                            "data": "",
+                            "userDefined": true
+                        }]
+                    },
+                    {
+                        "intent": "general_chat", "dataSchema": [{
+                            "key": "Message",
+                            "type": "dynamic",
+                            "dataType": "string",
+                            "required": true,
+                            "comments": "A general conversational message from the user.",
+                            "validator": "",
+                            "data": "",
+                            "userDefined": true
+                        }]
+                    }]
+                    listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
+                    const [{ matchedActions, model, usage }, message] = await Promise.all[actions(prevMessages, listOfIntentions), Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} })];
+                    let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
+                        if (intent == "enquiry") {
+                            const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
+                            const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
+                            let config = {
+                                additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
+                                    **DATA COMPLETENESS PROTOCOL - CRITICAL:**
+                                    When you do not have enough information to provide a complete and accurate answer to ANY query, you MUST begin your response with exactly "DATAPOINT_NEXUS" followed by your regular response. This applies to:
+                                    - Any specific information not included in the context provided
+                                    - Questions where context is missing, incomplete, or unclear
+                                    - Requests for details that would require additional data
+                                    - Any query where you cannot give a confident and complete answer
+                                    Example:
+                                        User: "What is the history of..."
+                                        Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about the history you're asking about. However, I can tell you that... [continue with what you do know]"`,
+                                assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption: false
+                            }
+                            const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
+                            await bot.telegram.sendMessage(chatId, response);
+                            message.responseTokens = responseTokens
+                            message.response = response
+                            message.embeddingTokens = embeddingTokens
+                            message.context = context
+                            if (signalDetected && agent.personalInfo.noDataMail) {
+                                try {
+                                    console.log("sending mail", { to: agent.personalInfo.noDataMail, topic: data });
+                                    let text = `Dear [Support Team],
+                    While interacting with the chatbot, it failed to fetch content related to "${data}". This issue is affecting the user experience and needs immediate attention.
+                    Please investigate and resolve the issue as soon as possible.
+                    Best regards,
+                                        Team Avakado`
+                                    let html = `<!DOCTYPE html>
+                    <html>
+                    <head>
+                    <meta charset="UTF-8">
+                    <title>Chatbot Content Fetch Issue</title>
+                    <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background-color: #f4f4f4;
+                        padding: 20px;
+                        }
+                    .container {
+                    background: #ffffff;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                    }
+                    h2 {
+                        color: #d9534f;
+                    }
+                    p {
+                        color: #333;
+                    }
+                    .footer {
+                        margin-top: 20px;
+                        font-size: 12px;
+                        color: #777;
+                    }
+                    </style>
+                    </head>
+                    <body>
+                    <div class="container">
+                    <p>Dear <strong>Support Team</strong>,</p>
+                    <p>While interacting with the chatbot, it failed to retrieve content related to <strong>${data}</strong>. This issue is impacting the user experience and requires immediate attention.</p>
+                    <p>Please investigate and resolve the issue as soon as possible.</p>
+                    <p>Best regards,</p>
+                    <p><strong>Team Avakado</strong><br>
+                    <div class="footer">
+                        <p>This is an automated email. Please do not reply directly.</p>
+                    </div>
+                    </div>
+                    </body>
+                                        </html>`
+                                    await sendMail({ to: agent.personalInfo.noDataMail, subject: "Urgent: Missing information for AVA", text, html })
+                                } catch (error) {
+                                    console.error(error);
+                                }
+                            }
+                        }
+                        else if (intent == "general_chat") {
+                            let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false }
+                            const { responseTokens, response } = await AssistantResponse(req, res, config)
+                            await bot.telegram.sendMessage(chatId, response);
+                            message.responseTokens = responseTokens
+                            message.response = response
+                        }
+                        else {
+                            await bot.telegram.sendMessage(chatId, "Action supposed to fire");
+                            // const currentAction = agent.actions.find(ele => intent == ele.intent)
+                            // const dataMap = new Map();
+                            // dataSchema.forEach(item => { dataMap.set(item.key, item.data) });
+                            // let respDataSchema = populateStructure(currentAction._doc.workingData.body, dataMap);
+                            // res.write(JSON.stringify({ id: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence }, responseType: "full", conversationId: conversation._id }))
+                            // message.Actions.push({ type: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence } })
+                        }
+                    })
+                    await Promise.all(tasks);
+                    await message.save()
+                }
                 // Ask for missing details
                 if (needLocation || needContact) {
                     const buttons = [];
                     if (needLocation) buttons.push({ text: "📍 Share Location", request_location: true });
                     if (needContact) buttons.push({ text: "📞 Share Contact", request_contact: true });
-
-                    await bot.telegram.sendMessage(chatId, `To assist you better, please share your ${needLocation ? "location" : ""}${needLocation && needContact ? " and " : ""}${needContact ? "contact details" : ""}.`, {
-                        reply_markup: {
-                            keyboard: [buttons],
-                            resize_keyboard: true,
-                            one_time_keyboard: true
-                        }
-                    });
-                }
-
-                await bot.telegram.sendChatAction(chatId, 'typing');
-                // Handle text messages
-                if (text) {
-                    const aiResponse = await generateAIResponse(text, "A helpful assistant");
-                    await bot.telegram.sendMessage(chatId, aiResponse);
+                    await bot.telegram.sendMessage(chatId, `To assist you better, please share your ${needLocation ? "location" : ""}${needLocation && needContact ? " and " : ""}${needContact ? "contact details" : ""}.`, { reply_markup: { keyboard: [buttons], resize_keyboard: true, one_time_keyboard: true } });
                 }
             } catch (error) {
                 console.error("Processing error:", error);
@@ -164,4 +287,3 @@ telegramRouter.post('/:botId', async (req, res) => {
 //     0|Ava_SAAS  |   "createdAt": "2025-04-03T12:40:19.999Z",
 //     0|Ava_SAAS  |   "updatedAt": "2025-04-03T12:40:19.999Z"
 //     0|Ava_SAAS  | }
-    
