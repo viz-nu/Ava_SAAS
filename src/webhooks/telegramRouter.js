@@ -9,13 +9,11 @@ export const telegramRouter = Router()
 telegramRouter.post('/:botId', async (req, res) => {
     try {
         const botId = req.params.botId;
-        const { update } = req.body;
-        console.log("req.body", JSON.stringify(req.body, null, 2));
-        
-        const chatId = update?.message?.chat?.id;
-        const { latitude, longitude } = update?.message?.location;
-        const { phone_number, first_name, user_id } = update?.message?.contact;
-        const { text } = update?.message;
+        const { message } = req.body;
+        const chatId = message?.chat?.id;
+        const { latitude, longitude } = message?.location;
+        const { phone_number, first_name, user_id } = message?.contact;
+        const { text } = message;
         const agent = await getBotDetails(botId);
         const conversation = await Conversation.findOneAndUpdate(
             { telegramChatId: chatId },
