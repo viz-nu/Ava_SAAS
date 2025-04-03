@@ -3,7 +3,7 @@ import { getBotDetails } from "../utils/telegraf.js";
 import { Telegraf } from "telegraf";
 import { actions, AssistantResponse, getContextMain } from "../utils/openai.js";
 import { Conversation } from "../models/Conversations.js";
-import { getLocation, handleCommand, populateStructure } from "../utils/tools.js";
+import { getLocation,  populateStructure } from "../utils/tools.js";
 import { Message } from "../models/Messages.js";
 import { sendMail } from "../utils/sendEmail.js";
 export const telegramRouter = Router()
