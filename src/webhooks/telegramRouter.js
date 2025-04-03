@@ -81,7 +81,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                     let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
                         if (intent == "enquiry") {
-                            const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
+                            const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
                             const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                             let config = {
                                 additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
