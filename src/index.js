@@ -135,6 +135,7 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                     assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption
                 }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
+                if (!streamOption) res.write(JSON.stringify({ id: "conversation", messageId: message._id, conversationId: conversation._id, responseType: "chunk", data: response }));
                 message.responseTokens = responseTokens
                 message.response = response
                 message.embeddingTokens = embeddingTokens
@@ -198,9 +199,10 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                     }
                 }
             }
-            else if (intent == "general_chat") {
+            else if (intent == "general_chat") { 
                 let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption }
                 const { responseTokens, response } = await AssistantResponse(req, res, config)
+                if (!streamOption) res.write(JSON.stringify({ id: "conversation", messageId: message._id, conversationId: conversation._id, responseType: "chunk", data: response }));
                 message.responseTokens = responseTokens
                 message.response = response
             }

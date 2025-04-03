@@ -192,51 +192,10 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
         };;
     }
 }
-export const ChatCompletion = async (req, res, config) => {
-    const { streamOption, prevMessages, model = "gpt-4", messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", temperature = 1 } = config;
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    let signalDetected = false, responseTokens, response = ""
-    if (!streamOption) {
-        const { choices, usage } = await openai.chat.completions.create({ model, messages: prevMessages, temperature });
-        responseTokens = { model, usage };
-        response = choices[0].message.content;
-        if (response.includes(signalKeyword) && !signalDetected) signalDetected = true;
-        const cleanContent = response.replace(signalKeyword, "") || content;
-        res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "full", data: cleanContent }));
-    }
-    const stream = await openai.chat.completions.create({ model, messages: prevMessages, temperature, stream: true });
-    for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || "";
-        if (content) {
-            if (content.includes(signalKeyword) && !signalDetected) signalDetected = true;
-            const cleanContent = content.replace(signalKeyword, "") || content;
-            response += cleanContent;
-            res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
-        }
-        if (chunk.choices[0].finish_reason === "stop") {
-            const completion_tokens = tokenSize(chunk.model, response);
-            const prompt_tokens = tokenSize(chunk.model, prevMessages.at(-1).content);
-            responseTokens = { model: chunk.model, usage: { completion_tokens, prompt_tokens, total_tokens: completion_tokens + prompt_tokens } };
-        }
-    }
-    return { responseTokens, response, signalDetected }
-}
 export const AssistantResponse = async (req, res, config) => {
     const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption } = config;
     const thread = await openai.beta.threads.create({ messages: prevMessages });
-    console.log("streamOption ", streamOption);
-    if (!streamOption) {
-        const { choices, usage } = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: false });
-        let response = choices[0].message.content;
-        if (response.includes(signalKeyword) && !signalDetected) {
-            signalDetected = true;
-            response = response.replace(signalKeyword, "")
-        }
-        return { responseTokens: { model, usage }, response, signalDetected }
-    }
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Transfer-Encoding', 'chunked');
+    if (streamOption) res.setHeader('Content-Type', 'text/plain'); res.setHeader('Transfer-Encoding', 'chunked');
     const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
     let signalDetected = false, responseTokens, response = ""
     for await (const chunk of stream) {
@@ -247,7 +206,7 @@ export const AssistantResponse = async (req, res, config) => {
                     if (content.includes(signalKeyword)) signalDetected = true;
                     const cleanContent = content.replace(signalKeyword, "") || content;
                     response += cleanContent;
-                    res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
+                    if (streamOption) res.write(JSON.stringify({ id: "conversation", messageId, conversationId, responseType: "chunk", data: cleanContent }));
                 }
                 break;
             case "thread.run.completed":
@@ -258,31 +217,9 @@ export const AssistantResponse = async (req, res, config) => {
                 break;
         }
     }
-
-    return { responseTokens, response, signalDetected }
-}
-export const generateAIResponse = async (message, botPersonality) => {
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini-2024-07-18", // You can change this to a different model if needed
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a Telegram bot with the following personality: ${botPersonality}. 
-                     Respond concisely and helpfully to user messages.`
-                },
-                {
-                    role: "user",
-                    content: message
-                }
-            ],
-            max_tokens: 500,
-            temperature: 0.7
-        });
-
-        return completion.choices[0].message.content;
-    } catch (error) {
-        console.error("Error generating AI response:", error);
-        return "Sorry, I couldn't process your request at the moment.";
+    if (response.includes(signalKeyword)) {
+        signalDetected = true;
+        response = response.replace(signalKeyword, "");
     }
+    return { responseTokens, response, signalDetected }
 }
