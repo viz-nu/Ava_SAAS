@@ -42,6 +42,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                 await bot.telegram.sendChatAction(chatId, 'typing');
                 // Handle text messages
                 if (text) {
+                    console.log("Text", text);
+
                     // handle commands 
                     if (text && text.startsWith('/')) {
                         const command = text.split(' ')[0].substring(1);
@@ -136,6 +138,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                     for (const { intent, dataSchema, confidence } of matchedActions) {
                         console.log("intentions", intent);
+                        console.log("dataSchema", dataSchema);
                         if (intent == "enquiry") {
                             const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
                             const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
