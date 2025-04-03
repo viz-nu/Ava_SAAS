@@ -223,9 +223,10 @@ export const ChatCompletion = async (req, res, config) => {
     return { responseTokens, response, signalDetected }
 }
 export const AssistantResponse = async (req, res, config) => {
-    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOptions = true } = config;
+    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption } = config;
     const thread = await openai.beta.threads.create({ messages: prevMessages });
-    if (!streamOptions) {
+    console.log("streamOption ", streamOption);
+    if (!streamOption) {
         const { choices, usage } = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: false });
         let response = choices[0].message.content;
         if (response.includes(signalKeyword) && !signalDetected) {

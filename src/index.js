@@ -132,7 +132,7 @@ Example:
 User: "What is the history of..."
 Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about the history you're asking about. However, I can tell you that... [continue with what you do know]"
 `,
-                    assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS"
+                    assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption
                 }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                 message.responseTokens = responseTokens
@@ -199,7 +199,7 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                 }
             }
             else if (intent == "general_chat") {
-                let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id }
+                let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption }
                 const { responseTokens, response } = await AssistantResponse(req, res, config)
                 message.responseTokens = responseTokens
                 message.response = response
