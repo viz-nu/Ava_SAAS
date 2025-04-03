@@ -153,7 +153,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                                     Example:
                                         User: "What is the history of..."
                                         Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about the history you're asking about. However, I can tell you that... [continue with what you do know]"`,
-                                assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption: false, response_format: "text"
+                                assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption: false
                             }
                             const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                             await bot.telegram.sendMessage(chatId, response);
@@ -219,7 +219,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                             }
                         }
                         else if (intent == "general_chat") {
-                            let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false, response_format: "text" }
+                            let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false}
                             const { responseTokens, response } = await AssistantResponse(req, res, config)
                             await bot.telegram.sendMessage(chatId, response);
                             message.responseTokens = responseTokens

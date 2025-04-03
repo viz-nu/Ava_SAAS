@@ -193,10 +193,10 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
     }
 }
 export const AssistantResponse = async (req, res, config) => {
-    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption, response_format = "markdown" } = config;
+    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption} = config;
     const thread = await openai.beta.threads.create({ messages: prevMessages });
     if (streamOption) { res.setHeader('Content-Type', 'text/plain'); res.setHeader('Transfer-Encoding', 'chunked'); }
-    const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true, response_format });
+    const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
     let signalDetected = false, responseTokens, response = ""
     for await (const chunk of stream) {
         switch (chunk.event) {
