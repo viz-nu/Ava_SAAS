@@ -97,7 +97,17 @@ export const getLocation = async (latitude, longitude) => {
         return { latitude, longitude }
     }
 }
+export const parseLLMResponse = (responseText) => {
+    const mainText = responseText.split('$followupquestions$')[0].trim();
+    const followups = [];
+    const fqRegex = /\$fq\$(.*?)\$\/fq\$/gs;
+    let match;
+    while ((match = fqRegex.exec(responseText)) !== null) {
+        followups.push(match[1].trim());
+    }
 
+    return { mainText, followups };
+}
 
 
 // const update = req.body;
