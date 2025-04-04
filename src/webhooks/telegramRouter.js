@@ -17,10 +17,8 @@ telegramRouter.post('/:botId', async (req, res) => {
         const { latitude, longitude } = message.location || {};
         const { phone_number, first_name, user_id } = message.contact || {};
         const text = message.text || null;
-
         // Respond immediately to prevent retries
         res.status(200).json({ success: true });
-
         // Process asynchronously to avoid delays
         setImmediate(async () => {
             try {
@@ -128,7 +126,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                             const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                             const { mainText, followups } = parseLLMResponse(response)
                             const buttons = followups.map((q) => [q]); // each row = one button
-                            console.log(buttons);
                             await bot.telegram.sendMessage(chatId, mainText, {
                                 reply_markup: {
                                     keyboard: buttons,
@@ -202,7 +199,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                             const { responseTokens, response } = await AssistantResponse(req, res, config)
                             const { mainText, followups } = parseLLMResponse(response)
                             const buttons = followups.map((q) => [q]); // each row = one button        
-                            console.log(buttons);
+
                             await bot.telegram.sendMessage(chatId, mainText, {
                                 reply_markup: {
                                     keyboard: buttons,
@@ -271,8 +268,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions)
                         const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                         for (const { intent, dataSchema, confidence } of matchedActions) {
-                            console.log("intentions", intent);
-                            console.log("dataSchema", dataSchema);
                             if (intent == "enquiry") {
                                 const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
                                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
@@ -291,8 +286,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 }
                                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                                 const { mainText, followups } = parseLLMResponse(response)
-                                const buttons = followups.map((q) => [q]); // each row = one button                                await bot.telegram.answerCbQuery(callback_query.id);
-                                console.log(buttons);
+                                const buttons = followups.map((q) => [q]); // each row = one button                               
+                                await bot.telegram.answerCbQuery(callback_query.id);
                                 await bot.telegram.sendMessage(chatId, mainText, {
                                     reply_markup: {
                                         keyboard: buttons,
@@ -367,7 +362,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 const { mainText, followups } = parseLLMResponse(response)
                                 const buttons = followups.map((q) => [q]); // each row = one button                           
                                 await bot.telegram.answerCbQuery(callback_query.id);
-                                console.log(buttons);
                                 await bot.telegram.sendMessage(chatId, mainText, {
                                     reply_markup: {
                                         keyboard: buttons,
@@ -391,7 +385,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                 console.error("Processing error:", error);
             }
         });
-
     } catch (error) {
         console.error("Webhook error:", error);
         return res.status(200).json({ success: false, error: "Processed with errors" }); // Always return 200 to prevent retries
