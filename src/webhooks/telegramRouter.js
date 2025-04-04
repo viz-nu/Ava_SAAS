@@ -127,7 +127,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                             }
                             const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                             const { mainText, followups } = parseLLMResponse(response)
-                            const buttons = followups.map((question) => [{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]);
+                            const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
+                            console.log(buttons);
                             await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
                             message.responseTokens = responseTokens
                             message.response = response
@@ -193,7 +194,11 @@ telegramRouter.post('/:botId', async (req, res) => {
                         else if (intent == "general_chat") {
                             let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false }
                             const { responseTokens, response } = await AssistantResponse(req, res, config)
-                            await bot.telegram.sendMessage(chatId, response);
+                            const { mainText, followups } = parseLLMResponse(response)
+                            const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
+                            console.log(buttons);
+                            
+                            await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
                             message.responseTokens = responseTokens
                             message.response = response
                         }
@@ -279,6 +284,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 const { mainText, followups } = parseLLMResponse(response)
                                 const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
                                 await bot.telegram.answerCbQuery(callback_query.id);
+                                console.log(buttons);
                                 await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
                                 message.responseTokens = responseTokens
                                 message.response = response
@@ -347,6 +353,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 const { mainText, followups } = parseLLMResponse(response)
                                 const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
                                 await bot.telegram.answerCbQuery(callback_query.id);
+                                console.log(buttons);
                                 await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
                                 message.responseTokens = responseTokens
                                 message.response = response
