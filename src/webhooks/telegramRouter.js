@@ -26,7 +26,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                 if (!agent || !agent.personalInfo?.telegram?.botToken) return;
                 const bot = new Telegraf(agent.personalInfo.telegram.botToken);
                 const conversation = await Conversation.findOneAndUpdate(
-                    { telegramChatId: chatId },
+                    { telegramChatId: chatId, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000) },
                     {
                         $setOnInsert: { agent: agent._id, business: agent.business },
                         ...(latitude && longitude ? { geoLocation: await getLocation(latitude, longitude) } : {}),
@@ -70,7 +70,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     }
                     // handle regular texts
                     let prevMessages = []
-                    const messages = await Message.find({ conversationId: conversation._id }).select("query response");
+                    const messages = await Message.find({ conversationId: conversation._id }).select("query response").sort({ createdAt: -1 }).limit(8);
                     prevMessages.push(...messages.flatMap(({ query, response }) => {
                         const entries = [];
                         if (query) entries.push({ role: "user", content: query });
