@@ -345,7 +345,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false }
                                 const { responseTokens, response } = await AssistantResponse(req, res, config)
                                 const { mainText, followups } = parseLLMResponse(response)
-                                const buttons = followups.map((question) => [{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]);
+                                const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
                                 await bot.telegram.answerCbQuery(callback_query.id);
                                 await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
                                 message.responseTokens = responseTokens
