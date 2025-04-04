@@ -26,7 +26,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                 if (!agent || !agent.personalInfo?.telegram?.botToken) return;
                 const bot = new Telegraf(agent.personalInfo.telegram.botToken);
                 const conversation = await Conversation.findOneAndUpdate(
-                    { telegramChatId: chatId, createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000) },
+                    { telegramChatId: chatId, createdAt: { $gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
                     {
                         $setOnInsert: { agent: agent._id, business: agent.business },
                         ...(latitude && longitude ? { geoLocation: await getLocation(latitude, longitude) } : {}),
