@@ -127,9 +127,15 @@ telegramRouter.post('/:botId', async (req, res) => {
                             }
                             const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                             const { mainText, followups } = parseLLMResponse(response)
-                            const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
+                            const buttons = followups.map((q) => [q]); // each row = one button
                             console.log(buttons);
-                            await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
+                            await bot.telegram.sendMessage(chatId, mainText, {
+                                reply_markup: {
+                                    keyboard: buttons,
+                                    resize_keyboard: true,
+                                    one_time_keyboard: true // hides after selection
+                                }
+                            });
                             message.responseTokens = responseTokens
                             message.response = response
                             message.embeddingTokens = embeddingTokens
@@ -195,10 +201,15 @@ telegramRouter.post('/:botId', async (req, res) => {
                             let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false }
                             const { responseTokens, response } = await AssistantResponse(req, res, config)
                             const { mainText, followups } = parseLLMResponse(response)
-                            const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
+                            const buttons = followups.map((q) => [q]); // each row = one button        
                             console.log(buttons);
-                            
-                            await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
+                            await bot.telegram.sendMessage(chatId, mainText, {
+                                reply_markup: {
+                                    keyboard: buttons,
+                                    resize_keyboard: true,
+                                    one_time_keyboard: true // hides after selection
+                                }
+                            });
                             message.responseTokens = responseTokens
                             message.response = response
                         }
@@ -221,8 +232,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                     const data = update.callback_query.data;
 
                     if (data.startsWith('fq::')) {
-                        const text = decodeURIComponent(data.split('fq::')[1]);
-
                         // Optionally pass the question to the LLM again or handle predefined logic
                         let prevMessages = []
                         const messages = await Message.find({ conversationId: conversation._id }).select("query response");
@@ -282,10 +291,15 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 }
                                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                                 const { mainText, followups } = parseLLMResponse(response)
-                                const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
-                                await bot.telegram.answerCbQuery(callback_query.id);
+                                const buttons = followups.map((q) => [q]); // each row = one button                                await bot.telegram.answerCbQuery(callback_query.id);
                                 console.log(buttons);
-                                await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
+                                await bot.telegram.sendMessage(chatId, mainText, {
+                                    reply_markup: {
+                                        keyboard: buttons,
+                                        resize_keyboard: true,
+                                        one_time_keyboard: true // hides after selection
+                                    }
+                                });
                                 message.responseTokens = responseTokens
                                 message.response = response
                                 message.embeddingTokens = embeddingTokens
@@ -351,10 +365,16 @@ telegramRouter.post('/:botId', async (req, res) => {
                                 let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption: false }
                                 const { responseTokens, response } = await AssistantResponse(req, res, config)
                                 const { mainText, followups } = parseLLMResponse(response)
-                                const buttons = followups.map((question) => ([{ text: question, callback_data: `fq::${encodeURIComponent(question)}` }]));
+                                const buttons = followups.map((q) => [q]); // each row = one button                           
                                 await bot.telegram.answerCbQuery(callback_query.id);
                                 console.log(buttons);
-                                await bot.telegram.sendMessage(chatId, mainText, { reply_markup: { inline_keyboard: buttons } });
+                                await bot.telegram.sendMessage(chatId, mainText, {
+                                    reply_markup: {
+                                        keyboard: buttons,
+                                        resize_keyboard: true,
+                                        one_time_keyboard: true // hides after selection
+                                    }
+                                });
                                 message.responseTokens = responseTokens
                                 message.response = response
                             }
