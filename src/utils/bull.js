@@ -22,7 +22,7 @@ urlProcessingQueue.process(async (job) => {
                 "url": url,
                 "formats": ["markdown"],
                 "skipTlsVerification": false,
-                "timeout": 10000,
+                "timeout": 30000,
                 "location": { "country": "US", "languages": ["en-US"] },
                 "removeBase64Images": true,
                 "blockAds": true,
