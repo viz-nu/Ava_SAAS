@@ -1,8 +1,7 @@
 import { Router } from "express";
 export const whatsappRouter = Router()
-whatsappRouter.get('/:params', async (req, res) => {
+whatsappRouter.get('/:params/', async (req, res) => {
     try {
-
         const mode = req.query['hub.mode'];
         const token = req.query['hub.verify_token'];
         const challenge = req.query['hub.challenge'];
@@ -19,7 +18,7 @@ whatsappRouter.get('/:params', async (req, res) => {
 })
 whatsappRouter.post('/:params', async (req, res) => {
     try {
-
+        
         // const mode = req.query['hub.mode'];
         // const token = req.query['hub.verify_token'];
         // const challenge = req.query['hub.challenge'];
