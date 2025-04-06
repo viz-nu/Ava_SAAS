@@ -23,8 +23,8 @@ telegramRouter.post('/:botId', async (req, res) => {
         setImmediate(async () => {
             try {
                 const agent = await getBotDetails(botId);
-                if (!agent || !agent.personalInfo?.telegram?.botToken) return;
-                const bot = new Telegraf(agent.personalInfo.telegram.botToken);
+                if (!agent || !agent.integrations?.telegram?.botToken) return;
+                const bot = new Telegraf(agent.integrations.telegram.botToken);
                 const conversation = await Conversation.findOneAndUpdate(
                     { telegramChatId: chatId, createdAt: { $gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
                     {
