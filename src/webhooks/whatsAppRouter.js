@@ -36,7 +36,7 @@ whatsappRouter.post('/:params', async (req, res) => {
         const query = parsedUrl.query;
         console.log("params", req.params);
         console.log("QUERY", query);
-        console.log("body", req.body)
+        console.log("body", JSON.stringify(req.body, null, 2))
         return res.status(200);
     } catch (error) {
         console.error('Error in webhook verification:', error);
