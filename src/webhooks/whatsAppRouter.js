@@ -34,7 +34,7 @@ whatsappRouter.post('/:params', async (req, res) => {
         // console.log({ mode, token, challenge });
         const parsedUrl = parse(req.originalUrl, true);
         const query = parsedUrl.query;
-        console.log("params", req.params);
+        console.log("params", JSON.stringify(req.params, null, 2));
         console.log("QUERY", query);
         console.log("body", JSON.stringify(req.body, null, 2))
         return res.status(200);
