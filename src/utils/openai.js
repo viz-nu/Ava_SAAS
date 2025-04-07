@@ -229,3 +229,24 @@ export const AssistantResponse = async (req, res, config) => {
     }
     return { responseTokens, response, signalDetected }
 }
+export const generateAIResponse = async (userMessageText, contactName) => {
+    try {
+        const systemPrompt = contactName
+            ? `You are a helpful assistant responding to ${contactName} on WhatsApp. Be concise, friendly, and address them by name occasionally.`
+            : "You are a helpful assistant responding to messages from WhatsApp users. Be concise, friendly, and helpful.";
+        // Generate AI response using GPT-4 Omini with personalized prompt
+        const aiResponse = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessageText }
+            ],
+            max_tokens: 500,
+        });
+
+        return aiResponse.choices[0].message.content.trim();
+    } catch (error) {
+        console.error("❌ Error generating AI response:", error);
+        return "I'm sorry, I couldn't process your request at the moment. Please try again later.";
+    }
+};
