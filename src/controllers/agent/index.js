@@ -40,6 +40,7 @@ export const integrations = errorWrapper(async (req, res) => {
         }
         await agent.save()
     }
+    return { statusCode: 200, message: "Integration Updated", data: agent };
 })
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
