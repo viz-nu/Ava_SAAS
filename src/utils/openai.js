@@ -177,7 +177,7 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
         };
         context.forEach(ele => {
             result.answer += `\n${ele.summary}\n`;
-            result.context.push({ ...ele.metadata, score: ele.score });
+            result.context.push({ ...ele.metadata, score: ele.score, chunkNumber: ele.chunkNumber });
         })
         return result;
     } catch (error) {
@@ -193,7 +193,7 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
     }
 }
 export const AssistantResponse = async (req, res, config) => {
-    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption} = config;
+    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption } = config;
     const thread = await openai.beta.threads.create({ messages: prevMessages });
     if (streamOption) { res.setHeader('Content-Type', 'text/plain'); res.setHeader('Transfer-Encoding', 'chunked'); }
     const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
