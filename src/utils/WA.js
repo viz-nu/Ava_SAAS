@@ -1,7 +1,6 @@
 import axios from "axios"
-export const sendWAMessage = async ({ phone_number_id = "613445751852844", messaging_product = "whatsapp", to, type = "text", Data }) => {
+export const sendWAMessage = async ({ phone_number_id, messaging_product = "whatsapp", to, type = "text", Data }) => {
     try {
-
         const whatsappApiUrl = `https://graph.facebook.com/v20.0/${phone_number_id}/messages`;
         const token = process.env.AVAKADO_WABA_TOKEN;
         // Default payload structure
