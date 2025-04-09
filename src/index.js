@@ -199,7 +199,7 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                     }
                 }
             }
-            else if (intent == "general_chat") { 
+            else if (intent == "general_chat") {
                 let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption }
                 const { responseTokens, response } = await AssistantResponse(req, res, config)
                 if (!streamOption) res.write(JSON.stringify({ id: "conversation", messageId: message._id, conversationId: conversation._id, responseType: "chunk", data: response }));
@@ -235,7 +235,7 @@ app.post("/trigger", async (req, res) => {
         let body = await dataBaker(action.workingData.body, actionId, conversationId)
         let headers = await dataBaker(action.workingData.headers, actionId, conversationId)
         let url = await dataBaker(action.workingData.url, actionId, conversationId)
-        return res.status(200).json({ success: true, message: "received submit request", data: { body: body.body, headers, url: url.url } })
+        return res.status(200).json({ success: true, message: "received submit request", data: { body: body.body, headers, url: url.url, accessType: action?.accessType, method: action?.workingData?.method } })
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "internal server error", error: error.message });
