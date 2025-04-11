@@ -1,8 +1,7 @@
 import axios from "axios"
-export const sendWAMessage = async ({ phone_number_id, messaging_product = "whatsapp", to, type = "text", Data }) => {
+export const sendWAMessage = async ({ token, phone_number_id, messaging_product = "whatsapp", to, type = "text", Data }) => {
     try {
         const whatsappApiUrl = `https://graph.facebook.com/v20.0/${phone_number_id}/messages`;
-        const token = process.env.AVAKADO_WABA_TOKEN;
         // Default payload structure
         let payload = { messaging_product, recipient_type: "individual", to: to };
         // Handle different message types
@@ -40,4 +39,26 @@ export const sendWAMessage = async ({ phone_number_id, messaging_product = "what
         console.error('Config:', error.config);
         return null
     }
+}
+export const getMediaUrl = async ({ token, mediaId }) => {
+    try {
+        const response = await axios.get(`https://graph.facebook.com/v16.0/${mediaId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        return response.data.url;
+    } catch (error) {
+        console.error("Error occurred while fetching MediaUrl:", error);
+        return null
+    }
+}
+
+// Function to download audio file
+export const downloadAndTranscribeAudio = async ({ token, url, mediaId, openAiKey }) => {
+    const response = await axios.get(url, { headers: { 'Authorization': `Bearer ${token}` }, responseType: 'arraybuffer' });
+    const formData = new FormData();
+    const audioBlob = new Blob([response.data], { type: 'audio/ogg' });
+    // Add the file to the form data
+    formData.append('file', audioBlob, `audio-${mediaId}.ogg`);
+    formData.append('model', 'whisper-1');
+    // Send directly to OpenAI Whisper API
+    const transcriptionResponse = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, { headers: { 'Authorization': `Bearer ${openAiKey}`, 'Content-Type': 'multipart/form-data' } });
+    return transcriptionResponse.data.text;
 }
