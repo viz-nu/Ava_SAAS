@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { parse } from "url";
-import { downloadAndTranscribeAudio, getMediaUrl, sendWAMessage } from "../utils/WA.js";
+import {  getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
 import { generateAIResponse } from "../utils/openai.js";
 export const whatsappRouter = Router()
 whatsappRouter.get('/:params', async (req, res) => {
