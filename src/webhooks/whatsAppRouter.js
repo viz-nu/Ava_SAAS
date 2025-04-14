@@ -3,7 +3,6 @@ import { parse } from "url";
 import { getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
 import { generateAIResponse } from "../utils/openai.js";
 import { Agent } from "../models/Agent.js";
-import { Business } from "../models/Business.js";
 export const whatsappRouter = Router()
 whatsappRouter.get('/:agentId', async (req, res) => {
   try {
@@ -19,7 +18,6 @@ whatsappRouter.get('/:agentId', async (req, res) => {
 whatsappRouter.post('/:agentId', async (req, res) => {
   try {
     const agent = await Agent.findById(req.params.agentId);
-    const business = await Business.findOne({ agents: agent._id })
     console.log("📨 Body:", JSON.stringify(req.body, null, 2));
     const body = req.body;
     if (body.object === 'whatsapp_business_account' && Array.isArray(body.entry)) {
