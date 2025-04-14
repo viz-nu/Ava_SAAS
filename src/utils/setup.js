@@ -9,7 +9,7 @@ export const digest = async (text, url, collectionId) => {
         chunkSize: 1000,
         chunkOverlap: 100
     });
-    const [chunks, business] = await Promise.all([await splitter.splitText(text), await Business.findOne({ collections: collectionId })])
+    const chunks = await splitter.splitText(text)
     const batchSize = 10; // Send 10 requests at a time
     for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
@@ -18,8 +18,8 @@ export const digest = async (text, url, collectionId) => {
                 const enc = encoding_for_model("text-embedding-3-small");
                 const tokens = enc.encode(chunk);
                 const tokensUsed = tokens.length;
-                const summary = await getSummary(business.modelIntegrations.OpenAi.apiKey, chunk)
-                let embeddingVector = await EmbeddingFunct(business.modelIntegrations.OpenAi.apiKey, summary)
+                const summary = await getSummary(chunk)
+                let embeddingVector = await EmbeddingFunct(summary)
                 return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url } }
             }));
         await Data.insertMany(responses)
@@ -30,7 +30,7 @@ export const digestMarkdown = async (text, url, collectionId, extraMetaData = {}
         chunkSize: 1000, // Ideal chunk size
         chunkOverlap: 100, // To maintain context
     });
-    const [chunks, business] = await Promise.all([await markdownSplitter.splitText(text), await Business.findOne({ collections: collectionId })])
+    const chunks = await markdownSplitter.splitText(text)
     const batchSize = 10; // Send 10 requests at a time
     for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
@@ -39,8 +39,8 @@ export const digestMarkdown = async (text, url, collectionId, extraMetaData = {}
                 const enc = encoding_for_model("text-embedding-3-small");
                 const tokens = enc.encode(text);
                 const tokensUsed = tokens.length;
-                const summary = await getSummary(business.modelIntegrations.OpenAi.apiKey, chunk)
-                let embeddingVector = await EmbeddingFunct(business.modelIntegrations.OpenAi.apiKey, summary)
+                const summary = await getSummary(chunk)
+                let embeddingVector = await EmbeddingFunct(summary)
                 return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url, ...extraMetaData } }
             }));
         await Data.insertMany(responses)

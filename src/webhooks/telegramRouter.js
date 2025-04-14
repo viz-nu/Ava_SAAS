@@ -106,12 +106,12 @@ telegramRouter.post('/:botId', async (req, res) => {
                         }]
                     }]
                     listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-                    const { matchedActions, model, usage } = await actions(business.modelIntegrations.OpenAi.apiKey, prevMessages, listOfIntentions)
+                    const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions)
                     const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                     for (const { intent, dataSchema, confidence } of matchedActions) {
                         if (intent == "enquiry") {
                             const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
-                            const { answer, context, embeddingTokens } = await getContextMain(business.modelIntegrations.OpenAi.apiKey, agent.collections, data);
+                            const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                             let config = {
                                 additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
                                     **DATA COMPLETENESS PROTOCOL - CRITICAL:**
@@ -267,12 +267,12 @@ telegramRouter.post('/:botId', async (req, res) => {
                             }]
                         }]
                         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-                        const { matchedActions, model, usage } = await actions(business.modelIntegrations.OpenAi.apiKey, prevMessages, listOfIntentions)
+                        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions)
                         const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                         for (const { intent, dataSchema, confidence } of matchedActions) {
                             if (intent == "enquiry") {
                                 const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
-                                const { answer, context, embeddingTokens } = await getContextMain(business.modelIntegrations.OpenAi.apiKey, agent.collections, data);
+                                const { answer, context, embeddingTokens } = await getContextMain( agent.collections, data);
                                 let config = {
                                     additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
                                         **DATA COMPLETENESS PROTOCOL - CRITICAL:**

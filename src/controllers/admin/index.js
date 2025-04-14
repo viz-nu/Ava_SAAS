@@ -148,7 +148,7 @@ export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const selectedIntents = ["enquiry", "complaint"];
 })
 export const editBusiness = errorWrapper(async (req, res) => {
-    let business = await Business.findById(req.user.business,"-modelIntegrations")
+    let business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const { logoURL, facts, sector, tagline, address, description, contact } = req.body
     if (logoURL) business.logoURL = logoURL;
@@ -191,7 +191,6 @@ export const deleteAction = errorWrapper(async (req, res) => {
         Business.updateOne({ actions: req.params.id }, { $pull: { actions: req.params.id } }),
         Agent.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
     ]);
-    delete updatedBusiness.modelIntegrations
     return { statusCode: 200, message: "Action deleted successfully", data: { deletedAction, updatedBusiness, updatedAgents } }
 });
 export const raiseTicket = errorWrapper(async (req, res) => {
