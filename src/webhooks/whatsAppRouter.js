@@ -3,6 +3,7 @@ import { parse } from "url";
 import { getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
 import { generateAIResponse } from "../utils/openai.js";
 import { Agent } from "../models/Agent.js";
+import { Business } from "../models/Business.js";
 export const whatsappRouter = Router()
 whatsappRouter.get('/:agentId', async (req, res) => {
   try {
@@ -18,6 +19,7 @@ whatsappRouter.get('/:agentId', async (req, res) => {
 whatsappRouter.post('/:agentId', async (req, res) => {
   try {
     const agent = await Agent.findById(req.params.agentId);
+    const business = await Business.findOne({ agents: agent._id })
     console.log("📨 Body:", JSON.stringify(req.body, null, 2));
     const body = req.body;
     if (body.object === 'whatsapp_business_account' && Array.isArray(body.entry)) {
@@ -56,7 +58,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                     console.log(`📸 Image message from ${contactName || from}: "${userMessageText}"`);
                     break;
                   case "audio":
-                    userMessageText = await getMediaTranscriptions({ token: agent.integrations?.whatsapp?.permanentAccessToken, mediaId: message.audio.id, openAiKey: process.env.OPEN_API_KEY, transcriptionModel: "whisper-1" });
+                    userMessageText = await getMediaTranscriptions({ token: agent.integrations?.whatsapp?.permanentAccessToken, mediaId: message.audio.id, openAiKey: business.modelIntegrations.OpenAi.apiKey, transcriptionModel: "whisper-1" });
                     console.log(`🔊 Audio message from ${contactName || from}`);
                     break;
                   case "document":
@@ -70,7 +72,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                 }
                 try {
                   // Create a personalized system prompt with the user's name
-                  const responseText = await generateAIResponse(userMessageText, contactName)
+                  const responseText = await generateAIResponse({ openAiKey: business.modelIntegrations.OpenAi.apiKey, userMessageText, contactName })
                   console.log(`🤖 AI Response to ${contactName || from}: "${responseText}"`);
                   // Send the AI response back to the user
                   await sendWAMessage({ token: agent.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: responseText } });

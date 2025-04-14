@@ -2,7 +2,6 @@ import axios from 'axios';
 import { parseStringPromise } from "xml2js";
 import https from "https";
 // import pLimit from "p-limit";
-import { digestMarkdown } from './setup.js';
 import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
 import { io } from './io.js';
 import { Collection } from '../models/Collection.js';
@@ -166,103 +165,10 @@ export const FetchUsingDroxy = async (url) => {
   }
 }
 export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-  // let completed = 0;
-  // const total = urls.length;
-  // console.log("Received:", urls.length, "URLs");
-  // console.log("CollectionId:", collectionId);
-  // console.log("Receivers:", receivers);
-  // console.log("ContentsId:", _id);
-  // for (const { url } of urls) {
-  //   try {
-  //     console.log("working on :" + url);
-  //     const { data } = await axios.post("https://api.firecrawl.dev/v1/scrape",
-  //       { "url": url, "formats": ["markdown"], "skipTlsVerification": false, "timeout": 10000, "location": { "country": "US", "languages": ["en-US"] }, "removeBase64Images": true, "blockAds": true, "proxy": "basic" }, {
-  //       headers: { Authorization: `Bearer ${process.env.FIREBASE_API_KEY}`, 'Content-Type': 'application/json' }
-  //     });
-  //     if (data?.data?.markdown) {
-  //       console.log("digesting");
-  //       await digestMarkdown(data.data.markdown, url, collectionId, data.data.metadata);
-  //       await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } } });
-  //     }
-  //     completed += 1;
-  //     const progressData = { total, progress: completed, collectionId };
-  //     console.log(progressData);
-  //     receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
-  //   }
-  //   catch (error) {
-  //     console.error(error);
-  //     await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: false, url: url, error: error?.message } } });
-  //   }
-  // }
   const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receivers, _id })));
   await Promise.all(jobs);
   return { success: true };
 };
-// export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-//   const limit = pLimit(3); // Limit concurrent API calls
-//   const batchSize = 3;
-//   let completed = 0;
-//   const total = urls.length;
-
-//   console.log("Received:", urls.length, "URLs");
-//   console.log("CollectionId:", collectionId);
-//   console.log("Receivers:", receivers);
-//   console.log("ContentsId:", _id);
-
-//   async function* generateBatches() {
-//     for (let i = 0; i < urls.length; i += batchSize) {
-//       yield urls.slice(i, i + batchSize).map(ele => ele.url);
-//     }
-//   }
-
-//   try {
-//     for await (const batch of generateBatches()) {
-//       // Limit concurrent requests
-//       const batchResult = await Promise.all(batch.map(url => limit(async () => {
-//         try {
-//           const { data } = await axios.post("http://184.72.211.188:3001/crawl-urls", { urls: [url] });
-//           if (!data.results) throw new Error("Invalid response format");
-//           return {
-//             url: data.results[0].url,
-//             content: data.results[0].content,
-//             success: data.results[0].success || false,
-//             error: data.results[0].error || null
-//           };
-//         } catch (error) {
-//           return { url, success: false, error: error.message || "Unknown error" };
-//         }
-//       })));
-//       if (!batchResult) continue;
-//       // Process batch results one by one to reduce memory usage
-//       for (const ele of batchResult) {
-//         if (ele.success) {
-//           await digestMarkdown(ele.content, ele.url, collectionId);
-//         }
-//     await Collection.updateOne(
-//       { _id: collectionId, "contents._id": _id },
-//       {
-//         $push: {
-//           "contents.$.metaData.detailedReport": {
-//             success: ele.success,
-//             url: ele.url,
-//             error: ele.success ? undefined : ele.error
-//           }
-//         }
-//       }
-//     );
-//   }
-//   // Emit progress update
-//   completed += batch.length;
-//   const progressData = { total, progress: completed, collectionId };
-//   console.log(progressData);
-//   receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
-// }
-//     return { success: true };
-//   } catch (error) {
-//     console.error("Error processing URLs:", error);
-//     return { success: false, error: error.message || "Unknown error" };
-//   }
-// };
 export const fetchUrlsUsingLangChain = async (sitemapUrl, visited = new Set()) => {
   try {
     if (visited.has(sitemapUrl)) return [];

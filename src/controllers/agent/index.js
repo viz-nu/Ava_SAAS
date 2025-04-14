@@ -45,6 +45,7 @@ export const integrations = errorWrapper(async (req, res) => {
         agent.integrations.whatsapp.updatedAt = new Date()
         await agent.save()
     }
+    delete agent.business.modelIntegrations
     return { statusCode: 200, message: "Integration Updated", data: agent };
 })
 export const createAgent = errorWrapper(async (req, res) => {
@@ -67,6 +68,7 @@ export const createAgent = errorWrapper(async (req, res) => {
     const agent = await Agent.create({ collections, appearance, personalInfo, actions, business: business._id, createdBy: req.user._id });
     business.agents.push(agent._id)
     await business.save()
+    delete agent.business.modelIntegrations
     return { statusCode: 201, message: "New agent added", data: agent };
 });
 export const getAllAgents = errorWrapper(async (req, res) => {
@@ -79,6 +81,7 @@ export const getAgentById = errorWrapper(async (req, res) => {
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
     const business = await Business.findById(req.user.business);
     if (!business || !business.agents.includes(agent._id)) return { statusCode: 403, message: "Unauthorized", data: null }
+    delete agent.business.modelIntegrations
     return { statusCode: 200, message: "Agent retrieved", data: agent };
 });
 export const updateAgent = errorWrapper(async (req, res) => {
@@ -119,6 +122,7 @@ export const updateAgent = errorWrapper(async (req, res) => {
         if (name || systemPrompt || temperature || model) await openai.beta.assistants.update(agent.personalInfo.assistantId, { name: personalInfo.name, instructions: personalInfo.systemPrompt || "", model: personalInfo.model || "gpt-4o-mini-2024-07-18", temperature: personalInfo.temperature || 1 });
     }
     await agent.save();
+    delete agent.business.modelIntegrations
     return { statusCode: 200, message: "Agent updated", data: agent };
 });
 export const deleteAgent = errorWrapper(async (req, res) => {
