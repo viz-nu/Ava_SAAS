@@ -1,40 +1,23 @@
 import { Router } from "express";
 import { parse } from "url";
-import {  getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
+import { getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
 import { generateAIResponse } from "../utils/openai.js";
+import { Agent } from "../models/Agent.js";
 export const whatsappRouter = Router()
-whatsappRouter.get('/:params', async (req, res) => {
+whatsappRouter.get('/:agentId', async (req, res) => {
   try {
     const parsedUrl = parse(req.originalUrl, true);
     const query = parsedUrl.query;
-    const mode = query['hub.mode'];
-    const token = query['hub.verify_token'];
-    const challenge = query['hub.challenge'];
-    console.log("Mode:", mode);
-    console.log("Verify Token:", token);
-    console.log("Challenge:", challenge);
-    console.log("Params:", req.params);
-    console.log("Query:", query);
-    // Optional: Verify the token before responding
-    if (mode === 'subscribe' && token === process.env.META_VERIFICATION_TOKEN) {
-      console.log("WEBHOOK_VERIFIED");
-      return res.status(200).send(challenge);
-    } else {
-      return res.sendStatus(403);
-    }
+    const agent = await Agent.findById(req.params.agentId);
+    return (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === agent.integrations.whatsapp.verificationToken) ? res.status(200).send(query['hub.challenge']) : res.sendStatus(403);
   } catch (error) {
     console.error('Error in webhook verification:', error);
-    res.sendStatus(500);
+    return res.sendStatus(500);
   }
 });
-whatsappRouter.post('/:params', async (req, res) => {
+whatsappRouter.post('/:agentId', async (req, res) => {
   try {
-    const parsedUrl = parse(req.originalUrl, true);
-    const query = parsedUrl.query;
-    const params = req.params;
-    console.log("➡️ Incoming webhook");
-    console.log("📦 Params:", JSON.stringify(params, null, 2));
-    console.log("🔍 Query:", JSON.stringify(query, null, 2));
+    const agent = await Agent.findById(req.params.agentId);
     console.log("📨 Body:", JSON.stringify(req.body, null, 2));
     const body = req.body;
     if (body.object === 'whatsapp_business_account' && Array.isArray(body.entry)) {
@@ -63,29 +46,34 @@ whatsappRouter.post('/:params', async (req, res) => {
                 }
                 // Handle different message types
                 let userMessageText = "";
-                if (message.type === "text" && message.text) {
-                  userMessageText = message.text.body;
-                  console.log(`💬 Text message from ${contactName || from}: "${userMessageText}"`);
-                } else if (message.type === "image" && message.image) {
-                  userMessageText = message.image.caption || "Image received (no caption)";
-                  console.log(`📸 Image message from ${contactName || from}: "${userMessageText}"`);
-                } else if (message.type === "audio" && message.audio) {
-                  // Get the MediaTranscriptions using the WhatsApp API AND OPEN AI
-                  userMessageText = await getMediaTranscriptions({ token: process.env.AVAKADO_WABA_TOKEN, mediaId: message.audio.id, openAiKey: process.env.OPEN_API_KEY, transcriptionModel: "whisper-1" });
-                  console.log(`🔊 Audio message from ${contactName || from}`);
-                } else if (message.type === "document" && message.document) {
-                  userMessageText = message.document.caption || "Document received (no caption)";
-                  console.log(`📄 Document message from ${contactName || from}: "${userMessageText}"`);
-                } else {
-                  userMessageText = `Message of type ${message.type} received`;
-                  console.log(`📩 ${message.type} message from ${contactName || from}`);
+                switch (message.type) {
+                  case "text":
+                    userMessageText = message.text.body;
+                    console.log(`💬 Text message from ${contactName || from}: "${userMessageText}"`);
+                    break;
+                  case "image":
+                    userMessageText = message.image.caption || "Image received (no caption)";
+                    console.log(`📸 Image message from ${contactName || from}: "${userMessageText}"`);
+                    break;
+                  case "audio":
+                    userMessageText = await getMediaTranscriptions({ token: agent.integrations?.whatsapp?.permanentAccessToken, mediaId: message.audio.id, openAiKey: process.env.OPEN_API_KEY, transcriptionModel: "whisper-1" });
+                    console.log(`🔊 Audio message from ${contactName || from}`);
+                    break;
+                  case "document":
+                    userMessageText = message.document.caption || "Document received (no caption)";
+                    console.log(`📄 Document message from ${contactName || from}: "${userMessageText}"`);
+                    break;
+                  default:
+                    userMessageText = `Message of type ${message.type} received`;
+                    console.log(`📩 ${message.type} message from ${contactName || from}`);
+                    break;
                 }
                 try {
                   // Create a personalized system prompt with the user's name
                   const responseText = await generateAIResponse(userMessageText, contactName)
                   console.log(`🤖 AI Response to ${contactName || from}: "${responseText}"`);
                   // Send the AI response back to the user
-                  await sendWAMessage({ token: process.env.AVAKADO_WABA_TOKEN, phone_number_id, messaging_product, to: from, type: "text", Data: { body: responseText } });
+                  await sendWAMessage({ token: agent.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: responseText } });
                   console.log(`✅ Response sent to ${contactName || from}`);
                 } catch (err) {
                   console.error(`❌ Error processing message from ${contactName || from}:`, err);

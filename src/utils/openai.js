@@ -215,11 +215,9 @@ export const AssistantResponse = async (req, res, config) => {
                     console.log(`Thread deleted`);
                 } catch (error) {
                     console.error(`Error deleting thread: ${error.message}`);
-                    // Continue with execution, ignoring the thread deletion error
                 }
                 const { usage, model } = chunk.data
                 responseTokens = { usage, model };
-                console.log(`Thread deleted`);
                 break;
         }
     }
