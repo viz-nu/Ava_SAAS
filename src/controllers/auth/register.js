@@ -16,7 +16,6 @@ export const register = errorWrapper(async (req, res, next) => {
     const user = await User.create({ email: email, password: bcrypt.hashSync(password, 12), role: role, name: name, business: newOrganization._id, isVerified: false, emailToken });
     newOrganization.members.push(user._id)
     newOrganization.createdBy = user._id
-    newOrganization.modelIntegrations = { OpenAi: await createAnOpenAiApiKey(BusinessName) }
     const doc = await createFolder(newOrganization._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO)
     newOrganization.docData = {
         folder: doc.id,

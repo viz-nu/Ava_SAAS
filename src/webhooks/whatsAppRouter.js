@@ -58,7 +58,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                     console.log(`📸 Image message from ${contactName || from}: "${userMessageText}"`);
                     break;
                   case "audio":
-                    userMessageText = await getMediaTranscriptions({ token: agent.integrations?.whatsapp?.permanentAccessToken, mediaId: message.audio.id, openAiKey: business.modelIntegrations.OpenAi.apiKey, transcriptionModel: "whisper-1" });
+                    userMessageText = await getMediaTranscriptions({ token: agent.integrations?.whatsapp?.permanentAccessToken, mediaId: message.audio.id, transcriptionModel: "whisper-1" });
                     console.log(`🔊 Audio message from ${contactName || from}`);
                     break;
                   case "document":
@@ -72,7 +72,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                 }
                 try {
                   // Create a personalized system prompt with the user's name
-                  const responseText = await generateAIResponse({ openAiKey: business.modelIntegrations.OpenAi.apiKey, userMessageText, contactName })
+                  const responseText = await generateAIResponse({ userMessageText, contactName })
                   console.log(`🤖 AI Response to ${contactName || from}: "${responseText}"`);
                   // Send the AI response back to the user
                   await sendWAMessage({ token: agent.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: responseText } });
