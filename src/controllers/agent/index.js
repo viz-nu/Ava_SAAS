@@ -11,7 +11,7 @@ export const integrations = errorWrapper(async (req, res) => {
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     if (!business.agents.includes(req.params.id)) return { statusCode: 403, message: "Unauthorized", data: null }
-    const { telegramToken } = req.body
+    const { telegramToken, whatsappToken } = req.body
     if (telegramToken) {
         if (agent.integrations?.telegram?.botToken) {
             const existingBotToken = agent.integrations.telegram.botToken;
@@ -38,6 +38,11 @@ export const integrations = errorWrapper(async (req, res) => {
             }
             agent.integrations.telegram = { userName: botInfo.username, id: botInfo.id, webhookUrl, botToken: telegramToken }
         }
+        await agent.save()
+    }
+    if (whatsappToken) {
+        agent.integrations.whatsapp.permanentAccessToken = whatsappToken
+        agent.integrations.whatsapp.updatedAt = new Date()
         await agent.save()
     }
     return { statusCode: 200, message: "Integration Updated", data: agent };

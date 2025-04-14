@@ -27,6 +27,12 @@ const AgentSchema = new Schema({
             id: String,
             userName: String
         },
+        whatsapp: {
+            webhookUrl: String,
+            verificationToken: String,
+            permanentAccessToken: String,
+            updatedAt: Date
+        }
     },
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
@@ -35,5 +41,11 @@ const AgentSchema = new Schema({
     isFeatured: { type: Boolean, default: false },
 }, {
     timestamps: true
+});
+import { randomBytes } from 'crypto';
+AgentSchema.pre('save', function (next) {
+    // if (!this.integrations.whatsapp || !this.integrations.whatsapp.verificationToken) this.integrations.whatsapp = { webhookUrl: `https://chatapi.campusroot.com/webhook/whatsapp/${this._id}`, verificationToken: randomBytes(9).toString('hex') };
+    if (!this.integrations.whatsapp || !this.integrations.whatsapp.verificationToken) this.integrations.whatsapp = { webhookUrl: `${process.env.SERVER_URL}webhook/whatsapp/${this._id}`, verificationToken: randomBytes(9).toString('hex') };
+    next();
 });
 export const Agent = model('Agent', AgentSchema, "Agent");
