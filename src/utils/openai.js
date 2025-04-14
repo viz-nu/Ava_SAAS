@@ -1,10 +1,11 @@
 import OpenAI from "openai";
 import { Data } from "../models/Data.js";
-import { tokenSize } from "./tiktoken.js";
 import mongoose from "mongoose";
-export const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
-export const EmbeddingFunct = async (text) => {
+import axios from "axios";
+
+export const EmbeddingFunct = async (openAiKey, text) => {
     try {
+        const openai = new OpenAI({ apiKey: openAiKey });
         const { data, model, usage } = await openai.embeddings.create({
             model: "text-embedding-3-small",
             input: text,
@@ -16,8 +17,9 @@ export const EmbeddingFunct = async (text) => {
         return null;
     }
 }
-export const getSummary = async (chunk) => {
+export const getSummary = async (openAiKey, chunk) => {
     try {
+        const openai = new OpenAI({ apiKey: openAiKey });
         const { choices } = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
@@ -34,7 +36,7 @@ export const getSummary = async (chunk) => {
         return null;
     }
 }
-export const actions = async (messages, availableActions) => {
+export const actions = async (openAiKey, messages, availableActions) => {
     const systemMessage = {
         role: "system",
         content: `You are an AI assistant designed to analyze all previous messages to maintain context, classify user intents, and extract structured data for predefined actions.
@@ -53,6 +55,7 @@ export const actions = async (messages, availableActions) => {
         🚨 ALWAYS use the exact same output format with actions array containing intent, confidence, and dataSchema.
         🚨 ALWAYS return ALL relevant intents - do not limit to just one intent when multiple are applicable.`
     };
+    const openai = new OpenAI({ apiKey: openAiKey });
     const tools = [
         {
             type: "function",
@@ -142,9 +145,9 @@ export const actions = async (messages, availableActions) => {
         return { matchedActions: [], model: null, usage: null };
     }
 };
-export const getContextMain = async (collectionIds, text, options = {}) => {
+export const getContextMain = async (openAiKey, collectionIds, text, options = {}) => {
     const { numCandidates = 500, limit = 5 } = options;
-    const embeddingResult = await EmbeddingFunct(text)
+    const embeddingResult = await EmbeddingFunct(openAiKey, text)
     try {
         // First stage retrieval with more candidates
         let context = await Data.aggregate([
@@ -193,7 +196,8 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
     }
 }
 export const AssistantResponse = async (req, res, config) => {
-    const { prevMessages, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption } = config;
+    const { prevMessages, openAiKey, additional_instructions, assistant_id, messageId, conversationId, signalKeyword = "DATAPOINT_NEXUS", streamOption } = config;
+    const openai = new OpenAI({ apiKey: openAiKey });
     const thread = await openai.beta.threads.create({ messages: prevMessages });
     if (streamOption) { res.setHeader('Content-Type', 'text/plain'); res.setHeader('Transfer-Encoding', 'chunked'); }
     const stream = await openai.beta.threads.runs.create(thread.id, { assistant_id, additional_instructions, stream: true });
@@ -227,7 +231,7 @@ export const AssistantResponse = async (req, res, config) => {
     }
     return { responseTokens, response, signalDetected }
 }
-export const generateAIResponse = async (userMessageText, contactName) => {
+export const generateAIResponse = async ({ openAiKey, userMessageText, contactName }) => {
     try {
         let systemPrompt = `You are an experienced and friendly student advisor at One Window, a trusted consultancy that helps students explore and pursue higher education opportunities abroad. ${contactName ? `You are currently responding to ${contactName} on WhatsApp.` : ''}
         Your primary goal is to guide students toward choosing the right academic path—especially in universities outside their home country—and to convince them of the value of higher education for their personal and professional growth.
@@ -249,6 +253,7 @@ export const generateAIResponse = async (userMessageText, contactName) => {
           - Persuasive but never pushy
           - Keep things simple and student-friendly
         Always assure the student that you are here to make the study abroad journey easier and successful for them.`;
+        const openai = new OpenAI({ apiKey: openAiKey });
         const aiResponse = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
@@ -264,3 +269,12 @@ export const generateAIResponse = async (userMessageText, contactName) => {
         return "I'm sorry, I couldn't process your request at the moment. Please try again later.";
     }
 };
+export const createAnOpenAiApiKey = async (name) => {
+    try {
+        const { data } = await axios.post("https://api.openai.com/v1/organization/admin_api_keys", { name }, { headers: { 'Authorization': `Bearer ${process.env.OPEN_API_ADMIN_KEY}`, 'Content-Type': 'application/json' } })
+        return { apiKey: data.value, name: data.name, id: data.id, redacted_value: data.redacted_value, created_at: data.created_at }
+    } catch (error) {
+        console.log(error);
+        throw new Error("Error occurred while creating openAi api key");
+    }
+}

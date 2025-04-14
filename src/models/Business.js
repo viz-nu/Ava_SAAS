@@ -13,6 +13,7 @@ const BusinessSchema = new Schema({
         phone: String,
         website: String
     },
+    modelIntegrations: { OpenAi: { apiKey: String, name: String, id: String, redacted_value: String, created_at: Date } },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     docData: { type: Schema.Types.Mixed },
     members: [{ type: Schema.Types.ObjectId, ref: 'Users' }],

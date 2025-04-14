@@ -115,11 +115,11 @@ app.post('/v1/agent', async (req, res) => {
             }]
         }]
         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
+        const { matchedActions, model, usage } = await actions(business.modelIntegrations.OpenAi.apiKey, prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
-                const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
+                const { answer, context, embeddingTokens } = await getContextMain(business.modelIntegrations.OpenAi.apiKey, agent.collections, data);
                 let config = {
                     additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
 **DATA COMPLETENESS PROTOCOL - CRITICAL:**
@@ -131,7 +131,7 @@ When you do not have enough information to provide a complete and accurate answe
 Example:
 User: "What is the history of..."
 Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about the history you're asking about. However, I can tell you that... [continue with what you do know]"
-`,
+`, openAiKey: business.modelIntegrations.OpenAi.apiKey,
                     assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption
                 }
                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
@@ -200,7 +200,7 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                 }
             }
             else if (intent == "general_chat") {
-                let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption }
+                let config = { assistant_id: agent.personalInfo.assistantId, openAiKey: business.modelIntegrations.OpenAi.apiKey, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption }
                 const { responseTokens, response } = await AssistantResponse(req, res, config)
                 if (!streamOption) res.write(JSON.stringify({ id: "conversation", messageId: message._id, conversationId: conversation._id, responseType: "chunk", data: response }));
                 message.responseTokens = responseTokens
@@ -258,7 +258,7 @@ app.put("/reaction", async (req, res) => {
 app.get("/get-agent", async (req, res) => {
     try {
         const { agentId } = req.query
-        const agent = await Agent.findById(agentId).populate("business")
+        const agent = await Agent.findById(agentId).populate("business", "-modelIntegrations")
         if (!agent) return res.status(404).json({ message: 'Agent not found' });
         res.status(200).json({ success: true, data: agent });
     } catch (error) {
