@@ -278,3 +278,16 @@ export const createAnOpenAiApiKey = async (name) => {
         throw new Error("Error occurred while creating openAi api key");
     }
 }
+export const createAnAssistant = async ({ openAiKey, name, instructions, model, temperature }) => {
+    const openai = new OpenAI({ apiKey: openAiKey });
+    let { id } = await openai.beta.assistants.create({ name, instructions, model, temperature });
+    return id
+}
+export const updateAnAssistant = async ({ openAiKey, assistantId, name, instructions, model, temperature }) => {
+    const openai = new OpenAI({ apiKey: openAiKey });
+    await openai.beta.assistants.update(assistantId, { name, instructions, model, temperature });
+}
+export const deleteAnAssistant = async ({ openAiKey, assistantId }) => {
+    const openai = new OpenAI({ apiKey: openAiKey });
+    await openai.beta.assistants.del(assistantId);
+}
