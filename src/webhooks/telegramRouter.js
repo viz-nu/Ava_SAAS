@@ -24,9 +24,9 @@ telegramRouter.post('/:botId', async (req, res) => {
         setImmediate(async () => {
             try {
                 const agent = await getBotDetails(botId);
+                console.log(agent);
                 if (!agent || !agent.integrations?.telegram?.botToken) return;
                 const bot = new Telegraf(agent.integrations.telegram.botToken);
-                const business = await Business.findOne({ agents: agent._id })
                 const conversation = await Conversation.findOneAndUpdate(
                     { telegramChatId: chatId, createdAt: { $gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
                     {
@@ -42,7 +42,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                 await bot.telegram.sendChatAction(chatId, 'typing');
                 // Handle text messages
                 if (text) {
-                    console.log("Text", text);
                     // handle commands 
                     if (text && text.startsWith('/')) {
                         const command = text.split(' ')[0].substring(1);
@@ -272,7 +271,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                         for (const { intent, dataSchema, confidence } of matchedActions) {
                             if (intent == "enquiry") {
                                 const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
-                                const { answer, context, embeddingTokens } = await getContextMain( agent.collections, data);
+                                const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
                                 let config = {
                                     additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
                                         **DATA COMPLETENESS PROTOCOL - CRITICAL:**
