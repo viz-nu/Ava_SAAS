@@ -19,7 +19,7 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
             payload.document = Data;
         }
         const { data } = await axios.post(whatsappApiUrl, payload, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
-        console.log("✅ Message sent successfully:", data);
+        // console.log("✅ Message sent successfully:", data);
         return data
     } catch (error) {
         console.error("❌ Error sending WhatsApp message:");
