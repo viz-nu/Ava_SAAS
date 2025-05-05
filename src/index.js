@@ -60,13 +60,16 @@ app.use(helmet({
 app.use(ExpressMongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use(express.json());
-
+const openCors = cors({
+    origin: true, // Reflect request origin
+    credentials: true,
+  });
 app.get("/", cors(corsOptions), (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", cors(corsOptions), emailConformation);
 app.use("/api/v1", cors(corsOptions), indexRouter);
 app.use("/webhook", cors(corsOptions), webhookRouter);
 
-app.post('/v1/agent', cors(), async (req, res) => {
+app.post('/v1/agent', openCors, async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
         let [agent, business, conversation] = await Promise.all([
@@ -225,7 +228,7 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
         // res.status(500).json({ error: error.message });
     }
 });
-app.post("/trigger", cors(), async (req, res) => {
+app.post("/trigger", openCors, async (req, res) => {
     try {
         const { actionId, collectedData, conversationId } = req.body
         const action = await Action.findById(actionId);
@@ -242,7 +245,7 @@ app.post("/trigger", cors(), async (req, res) => {
         return res.status(500).json({ message: "internal server error", error: error.message });
     }
 })
-app.put("/reaction", cors(), async (req, res) => {
+app.put("/reaction", openCors, async (req, res) => {
     const { messageId, reaction } = req.body;
     // Validation for messageId and reaction
     if (!messageId || !reaction) return res.status(400).json({ message: "Message ID and reaction are required" });
@@ -256,7 +259,7 @@ app.put("/reaction", cors(), async (req, res) => {
         return res.status(500).json({ message: "An error occurred", error: err.message });
     }
 });
-app.get("/get-agent", cors(), async (req, res) => {
+app.get("/get-agent", openCors, async (req, res) => {
     try {
         const { agentId } = req.query
         const agent = await Agent.findById(agentId).populate("business")
@@ -267,7 +270,7 @@ app.get("/get-agent", cors(), async (req, res) => {
         res.status(500).json({ message: "An error occurred", error: error.message });
     }
 })
-app.post('/send-invite', cors(), async (req, res) => {
+app.post('/send-invite', openCors, async (req, res) => {
     try {
         let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = req.body;
         if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
@@ -312,7 +315,7 @@ app.post('/send-invite', cors(), async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 });
-app.post('/send-mail', cors(), async (req, res) => {
+app.post('/send-mail', openCors, async (req, res) => {
     try {
         const { to, subject, text, html } = req.body;
         await sendMail({
