@@ -63,12 +63,17 @@ app.use(express.json());
 const openCors = cors({
     origin: true, // Reflect request origin
     credentials: true,
-  });
+});
 app.get("/", cors(corsOptions), (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", cors(corsOptions), emailConformation);
 app.use("/api/v1", cors(corsOptions), indexRouter);
 app.use("/webhook", cors(corsOptions), webhookRouter);
-
+app.options('/v1/agent', openCors);
+app.options('/trigger', openCors);
+app.options('/reaction', openCors);
+app.options('/get-agent', openCors);
+app.options('/send-invite', openCors);
+app.options('/send-mail', openCors);
 app.post('/v1/agent', openCors, async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
