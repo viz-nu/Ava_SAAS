@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { Data } from "../models/Data.js";
 import mongoose from "mongoose";
-const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
+export const openai = new OpenAI({ apiKey: process.env.OPEN_API_KEY });
 export const EmbeddingFunct = async (text) => {
     try {
         const { data, model, usage } = await openai.embeddings.create({

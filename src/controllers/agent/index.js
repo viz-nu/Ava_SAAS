@@ -5,7 +5,7 @@ import { Business } from '../../models/Business.js';
 import { Collection } from '../../models/Collection.js';
 import { agentSchema } from '../../Schema/index.js';
 import { Telegraf } from "telegraf";
-import { createAnAssistant, deleteAnAssistant, updateAnAssistant } from '../../utils/openai.js';
+import { createAnAssistant, deleteAnAssistant, openai, updateAnAssistant } from '../../utils/openai.js';
 export const integrations = errorWrapper(async (req, res) => {
     const [business, agent] = await Promise.all([Business.findById(req.user.business), Agent.findById(req.params.id)]);
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
@@ -136,4 +136,19 @@ export const deleteAgent = errorWrapper(async (req, res) => {
         Business.updateMany({ agents: req.params.id }, { $pull: { agents: req.params.id } })
     ])
     return { statusCode: 200, message: "Agent deleted successfully" };
+});
+export const promptGenerator = errorWrapper(async (req, res) => {
+    const { prompt } = req.body;
+    const business = await Business.findById(req.user.business);
+    if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    const systemInstruction = `You are an expert prompt engineer. Your job is to take a rough or draft input describing an AI assistant and generate a polished, detailed, and optimized system prompt. The final output should clearly define the assistant's name, role, goals, tone, limitations, language, audience, response style, and fallback behavior in a structured and professional format.`;
+    const aiResponse = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: JSON.stringify(prompt) }
+        ],
+        max_tokens: 500,
+    });
+    return { statusCode: 200, message: "Prompt generated successfully", data: aiResponse.choices[0].message.content.trim() };
 });

@@ -43,7 +43,6 @@ const corsOptions = {
     optionsSuccessStatus: 204,
     preflightContinue: false
 };
-app.use(cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
@@ -61,11 +60,13 @@ app.use(helmet({
 app.use(ExpressMongoSanitize());
 app.use(morgan(':date[web] :method :url :status :res[content-length] - :response-time ms'));
 app.use(express.json());
-app.get("/", (req, res) => res.send("Server up and running"));
-app.get("/email/confirmation", emailConformation)
-app.use("/api/v1", indexRouter)
-app.use("/webhook", webhookRouter)
-app.post('/v1/agent', async (req, res) => {
+
+app.get("/", cors(corsOptions), (req, res) => res.send("Server up and running"));
+app.get("/email/confirmation", cors(corsOptions), emailConformation);
+app.use("/api/v1", cors(corsOptions), indexRouter);
+app.use("/webhook", cors(corsOptions), webhookRouter);
+
+app.post('/v1/agent', cors(), async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
         let [agent, business, conversation] = await Promise.all([
@@ -115,7 +116,7 @@ app.post('/v1/agent', async (req, res) => {
             }]
         }]
         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-        const { matchedActions, model, usage } = await actions( prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
+        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
@@ -224,7 +225,7 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
         // res.status(500).json({ error: error.message });
     }
 });
-app.post("/trigger", async (req, res) => {
+app.post("/trigger", cors(), async (req, res) => {
     try {
         const { actionId, collectedData, conversationId } = req.body
         const action = await Action.findById(actionId);
@@ -241,7 +242,7 @@ app.post("/trigger", async (req, res) => {
         return res.status(500).json({ message: "internal server error", error: error.message });
     }
 })
-app.put("/reaction", async (req, res) => {
+app.put("/reaction", cors(), async (req, res) => {
     const { messageId, reaction } = req.body;
     // Validation for messageId and reaction
     if (!messageId || !reaction) return res.status(400).json({ message: "Message ID and reaction are required" });
@@ -255,7 +256,7 @@ app.put("/reaction", async (req, res) => {
         return res.status(500).json({ message: "An error occurred", error: err.message });
     }
 });
-app.get("/get-agent", async (req, res) => {
+app.get("/get-agent", cors(), async (req, res) => {
     try {
         const { agentId } = req.query
         const agent = await Agent.findById(agentId).populate("business")
@@ -266,7 +267,7 @@ app.get("/get-agent", async (req, res) => {
         res.status(500).json({ message: "An error occurred", error: error.message });
     }
 })
-app.post('/send-invite', async (req, res) => {
+app.post('/send-invite', cors(), async (req, res) => {
     try {
         let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = req.body;
         if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
@@ -311,7 +312,7 @@ app.post('/send-invite', async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 });
-app.post('/send-mail', async (req, res) => {
+app.post('/send-mail', cors(), async (req, res) => {
     try {
         const { to, subject, text, html } = req.body;
         await sendMail({
