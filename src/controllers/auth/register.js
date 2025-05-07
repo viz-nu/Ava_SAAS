@@ -9,6 +9,7 @@ import { readFileSync } from "fs";
 import bcrypt from "bcryptjs";
 import Handlebars from "handlebars";
 import { createFolder } from "../../utils/CRMintegrations.js";
+import { getBusinessInfo } from "../../utils/serpAPI.js";
 export const register = errorWrapper(async (req, res, next) => {
     const { name, email, password, role, BusinessName, logoURL } = req.body;
     const newOrganization = await Business.create({ name: BusinessName, logoURL: logoURL })
@@ -54,4 +55,8 @@ export const emailConformation = errorWrapper(async (req, res) => {
     const user = await User.findOneAndUpdate({ emailToken: code }, { isVerified: true }, { new: true })
     if (!user) return { statusCode: 404, message: "User not found" }
     return { statusCode: 303, message: "Email confirmed successfully", url: `${process.env.CLIENT_URL}login` }
+})
+export const OrgInfo = errorWrapper(async (req, res) => {
+    const { name } = req.params
+    return { statusCode: 200, message: "Organization info", data: await getBusinessInfo(name) }
 })

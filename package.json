@@ -15,6 +15,7 @@
     "@langchain/community": "^0.3.33",
     "@langchain/core": "^0.3.42",
     "@socket.io/redis-adapter": "^8.3.0",
+    "ai": "^4.3.14",
     "axios": "^1.8.1",
     "bcryptjs": "^3.0.0",
     "body-parser": "^1.20.3",
@@ -39,7 +40,7 @@
     "node-cache": "^5.1.2",
     "nodemailer": "^6.10.0",
     "officeparser": "^4.2.0",
-    "openai": "^4.85.1",
+    "openai": "^4.97.0",
     "p-limit": "^6.2.0",
     "pdf-parse": "^1.1.1",
     "psl": "^1.15.0",
@@ -52,7 +53,8 @@
     "xml2js": "^0.6.2",
     "xss-req-sanitizer": "^1.0.4",
     "youtubei.js": "^13.0.0",
-    "yup": "^1.6.1"
+    "yup": "^1.6.1",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

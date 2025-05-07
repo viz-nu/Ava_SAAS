@@ -142,7 +142,7 @@ export const actions = async (messages, availableActions) => {
     }
 };
 export const getContextMain = async (collectionIds, text, options = {}) => {
-    const { numCandidates = 500, limit = 5 } = options;
+    const { numCandidates = 500, limit = 10 } = options;
     const embeddingResult = await EmbeddingFunct(text)
     try {
         // First stage retrieval with more candidates
@@ -272,6 +272,21 @@ export const generateAIResponse = async ({ userMessageText, contactName }) => {
 //         throw new Error("Error occurred while creating openAi api key");
 //     }
 // }
+export const OpenAiLLM = async ({ input = [], model = "gpt-4o-mini", text = {} }) => {
+    try {
+        const response = await openai.responses.parse({
+            model,
+            input,
+            text
+        });
+        console.log("total response", JSON.stringify(response, null, 2));
+
+        return response.output_parsed
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
 export const createAnAssistant = async ({ name, instructions, model, temperature }) => {
     let { id } = await openai.beta.assistants.create({ name, instructions, model, temperature });
     return id
