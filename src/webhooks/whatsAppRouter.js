@@ -79,7 +79,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                       const conversation = await Conversation.findOneAndUpdate(
                         { whatsappChatId: from, createdAt: { $gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
                         { $setOnInsert: { agent: agent._id, business: agent.business }, ...(contactName ? { contact: { from, contactName } } : {}) },
-                        { upsert: true, new: true }
+                        { upsert: true, new: true, strict: false }
                       );
                       let prevMessages = []
                       const messages = await Message.find({ conversationId: conversation._id }).select("query response").sort({ createdAt: -1 }).limit(8);
