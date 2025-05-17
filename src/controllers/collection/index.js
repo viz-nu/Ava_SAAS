@@ -159,7 +159,7 @@ export const deleteCollection = errorWrapper(async (req, res) => {
     // Delete the collection
     const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
     await Promise.all([
-        Collection.deleteOne(req.params.id),
+        Collection.findByIdAndDelete(req.params.id),
         Data.deleteMany({ collection: req.params.id }),
         business.save(),
         ...jobs.filter(job => job.data.collectionId === id).map(job => job.remove())
