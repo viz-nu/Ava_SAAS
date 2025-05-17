@@ -134,8 +134,11 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
                         success: true,
                         url: url
                     },
+                },
+                $set: {
                     "contents.$.status": "active"
                 }
+
             }
         );
         fs.unlinkSync(tempFilePath);
@@ -143,7 +146,7 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
         return { success: true, data: null }
     } catch (error) {
         console.error(error);
-                await Collection.updateOne(
+        await Collection.updateOne(
             { _id: collectionId, "contents._id": _id },
             {
                 $push: {
@@ -151,7 +154,9 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
                         success: false,
                         url: url
                     },
-                    "contents.$.status": "failed"
+                },
+                $set: {
+                    "contents.$.status": "active"
                 }
             }
         );
