@@ -133,7 +133,8 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
                     "contents.$.metaData.detailedReport": {
                         success: true,
                         url: url
-                    }
+                    },
+                    "contents.$.status": "active"
                 }
             }
         );
@@ -142,6 +143,18 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
         return { success: true, data: null }
     } catch (error) {
         console.error(error);
+                await Collection.updateOne(
+            { _id: collectionId, "contents._id": _id },
+            {
+                $push: {
+                    "contents.$.metaData.detailedReport": {
+                        success: false,
+                        url: url
+                    },
+                    "contents.$.status": "failed"
+                }
+            }
+        );
         return { success: false, error: error.message || error, data: null }
     }
 }
