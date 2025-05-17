@@ -154,6 +154,10 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                         console.log("sending mail", { to: agent.personalInfo.noDataMail, topic: data });
                         let text = `Dear [Support Team],
                         While interacting with the chatbot, it failed to fetch content related to "${data}". This issue is affecting the user experience and needs immediate attention.
+                        User Query:
+                        "${userMessage}"
+                        RAG Model Retrieved Context:
+                        ${answer || "No context retrieved or context was empty."}
                         Please investigate and resolve the issue as soon as possible.
                         Best regards,
                         Team Avakado`
@@ -191,6 +195,10 @@ Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about t
                         <div class="container">
                         <p>Dear <strong>Support Team</strong>,</p>
                         <p>While interacting with the chatbot, it failed to retrieve content related to <strong>${data}</strong>. This issue is impacting the user experience and requires immediate attention.</p>
+                        <p><strong>User Query:</strong></p>
+                        <div class="code-block">${userMessage}</div>
+                        <p><strong>RAG Model Retrieved Context:</strong></p>
+                        <div class="code-block">${answer || "No context retrieved or context was empty."}</div>
                         <p>Please investigate and resolve the issue as soon as possible.</p>
                         <p>Best regards,</p>
                         <p><strong>Team Avakado</strong><br>
