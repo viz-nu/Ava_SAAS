@@ -20,10 +20,7 @@ export let redisClient;
 export const connectRedis = async () => {
     if (redisClient) return redisClient
     try {
-        redisClient = createClient({
-            url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
-            password: process.env.REDIS_PASSWORD
-        });
+        redisClient = createClient({ url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, });
         redisClient.on('error', (err) => console.log('Redis Client Error', err));
         await redisClient.connect();
         console.log('Connected to Redis');
