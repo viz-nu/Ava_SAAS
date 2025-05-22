@@ -22,12 +22,33 @@ export const getSummary = async (chunk) => {
             messages: [
                 {
                     role: "system",
-                    content: "Convert the following content into organized bullet points. Extract: • Main topics • Key facts • All URLs/links • Important terms, dates, and figures. Keep information accurate and concise."
+                    content: `Analyze the following content and determine if it contains valuable, non-obvious information worth storing in a vector database.
+
+EVALUATION CRITERIA:
+- Skip common knowledge, basic definitions, or widely known facts
+- Focus on specific, unique, or contextual information
+- Prioritize actionable insights, specific data points, or specialized knowledge
+- Ignore generic content, boilerplate text, or redundant information
+
+OUTPUT INSTRUCTIONS:
+If the content is valuable, create a precise summary with:
+• Specific facts, figures, and data points
+• Unique insights or non-obvious information  
+• Important URLs, references, or citations
+• Key dates, names, and technical details
+• Context-specific information that adds value
+
+If the content lacks substantial value (common knowledge, generic information, or redundant data), respond with exactly: "false"
+
+Be strict in your evaluation - only summarize content that provides genuine informational value.`
                 },
                 { role: "user", content: chunk }
-            ]
+            ],
+            temperature: 0.1, // Lower temperature for more consistent evaluation
         });
-        return choices[0].message.content
+
+        const result = choices[0].message.content.trim();
+        return result === "false" ? { result: false, content: result } : { content: result, result: true };
     } catch (error) {
         console.error(error);
         return null;

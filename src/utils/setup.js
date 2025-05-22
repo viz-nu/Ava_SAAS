@@ -2,7 +2,6 @@ import { RecursiveCharacterTextSplitter, MarkdownTextSplitter } from "langchain/
 import { EmbeddingFunct, getSummary } from "./openai.js";
 import { Data } from "../models/Data.js";
 import { encoding_for_model } from "tiktoken";
-import { Business } from "../models/Business.js";
 
 export const digest = async (text, url, collectionId) => {
     const splitter = new RecursiveCharacterTextSplitter({
@@ -18,9 +17,14 @@ export const digest = async (text, url, collectionId) => {
                 const enc = encoding_for_model("text-embedding-3-small");
                 const tokens = enc.encode(chunk);
                 const tokensUsed = tokens.length;
-                const summary = await getSummary(chunk)
-                let embeddingVector = await EmbeddingFunct(summary)
-                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url } }
+                const { content, result } = await getSummary(chunk)
+                if (!result) {
+                    return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary: content, embeddingVector: [], metadata: { tokensUsed, url: url } }
+
+                }
+                let embeddingVector = await EmbeddingFunct(content)
+                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary: content, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url } }
+
             }));
         await Data.insertMany(responses)
     }
@@ -39,9 +43,10 @@ export const digestMarkdown = async (text, url, collectionId, extraMetaData = {}
                 const enc = encoding_for_model("text-embedding-3-small");
                 const tokens = enc.encode(text);
                 const tokensUsed = tokens.length;
-                const summary = await getSummary(chunk)
-                let embeddingVector = await EmbeddingFunct(summary)
-                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url, ...extraMetaData } }
+                const { content, result } = await getSummary(chunk)
+                if (!result) return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary: content, embeddingVector: [], metadata: { tokensUsed, url: url, ...extraMetaData } }
+                let embeddingVector = await EmbeddingFunct(content)
+                return { collection: collectionId, content: chunk, chunkNumber: i + index + 1, summary: content, embeddingVector: embeddingVector.data[0].embedding, metadata: { tokensUsed, url: url, ...extraMetaData } }
             }));
         await Data.insertMany(responses)
     }
