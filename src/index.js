@@ -22,6 +22,7 @@ import { webhookRouter } from "./webhooks/index.js";
 import { dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
 import { Action } from "./models/Action.js";
 import { DateTime } from "luxon";
+import { Lead } from "./models/Lead.js";
 await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
@@ -362,14 +363,11 @@ app.post('/contact-us', openCors, async (req, res) => {
             <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
             <p><strong>Purpose:</strong><br>${purpose}</p>
         `;
-        // Send the email
-        await sendMail({
-            to: "ankit@onewindow.co anurag@onewindow.co vishnu.teja101.vt@gmail.com",
-            subject,
-            text,
-            html
-        });
-        res.json({ success: true, message: 'we will get back to you soon', data: null });
+        Promise.all([
+            await Lead.create({ name, purpose, contactDetails: { email: email || null, phone: phone || null } }),
+            await sendMail({ to: "ankit@onewindow.co anurag@onewindow.co vishnu.teja101.vt@gmail.com", subject, text, html })
+        ]);
+        return res.json({ success: true, message: 'we will get back to you soon', data: null });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
