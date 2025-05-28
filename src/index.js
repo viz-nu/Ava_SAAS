@@ -343,6 +343,38 @@ app.post('/send-mail', openCors, async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 })
+app.post('/contact-us', openCors, async (req, res) => {
+    try {
+        const { name, contactDetails, purpose } = req.body;
+        if (!name || !contactDetails || !purpose) return res.status(400).json({ error: 'Missing required fields' });
+        const { email, phone } = contactDetails;
+        if (!email && !phone) return res.status(400).json({ error: 'At least one contact detail (email or phone) is required' });
+        const subject = `New Contact Request from ${name}`;
+        const text = ` New contact form submission:
+                        Name: ${name}
+                        Email: ${email || 'N/A'}
+                        Phone: ${phone || 'N/A'}
+                        Purpose: ${purpose}`.trim();
+        const html = `
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email || 'N/A'}</p>
+            <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
+            <p><strong>Purpose:</strong><br>${purpose}</p>
+        `;
+        // Send the email
+        await sendMail({
+            to: "ankit@onewindow.co",
+            subject,
+            text,
+            html
+        });
+        res.json({ success: true, message: 'we will get back to you soon', data: null });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
+    }
+})
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 const PORT = process.env.PORT || 3000;
