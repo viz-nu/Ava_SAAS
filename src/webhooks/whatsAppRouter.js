@@ -19,7 +19,7 @@ whatsappRouter.get('/:agentId', async (req, res) => {
 });
 whatsappRouter.post('/:agentId', async (req, res) => {
   try {
-    console.log("📨 Body:", JSON.stringify(req.body, null, 2));
+    // console.log("📨 Body:", JSON.stringify(req.body, null, 2));
     const body = req.body;
     res.status(200).send('EVENT_RECEIVED');
     setImmediate(async (params) => {
@@ -213,11 +213,8 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                         }
                       }
                       await message.save()
-                      const responseText = await generateAIResponse({ userMessageText, contactName })
-                      console.log(`🤖 AI Response to ${contactName || from}: "${responseText}"`);
-
-                      // 🤖 AI Response to Viz: "Hi there! 😊 How can I assist you today? Are you thinking about studying abroad?"
-                      // console.log(`✅ Response sent to ${contactName || from}`);
+                      // const responseText = await generateAIResponse({ userMessageText, contactName })
+                      // console.log(`🤖 AI Response to ${contactName || from}: "${responseText}"`);
                     } catch (err) {
                       console.error(`❌ Error processing message from ${contactName || from}:`, err);
                     }
