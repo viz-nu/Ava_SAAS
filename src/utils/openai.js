@@ -164,7 +164,7 @@ export const actions = async (messages, availableActions) => {
 };
 export const getContextMain = async (collectionIds, text, options = {}) => {
     const { numCandidates = 500, limit = 10 } = options;
-    const embeddingResult = await EmbeddingFunct(text)
+    const embeddingResult = await EmbeddingFunct(text) // this will return the embedding vector of the text
     try {
         // First stage retrieval with more candidates
         let context = await Data.aggregate([

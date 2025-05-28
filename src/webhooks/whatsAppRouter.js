@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { parse } from "url";
 import { getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
-import { AssistantResponse, generateAIResponse } from "../utils/openai.js";
+import { actions, AssistantResponse, generateAIResponse } from "../utils/openai.js";
 import { Agent } from "../models/Agent.js";
 import { Conversation } from "../models/Conversations.js";
 import { Message } from "../models/Messages.js";
