@@ -364,7 +364,7 @@ app.post('/contact-us', openCors, async (req, res) => {
         `;
         // Send the email
         await sendMail({
-            to: "ankit@onewindow.co",
+            to: "ankit@onewindow.co anurag@onewindow.co vishnu.teja101.vt@gmail.com",
             subject,
             text,
             html
