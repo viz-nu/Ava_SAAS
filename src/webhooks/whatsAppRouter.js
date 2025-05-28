@@ -116,8 +116,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                       }]
                       listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
                       const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions)
-                      const message = await Message.create({ business: agent.business, query: text, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
-
+                      const message = await Message.create({ business: agent.business, query: userMessageText, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
                       for (const { intent, dataSchema, confidence } of matchedActions) {
                         if (intent == "enquiry") {
                           const { data = text } = dataSchema.find(ele => ele.key == "Topic") || {}
