@@ -15,8 +15,8 @@ const AgentSchema = new Schema({
         facts: [String],
         quickQuestions: [{ label: String, value: String }],
         welcomeMessage: String,
-        model: { type: String, default: "gpt-4o-mini" },
-        temperature: { type: Number, default: 1 },
+        model: { type: String, default: 'gpt-4.1-mini' },
+        temperature: { type: Number, default: 0.5 },
         assistantId: String,
         noDataMail: { type: String, default: "vishnu@campusroot.com" },
     },
@@ -48,4 +48,4 @@ AgentSchema.pre('save', function (next) {
     if (!this.integrations.whatsapp || !this.integrations.whatsapp.verificationToken) this.integrations.whatsapp = { webhookUrl: `${process.env.SERVER_URL}webhook/whatsapp/${this._id}`, verificationToken: randomBytes(9).toString('hex') };
     next();
 });
-export const Agent = model('Agent', AgentSchema, "Agent");
+export const AgentModel = model('Agent', AgentSchema, "Agent");

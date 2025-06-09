@@ -5,7 +5,7 @@ import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
 import { Action } from "../../models/Action.js";
 import { analyzeQueries } from "../../utils/nlp.js";
-import { Agent } from "../../models/Agent.js";
+import { AgentModel } from "../../models/Agent.js";
 import { Conversation } from "../../models/Conversations.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
@@ -189,7 +189,7 @@ export const deleteAction = errorWrapper(async (req, res) => {
     const [deletedAction, updatedBusiness, updatedAgents] = await Promise.all([
         Action.findByIdAndDelete(req.params.id),
         Business.updateOne({ actions: req.params.id }, { $pull: { actions: req.params.id } }),
-        Agent.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
+        AgentModel.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
     ]);
     return { statusCode: 200, message: "Action deleted successfully", data: { deletedAction, updatedBusiness, updatedAgents } }
 });
