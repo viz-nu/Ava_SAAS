@@ -10,7 +10,7 @@ import { indexRouter } from "./routers/index.js";
 import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
 import { actions, AssistantResponse, getContextMain } from "./utils/openai.js";
-import { Agent } from "./models/Agent.js";
+import { AgentModel } from "./models/Agent.js";
 import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
@@ -19,7 +19,7 @@ import { initializeSocket, io } from "./utils/io.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
-import { dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
+import { BuiltInTools, createToolWrapper, dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
 import { Action } from "./models/Action.js";
 import { DateTime } from "luxon";
 import { Lead } from "./models/Lead.js";
@@ -79,7 +79,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
     try {
         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
         let [agent, business, conversation] = await Promise.all([
-            Agent.findById(agentId).populate("actions"),
+            AgentModel.findById(agentId).populate("actions"),
             Business.findOne({ agents: agentId }),
             conversationId ? Conversation.findById(conversationId) : null
         ]);
@@ -125,7 +125,8 @@ app.post('/v1/agent', openCors, async (req, res) => {
             }]
         }]
         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions); const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
+        const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
+        const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
             if (intent == "enquiry") {
                 const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
@@ -276,7 +277,7 @@ app.put("/reaction", openCors, async (req, res) => {
 app.get("/get-agent", openCors, async (req, res) => {
     try {
         const { agentId } = req.query
-        const agent = await Agent.findById(agentId).populate("business")
+        const agent = await AgentModel.findById(agentId).populate("business")
         if (!agent) return res.status(404).json({ message: 'Agent not found' });
         res.status(200).json({ success: true, data: agent });
     } catch (error) {
@@ -373,8 +374,204 @@ app.post('/contact-us', openCors, async (req, res) => {
         return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
     }
 })
+import { Agent, run, RunState, tool } from '@openai/agents';
+import { StreamEventHandler } from "./utils/streamHandler.js";
+app.post('/v2/agent', openCors, async (req, res) => {
+    const handler = new StreamEventHandler();
+    try {
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Transfer-Encoding', 'chunked');
+        const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [], // [{ id, action: 'approve'|'reject', correctedArguments?: {...} }]
+        } = req.body;
+        let [agentDetails, business, conversation, message] = await Promise.all([
+            AgentModel.findById(agentId),
+            Business.findOne({ agents: agentId }),
+            conversationId ? Conversation.findById(conversationId) : null,
+            messageId ? Message.findById(messageId) : null
+        ]);
+        if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
+        if (!business) return res.status(404).json({ error: 'Business not found' });
+        let prevMessages = [], state
+        if (conversation) {
+            const messages = await Message.find({ conversationId }).select("query response");
+            prevMessages.push(...messages.flatMap(({ query, response }) => {
+                const entries = [];
+                if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
+                if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
+                return entries;
+            }));
+        } else {
+            conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data });
+        }
+        if (!message) message = await Message.create({ business: business._id, query: userMessage, response: "", conversationId: conversation._id });
+        prevMessages.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
+        const toolsJson = BuiltInTools.map(ele => tool(createToolWrapper(ele)));
+        const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson });
+        if (interruptionDecisions.length > 0) {
+            state = await RunState.fromString(agent, conversation.state);
+            for (const decision of interruptionDecisions) {
+                // [{ id, action: 'approve'|'reject' }]
+                const interruption = conversation.pendingInterruptions.find(ele => ele.rawItem.id == decision.id);
+                if (interruption) (decision.action === 'approve') ? state.approve(interruption) : state.reject(interruption)
+            }
+            conversation = await Conversation.findByIdAndUpdate(conversationId, { $set: { pendingInterruptions: [], state: "" } }, { new: true });
+        } else { state = prevMessages }
+        // res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Cache-Control' });
+        let stream = await run(agent, state, { stream: true });
+        let hasInterruptions = false;
+        do {
+            for await (const delta of stream) {
+                const processed = handler.handleEvent(delta);
+                if (!processed) continue;
+                if (processed.type === 'stream_complete') break;
+                const payload = { id: "", messageId: message._id, conversationId: conversation._id, responseType: "full", data: null };
+                switch (processed.type) {
+                    case 'response_started':
+                        // console.log('🚀 Response started:', processed.message);
+                        break;
+                    case 'text_done':
+                        // console.log('\n✅ Text completed');
+                        break;
+                    case 'response_done':
+                        // processed.response.model  // "model": "gpt-3.5-turbo-0125",
+                        // processed.response.usage
+                        // "usage": {
+                        //   "input_tokens": 846,
+                        //   "input_tokens_details": {
+                        //     "cached_tokens": 0
+                        //   },
+                        //   "output_tokens": 68,
+                        //   "output_tokens_details": {
+                        //     "reasoning_tokens": 0
+                        //   },
+                        //   "total_tokens": 914
+                        // },
+                        console.log('🎉 Response completed');
+                        // "finalOutput": [
+                        //     {
+                        //         "id": "msg_68469c4518548192932e71486953d3930ea65c16d4a79d49",
+                        //         "type": "message",
+                        //         "status": "completed",
+                        //         "content": [
+                        //             {
+                        //                 "type": "output_text",
+                        //                 "annotations": [],
+                        //                 "text": "Hello! I can assist you with that. Please provide me with more details about the deal you'd like to discuss. What company are you representing, and what aspect of the deal would you like to focus on?"
+                        //             }
+                        //         ],
+                        //         "role": "assistant"
+                        //     }
+                        // ]
+                        // "finalOutput": [
+                        //     {
+                        //         "id": "fc_68469c97c714819caacf9fa0c2bc12890cc1f851f53c846f",
+                        //         "type": "function_call",
+                        //         "status": "completed",
+                        //         "arguments": "{\"company_name\":\"Apple\",\"preferred_time\":\"2023-11-09T17:00:00Z\",\"contact_email\":\"viz@apple.com\"}",
+                        //         "call_id": "call_jg18q6ln9SaoUuHXXDnBWz36",
+                        //         "name": "book_deal_slot"
+                        //     }
+                        // ]
+                        message.response = processed.response.finalOutput[0]?.content?.text || null
+                        break;
+                    case 'stream_complete':
+                        // console.log('🏁 Stream finished');
+                        break;
+                    case 'function_call':
+                        // payload.id = "triggeredAction";
+                        // payload.data = processed.functionCall?.name;
+                        // res.write(JSON.stringify(payload) );
+                        break;
+                    case 'function_output':
+                        // payload.id = "responseFromAction";
+                        // payload.data = processed.result?.output;
+                        // res.write(JSON.stringify(payload) );
+                        break;
+                    case 'text_delta':
+                        payload.id = "conversation";
+                        payload.data = processed.delta;
+                        payload.responseType = "chunk";
+                        res.write(JSON.stringify(payload));
+                        process.stdout.write(processed.delta);
+                        break;
+                    case 'error':
+                        payload.id = "error";
+                        payload.data = processed.error;
+                        res.write(JSON.stringify(payload));
+                        break;
+                }
+                res.flush?.(); // flush buffer if supported
+            }
+            const newState = stream.state;
+            if (stream.interruptions?.length) {
+                hasInterruptions = true;
+                const interruptionData = stream.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
+                conversation = await Conversation.findByIdAndUpdate(conversation._id, { $set: { pendingInterruptions: interruptionData, state: JSON.stringify(newState) } }, { new: true });
+                const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: rawItem, type: type, message: message })) } };
+                res.write(JSON.stringify(interruptionPayload));
+                break;
+            } else {
+                break;
+            }
+        } while (true);
+        await message.save()
+        return !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
+    } catch (error) {
+        console.error('Agent error:', error);
+        res.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
+        return res.end(JSON.stringify({ id: "end" }));
+    }
+});
+app.post('/v2/agent-executer', openCors, async (req, res) => {
+    let functionString = `
+            console.log(input.company_name, input.preferred_time, input.contact_email)
+            if(!input.company_name || !input.preferred_time || !input.contact_email) {
+                throw new Error('Missing required fields: company name, preferred time and contact email are all required')
+            }
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(input.contact_email)) {
+                throw new Error('Invalid email format provided')
+            }
+            // Validate date format
+            const date = new Date(input.preferred_time);
+            if(isNaN(date.getTime())) {
+                throw new Error('Invalid date format. Please use ISO format like 2024-01-01T14:00:00Z')
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return \`A slot has been booked with the \${input.company_name} team at \${input.preferred_time}. Confirmation sent to \${input.contact_email}.\`;
+        `, errorFunction = `
+            console.error('Deal booking failed:', input);
+            return 'I apologize, but I encountered an error while booking your meeting slot. Please check your details and try again, or contact our support team for assistance.';
+        `, { input } = req.body
+    let fnToBeExecuted = `
+        "use strict";
+        ${functionString}
+    `;
+    const ErrorFnToBeExecuted = `
+        "use strict";
+        ${errorFunction}
+    `
+    const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+    let mainFn = new AsyncFunction('input', fnToBeExecuted), errorFn = new AsyncFunction('input', ErrorFnToBeExecuted);
+    try {
+        const result = await mainFn(input);
+        return res.status(200).json({ success: true, result });
+    } catch (err) {
+        console.error('Execution error:', err);
+        try {
+            if (errorFunction?.trim()) {
+                const fallback = await errorFn(input);
+                return res.status(400).json({ success: false, error: err.message, message: fallback });
+            }
+            return res.status(500).json({ success: false, error: err.message, message: err.message });
+        } catch (innerErr) {
+            console.error('Error in fallback function:', innerErr);
+            return res.status(500).json({ success: false, error: 'Unexpected server error.' });
+        }
+    }
+})
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => console.log(`Server running on port http://localhost:${PORT}`));
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Conversation } from "../models/Conversations.js";
-
+import { z } from 'zod';
 export const populateStructure = (child, dataMap, parentPath = "") => {
     const result = []
     if (child.dataType == "object") child.childSchema.forEach(ele => result.push(...populateStructure(ele, dataMap, parentPath + "/" + child.key)))
@@ -109,212 +109,172 @@ export const parseLLMResponse = (responseText) => {
     return { mainText, followups };
 }
 
-
-// const update = req.body;
-
-// // Process the update based on its type
-// if (update.message) {
-//     await handleMessage(update.message);
-// } else if (update.callback_query) {
-//     await handleCallbackQuery(update.callback_query);
-// } else if (update.inline_query) {
-//     await handleInlineQuery(update.inline_query);
-// }
-
-
-// Handle various types of messages (text, commands, etc.)
-// export const handleMessage = async (message) => {
-//     const chatId = message.chat.id;
-
-//     // Handle commands (messages starting with '/')
-
-
-//     // Handle regular text messages
-//     if (message.text) {
-//         await handleTextMessage(message);
-//         return;
-//     }
-
-//     // Handle other message types (photos, documents, etc.)
-//     if (message.photo) {
-//         await sendTextMessage(chatId, "I received your photo!");
-//     } else if (message.document) {
-//         await sendTextMessage(chatId, "I received your document!");
-//     } else if (message.voice) {
-//         await sendTextMessage(chatId, "I received your voice message!");
-//     } else if (message.sticker) {
-//         await sendTextMessage(chatId, "Nice sticker!");
-//     } else {
-//         await sendTextMessage(chatId, "I received your message but I'm not sure how to process it.");
-//     }
-// }
-
-// Handle text commands (messages starting with '/')
-
-
-// Handle regular text messages (not commands)
-// async function handleTextMessage(message) {
-//     const chatId = message.chat.id;
-//     const text = message.text.toLowerCase();
-
-//     // Example of simple text pattern matching
-//     if (text.includes('hello') || text.includes('hi')) {
-//         await sendTextMessage(chatId, `Hello ${message.from.first_name}!`);
-//     } else if (text.includes('bye')) {
-//         await sendTextMessage(chatId, "Goodbye! Come back soon.");
-//     } else if (text.includes('help')) {
-//         await sendTextMessage(chatId, "Try using the /help command for assistance.");
-//     } else {
-//         // Echo the message (or implement more complex logic here)
-//         await sendTextMessage(chatId, `You said: ${message.text}`);
-//     }
-// }
-
-// // Handle callback queries (button presses)
-// async function handleCallbackQuery(callbackQuery) {
-//     const chatId = callbackQuery.message.chat.id;
-//     const messageId = callbackQuery.message.message_id;
-//     const data = callbackQuery.data;
-
-//     // Acknowledge the callback query
-//     await answerCallbackQuery(callbackQuery.id);
-
-//     // Process based on callback data
-//     if (data.startsWith('settings_')) {
-//         const setting = data.split('_')[1];
-
-//         switch (setting) {
-//             case 'notifications':
-//                 await editMessageText(
-//                     chatId,
-//                     messageId,
-//                     'Notification Settings:',
-//                     [
-//                         [
-//                             { text: 'All Messages', callback_data: 'notify_all' },
-//                             { text: 'Mentions Only', callback_data: 'notify_mentions' }
-//                         ],
-//                         [
-//                             { text: 'None', callback_data: 'notify_none' },
-//                             { text: '← Back', callback_data: 'back_to_settings' }
-//                         ]
-//                     ]
-//                 );
-//                 break;
-
-//             case 'language':
-//                 await editMessageText(
-//                     chatId,
-//                     messageId,
-//                     'Select Language:',
-//                     [
-//                         [
-//                             { text: 'English', callback_data: 'lang_en' },
-//                             { text: 'Spanish', callback_data: 'lang_es' }
-//                         ],
-//                         [
-//                             { text: 'French', callback_data: 'lang_fr' },
-//                             { text: '← Back', callback_data: 'back_to_settings' }
-//                         ]
-//                     ]
-//                 );
-//                 break;
-
-//             case 'profile':
-//                 await editMessageText(
-//                     chatId,
-//                     messageId,
-//                     'Profile Settings:',
-//                     [
-//                         [
-//                             { text: 'Edit Name', callback_data: 'profile_name' },
-//                             { text: 'Edit Bio', callback_data: 'profile_bio' }
-//                         ],
-//                         [
-//                             { text: '← Back', callback_data: 'back_to_settings' }
-//                         ]
-//                     ]
-//                 );
-//                 break;
-//         }
-//     } else if (data === 'back_to_settings') {
-//         await editMessageText(
-//             chatId,
-//             messageId,
-//             'What would you like to change?',
-//             [
-//                 [
-//                     { text: 'Notification Settings', callback_data: 'settings_notifications' },
-//                     { text: 'Language', callback_data: 'settings_language' }
-//                 ],
-//                 [
-//                     { text: 'Profile', callback_data: 'settings_profile' }
-//                 ]
-//             ]
-//         );
-//     } else if (data.startsWith('notify_')) {
-//         const option = data.split('_')[1];
-//         await sendTextMessage(chatId, `Notification settings updated to: ${option}`);
-//     } else if (data.startsWith('lang_')) {
-//         const language = data.split('_')[1];
-//         await sendTextMessage(chatId, `Language updated to: ${language}`);
-//     } else if (data.startsWith('profile_')) {
-//         const section = data.split('_')[1];
-//         await sendTextMessage(chatId, `To update your ${section}, please send me the new value.`);
-//     }
-// }
-
-// // Handle inline queries
-// async function handleInlineQuery(inlineQuery) {
-//     // Implementation for handling inline queries (if needed)
-//     // This is when users type @yourbot in any chat
-// }
-
-// // Helper function to send text messages
-// async function sendTextMessage(chatId, text) {
-//     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-//         chat_id: chatId,
-//         text: text
-//     });
-// }
-
-// // Helper function to send messages with inline keyboards
-// async function sendInlineKeyboard(chatId, text, keyboard) {
-//     await axios.post(`${TELEGRAM_API}/sendMessage`, {
-//         chat_id: chatId,
-//         text: text,
-//         reply_markup: {
-//             inline_keyboard: keyboard
-//         }
-//     });
-// }
-
-// // Helper function to edit messages (used for inline keyboards)
-// async function editMessageText(chatId, messageId, text, keyboard = null) {
-//     const payload = {
-//         chat_id: chatId,
-//         message_id: messageId,
-//         text: text
-//     };
-
-//     if (keyboard) {
-//         payload.reply_markup = {
-//             inline_keyboard: keyboard
-//         };
-//     }
-
-//     await axios.post(`${TELEGRAM_API}/editMessageText`, payload);
-// }
-
-// // Helper function to acknowledge callback queries
-// async function answerCallbackQuery(callbackQueryId, text = null) {
-//     const payload = {
-//         callback_query_id: callbackQueryId
-//     };
-
-//     if (text) {
-//         payload.text = text;
-//     }
-
-//     await axios.post(`${TELEGRAM_API}/answerCallbackQuery`, payload);
-// }
+export function createToolWrapper(toolDef) {
+    const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+    const wrapperBody = `
+        "use strict";
+        ${toolDef.functionString}
+    `;
+    const errorFn = toolDef.errorFunction ? `
+        "use strict";
+        ${toolDef.errorFunction}
+    `: null
+    return {
+        name: toolDef.name,
+        description: toolDef.description,
+        parameters: toolDef.parameters,
+        execute: toolDef.async ? new AsyncFunction('input', wrapperBody) : new Function('input', wrapperBody),
+        strict: true,
+        errorFunction: errorFn,
+        needsApproval: toolDef.needsApproval
+    };
+}
+export const BuiltInTools = [
+    {
+        async: true,
+        name: 'book_deal_slot',
+        description: 'Book a slot with a sales or partnership team to make a deal',
+        needsApproval: true, // High-value sales meetings need approval
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "company_name": {
+                    "type": "string",
+                    "description": "The name of the company the user wants to book a slot with",
+                    "minLength": 3
+                },
+                "preferred_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Preferred time of the meeting in iso format (e.g., '2020-01-01T00:00:00.123456Z' for 12am 2020/01/01)"
+                },
+                "contact_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "The user's email address for meeting confirmation"
+                }
+            },
+            "required": [
+                "company_name",
+                "preferred_time",
+                "contact_email"
+            ],
+            "additionalProperties": false
+        },
+        functionString: `
+            console.log(input.company_name, input.preferred_time, input.contact_email)
+            if(!input.company_name || !input.preferred_time || !input.contact_email) {
+                throw new Error('Missing required fields: company name, preferred time and contact email are all required')
+            }
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(input.contact_email)) {
+                throw new Error('Invalid email format provided')
+            }
+            // Validate date format
+            const date = new Date(input.preferred_time);
+            if(isNaN(date.getTime())) {
+                throw new Error('Invalid date format. Please use ISO format like 2024-01-01T14:00:00Z')
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return \`A slot has been booked with the \${input.company_name} team at \${input.preferred_time}. Confirmation sent to \${input.contact_email}.\`;
+        `,
+        errorFunction: `
+            console.error('Deal booking failed:', input);
+            return 'I apologize, but I encountered an error while booking your meeting slot. Please check your details and try again, or contact our support team for assistance.';
+        `
+    },
+    {
+        async: true,
+        "name": "schedule_expert_meeting",
+        "description": "Schedule an appointment with an expert based on availability",
+        needsApproval: false, // Regular expert meetings don't need approval
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "expert_type": {
+                    "type": "string",
+                    "description": "The type of expert the user wants to meet (e.g., financial advisor, product specialist)"
+                },
+                "preferred_date": {
+                    "type": "string",
+                    "description": "The user's preferred date or time for the appointment (e.g., 'next Monday at 3pm')"
+                },
+                "user_email": {
+                    "type": "string",
+                    "description": "The email address to send confirmation details to"
+                }
+            },
+            "required": [
+                "expert_type",
+                "preferred_date",
+                "user_email"
+            ],
+            "additionalProperties": false
+        },
+        functionString: `
+            if(!input.expert_type || !input.preferred_date || !input.user_email) {
+                throw new Error('All fields are required: expert_type, preferred_date, and user_email')
+            }
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(input.user_email)) {
+                throw new Error('Please provide a valid email address')
+            }
+            // Check if expert type is supported
+            const supportedExperts = ['financial advisor', 'product specialist', 'technical consultant', 'business analyst'];
+            if(!supportedExperts.some(expert => input.expert_type.toLowerCase().includes(expert))) {
+                throw new Error(\`Expert type "\${input.expert_type}" is not available. Available experts: \${supportedExperts.join(', ')}\`)
+            }
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            return \`An appointment with a \${input.expert_type} has been scheduled for \${input.preferred_date}. A confirmation has been sent to \${input.user_email}.\`;
+        `,
+        errorFunction: `
+            console.error('Expert meeting scheduling failed:', input);
+            return 'Sorry, I couldn\'t schedule your expert meeting. Please verify your details or try again later.';
+        `
+    },
+    {
+        async: true,
+        "name": "search_knowledge_base",
+        "description": "Query a knowledge base to retrieve relevant info on a topic.",
+        needsApproval: false, // Knowledge fetching doesn't need approval
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The specific question or topic the user wants information about"
+                },
+                "source": {
+                    "type": "string",
+                    "description": "The name of the knowledge base or source to fetch the answer from"
+                }
+            },
+            "required": [
+                "query",
+                "source"
+            ],
+            "additionalProperties": false
+        },
+        functionString: `
+            if(!input.query || !input.source) {
+                throw new Error('Both query and source are required parameters')
+            }
+            if(input.query.length < 3) {
+                throw new Error('Query must be at least 3 characters long')
+            }
+            // Simulate source validation
+            const availableSources = ['company_docs', 'product_manual', 'faq', 'policy_guide'];
+            if(!availableSources.includes(input.source.toLowerCase())) {
+                throw new Error(\`Source "\${input.source}" not found. Available sources: \${availableSources.join(', ')}\`)
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            return \`Based on the source "\${input.source}", here is the answer to your question "\${input.query}": [Detailed Answer from Knowledge Base]\`;
+        `,
+        errorFunction: `
+            console.error('Knowledge fetch failed:', input);
+            return 'I couldn\'t retrieve the information you requested. Please check your query and source, or try a different search term.';
+        `
+    }
+];

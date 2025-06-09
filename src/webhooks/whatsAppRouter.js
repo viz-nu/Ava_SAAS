@@ -2,7 +2,7 @@ import { Router } from "express";
 import { parse } from "url";
 import { getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
 import { actions, AssistantResponse, generateAIResponse, getContextMain } from "../utils/openai.js";
-import { Agent } from "../models/Agent.js";
+import { AgentModel } from "../models/Agent.js";
 import { Conversation } from "../models/Conversations.js";
 import { Message } from "../models/Messages.js";
 export const whatsappRouter = Router()
@@ -10,7 +10,7 @@ whatsappRouter.get('/:agentId', async (req, res) => {
   try {
     const parsedUrl = parse(req.originalUrl, true);
     const query = parsedUrl.query;
-    const agent = await Agent.findById(req.params.agentId);
+    const agent = await AgentModel.findById(req.params.agentId);
     return (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === agent.integrations.whatsapp.verificationToken) ? res.status(200).send(query['hub.challenge']) : res.sendStatus(403);
   } catch (error) {
     console.error('Error in webhook verification:', error);
@@ -24,7 +24,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
     res.status(200).send('EVENT_RECEIVED');
     setImmediate(async (params) => {
       try {
-        const agent = await Agent.findById(req.params.agentId);
+        const agent = await AgentModel.findById(req.params.agentId);
         if (!agent || !agent.integrations?.whatsapp?.permanentAccessToken) return;
         if (body.object === 'whatsapp_business_account' && Array.isArray(body.entry)) {
           for (const entry of body.entry) {
