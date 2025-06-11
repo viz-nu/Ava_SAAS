@@ -8,6 +8,16 @@ const AgentSchema = new Schema({
         textInputBox: { backgroundColor: String, textColor: String },
         quickQuestionsWelcomeScreenBox: { backgroundColor: String, textColor: String }
     },
+    interactionMetrics: Array,
+    tools: [{
+        async: { type: Boolean, default: true },
+        name: String,
+        description: String,
+        needsApproval: { type: Boolean, default: false },
+        parameters: Schema.Types.Mixed,
+        functionString: String,
+        errorFunction: String
+    }],
     personalInfo: {
         name: String,
         role: String,
@@ -17,7 +27,6 @@ const AgentSchema = new Schema({
         welcomeMessage: String,
         model: { type: String, default: 'gpt-4.1-mini' },
         temperature: { type: Number, default: 0.5 },
-        assistantId: String,
         noDataMail: { type: String, default: "vishnu@campusroot.com" },
     },
     integrations: {
