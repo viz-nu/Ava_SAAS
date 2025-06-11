@@ -188,16 +188,16 @@ export const getContextMain = async (collectionIds, text, options = {}) => {
             }
         ]);
         let result = {
-            context: [],
+            // context: [],
             answer: '',
-            embeddingTokens: {
-                model: embeddingResult.model,
-                usage: embeddingResult.usage
-            },
+            // embeddingTokens: {
+            //     model: embeddingResult.model,
+            //     usage: embeddingResult.usage
+            // },
         };
         context.forEach(ele => {
             result.answer += `\n${ele.summary}\n`;
-            result.context.push({ ...ele.metadata, score: ele.score, chunkNumber: ele.chunkNumber });
+            // result.context.push({ ...ele.metadata, score: ele.score, chunkNumber: ele.chunkNumber });
         })
         return result;
     } catch (error) {
@@ -307,14 +307,4 @@ export const OpenAiLLM = async ({ input = [], model = "gpt-4o-mini", text = {} }
         console.error(error);
         return null;
     }
-}
-export const createAnAssistant = async ({ name, instructions, model, temperature }) => {
-    let { id } = await openai.beta.assistants.create({ name, instructions, model, temperature });
-    return id
-}
-export const updateAnAssistant = async ({ assistantId, name, instructions, model, temperature }) => {
-    await openai.beta.assistants.update(assistantId, { name, instructions, model, temperature });
-}
-export const deleteAnAssistant = async ({ assistantId }) => {
-    await openai.beta.assistants.del(assistantId);
 }
