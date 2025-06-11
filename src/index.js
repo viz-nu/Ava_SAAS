@@ -351,7 +351,6 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         payload.data = processed.delta;
                         payload.responseType = "chunk";
                         res.write(JSON.stringify(payload));
-                        process.stdout.write(processed.delta);
                         break;
                     case 'error':
                         payload.id = "error";
