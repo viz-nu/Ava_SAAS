@@ -5,21 +5,33 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
         // Default payload structure
         let payload = { messaging_product, recipient_type: "individual", to: to };
         // Handle different message types
-        if (type === "text") {
-            payload.type = "text";
-            payload.text = Data;
-        } else if (type === "image") {
-            payload.type = "image";
-            payload.image = Data;
-        } else if (type === "audio") {
-            payload.type = "audio";
-            payload.audio = Data;
-        } else if (type === "document") {
-            payload.type = "document";
-            payload.document = Data;
-        } else if (type === "interactive") {
-            payload.type = "interactive";
-            payload.interactive = Data;
+        switch (key) {
+            case "text":
+                payload.type = "text";
+                payload.text = Data;
+                break;
+            case "image":
+                payload.type = "image";
+                payload.image = Data;
+                break;
+            case "audio":
+                payload.type = "audio";
+                payload.audio = Data;
+                break;
+            case "document":
+                payload.type = "document";
+                payload.document = Data;
+                break;
+            case "interactive":
+                payload.type = "interactive";
+                payload.interactive = Data;
+                break;
+            case "sender_action":
+                payload.type = "sender_action";
+                payload.sender_action = "typing_on";
+                break;
+            default:
+                break;
         }
         const { data } = await axios.post(whatsappApiUrl, payload, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         // console.log("✅ Message sent successfully:", data);
