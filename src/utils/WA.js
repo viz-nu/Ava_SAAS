@@ -5,7 +5,7 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
         // Default payload structure
         let payload = { messaging_product, recipient_type: "individual", to: to };
         // Handle different message types
-        switch (key) {
+        switch (type) {
             case "text":
                 payload.type = "text";
                 payload.text = Data;
