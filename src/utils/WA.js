@@ -52,6 +52,7 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
             console.error('Axios Error Message:', error.message);
         }
         console.error('Config:', error.config);
+        console.log(error);
         return null
     }
 }
