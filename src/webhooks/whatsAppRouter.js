@@ -53,7 +53,7 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                   let contactName = null;
                   if (value.contacts && Array.isArray(value.contacts)) {
                     const { profile } = value.contacts.find(c => c.wa_id === from); // Find the contact that matches the sender
-                    if (profile?.name) contactName = contact.profile.name;  // console.log(`👤 Contact identified: ${contactName} (${from})`);  👤 Contact identified: Viz (919490123143)
+                    if (profile?.name) contactName = profile.name;  // console.log(`👤 Contact identified: ${contactName} (${from})`);  👤 Contact identified: Viz (919490123143)
                   }
                   // Handle different message types
                   let userMessageText = ""; // => imp
