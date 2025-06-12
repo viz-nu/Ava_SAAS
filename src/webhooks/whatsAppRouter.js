@@ -49,7 +49,6 @@ whatsappRouter.post('/:agentId', async (req, res) => {
               case "Incoming Message":
                 for (const message of value.messages) {
                   const from = message.from; // => imp
-                  await sendWAMessage({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "sender_action", Data: null });
                   let contactName = null;
                   if (value.contacts && Array.isArray(value.contacts)) {
                     const { profile } = value.contacts.find(c => c.wa_id === from); // Find the contact that matches the sender
