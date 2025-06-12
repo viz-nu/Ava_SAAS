@@ -129,3 +129,55 @@ export function createToolWrapper(toolDef) {
         needsApproval: toolDef.needsApproval
     };
 }
+export function extractMainAndFollowUps(llmResponse) {
+    const followupRegex = /\$followupquestions\$(.*?)\$\/followupquestions\$/s;
+    const match = llmResponse.match(followupRegex);
+
+    let mainText = llmResponse;
+    let followUps = [];
+
+    if (match) {
+        // Remove the followup section from main text
+        mainText = llmResponse.replace(followupRegex, '').trim();
+
+        // Extract individual follow-up questions
+        const fqRegex = /\$fq\$(.*?)\$\/fq\$/gs;
+        let fqMatch;
+        while ((fqMatch = fqRegex.exec(match[1])) !== null) {
+            followUps.push(fqMatch[1].trim());
+        }
+    }
+
+    return { mainText, followUps };
+}
+export function buildFollowUpButtons(followUps = []) {
+    return {
+        type: "button",
+        body: {
+            text: generateHeading()
+        },
+        action: {
+            buttons: followUps.slice(0, 3).map((question, index) => ({
+                type: "reply",
+                reply: {
+                    id: `followup_${index + 1}`,
+                    title: truncate(question, 20)
+                }
+            }))
+        }
+    };
+}
+function truncate(text, maxLength) {
+    return text.length <= maxLength ? text : text.slice(0, maxLength - 1) + "…";
+}
+
+function generateHeading() {
+    const variants = [
+        "Here are a few questions you can consider asking:",
+        "You might want to follow up with:",
+        "Try asking one of these next:",
+        "Want to go deeper? Consider these:",
+        "Some questions you could ask:"
+    ];
+    return variants[Math.floor(Math.random() * variants.length)];
+}

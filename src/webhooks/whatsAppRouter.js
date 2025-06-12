@@ -5,6 +5,7 @@ import { actions, AssistantResponse, generateAIResponse, getContextMain } from "
 import { AgentModel } from "../models/Agent.js";
 import { Conversation } from "../models/Conversations.js";
 import { Message } from "../models/Messages.js";
+import { buildFollowUpButtons, extractMainAndFollowUps } from "../utils/tools.js";
 export const whatsappRouter = Router()
 whatsappRouter.get('/:agentId', async (req, res) => {
   try {
@@ -137,7 +138,10 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                           const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
                           // const { mainText, followups } = parseLLMResponse(response)
                           // const buttons = followups.map((q) => [q]); // each row = one button
-                          await sendWAMessage({ token: agent.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: response } });
+                          const { mainText, followUps } = extractMainAndFollowUps(response)
+                          console.log({ mainText, followUps });
+                          if (mainText.trim()) await sendWAMessage({ token: agent.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: mainText } });
+                          if (followUps.length > 0) await sendWAMessage({ token: agent.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "interactive", Data: buildFollowUpButtons(followUps) });
                           message.responseTokens = responseTokens
                           message.response = response
                           message.embeddingTokens = embeddingTokens

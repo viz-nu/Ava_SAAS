@@ -17,6 +17,9 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
         } else if (type === "document") {
             payload.type = "document";
             payload.document = Data;
+        } else if (type === "interactive") {
+            payload.type = "interactive";
+            payload.interactive = Data;
         }
         const { data } = await axios.post(whatsappApiUrl, payload, { headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } })
         // console.log("✅ Message sent successfully:", data);
