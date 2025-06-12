@@ -331,10 +331,13 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         //         "name": "book_deal_slot"
                         //     }
                         // ]
-                        message.response = processed.response.finalOutput[0]?.content?.text || null
+                        message.response = processed.response.finalOutput[0]?.content[0]?.text || null
+                        message.responseTokens.model = processed.response.model
+                        message.responseTokens.usage = processed.response.usage
                         break;
-                    case 'stream_complete':
-                        // console.log('🏁 Stream finished');
+                    case 'stream.complete':
+                        console.log('🏁 Stream finished');
+                        console.log(processed);
                         break;
                     case 'function_call':
                         // payload.id = "triggeredAction";

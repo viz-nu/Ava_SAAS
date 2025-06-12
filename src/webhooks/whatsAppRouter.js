@@ -97,7 +97,10 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                     const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || [];
                     const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson });
                     state = prevMessages
-                    let { finalOutput } = await run(agent, state, { stream: false, maxTurns: 3, context: `User Name: ${contactName || 'Unknown'}\nDate: ${new Date().toDateString()}` });
+                    let { finalOutput, ...moreInfo } = await run(agent, state, { stream: false, maxTurns: 3, context: `User Name: ${contactName || 'Unknown'}\nDate: ${new Date().toDateString()}` });
+                    console.log(moreInfo);
+                        // message.responseTokens.model = processed.response.model
+                        // message.responseTokens.usage = processed.response.usage
                     const message = await Message.create({ business: agentDetails.business, query: userMessageText, response: finalOutput, conversationId: conversation._id });
                     console.log("response", finalOutput);
                     const { mainText, followUps } = extractMainAndFollowUps(finalOutput)
