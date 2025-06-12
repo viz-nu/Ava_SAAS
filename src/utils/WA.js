@@ -26,10 +26,6 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
                 payload.type = "interactive";
                 payload.interactive = Data;
                 break;
-            case "sender_action":
-                payload.type = "sender_action";
-                payload.sender_action = "typing_on";
-                break;
             default:
                 break;
         }
