@@ -135,6 +135,7 @@ whatsappRouter.get("/main", async (req, res) => {
   try {
     const parsedUrl = parse(req.originalUrl, true);
     const query = parsedUrl.query;
+    console.log(query['hub.verify_token'], query['hub.mode']);
     return (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === "LeanOn") ? res.status(200).send(query['hub.challenge']) : res.sendStatus(403);
   } catch (error) {
     console.error('Error in webhook verification:', error);
