@@ -99,8 +99,8 @@ whatsappRouter.post('/:agentId', async (req, res) => {
                     state = prevMessages
                     let { finalOutput, ...moreInfo } = await run(agent, state, { stream: false, maxTurns: 3, context: `User Name: ${contactName || 'Unknown'}\nDate: ${new Date().toDateString()}` });
                     console.log(moreInfo);
-                        // message.responseTokens.model = processed.response.model
-                        // message.responseTokens.usage = processed.response.usage
+                    // message.responseTokens.model = processed.response.model
+                    // message.responseTokens.usage = processed.response.usage
                     const message = await Message.create({ business: agentDetails.business, query: userMessageText, response: finalOutput, conversationId: conversation._id });
                     console.log("response", finalOutput);
                     const { mainText, followUps } = extractMainAndFollowUps(finalOutput)
@@ -128,6 +128,16 @@ whatsappRouter.post('/:agentId', async (req, res) => {
     })
   } catch (error) {
     console.error('❌ Error in WhatsApp webhook:', error);
+    return res.sendStatus(500);
+  }
+});
+whatsappRouter.get("/main", async (req, res) => {
+  try {
+    const parsedUrl = parse(req.originalUrl, true);
+    const query = parsedUrl.query;
+    return (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === "LeanOn") ? res.status(200).send(query['hub.challenge']) : res.sendStatus(403);
+  } catch (error) {
+    console.error('Error in webhook verification:', error);
     return res.sendStatus(500);
   }
 });
