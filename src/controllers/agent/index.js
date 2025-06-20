@@ -5,13 +5,16 @@ import { Business } from '../../models/Business.js';
 import { Collection } from '../../models/Collection.js';
 import { agentSchema } from '../../Schema/index.js';
 import { Telegraf } from "telegraf";
-import {  openai } from '../../utils/openai.js';
+import { openai } from '../../utils/openai.js';
+import { randomBytes } from 'crypto';
+import axios from 'axios';
+const { wa_client_id, wa_client_secret, SERVER_URL } = process.env;
 export const integrations = errorWrapper(async (req, res) => {
     const [business, agent] = await Promise.all([Business.findById(req.user.business), AgentModel.findById(req.params.id)]);
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     if (!business.agents.includes(req.params.id)) return { statusCode: 403, message: "Unauthorized", data: null }
-    const { telegramToken, whatsappToken } = req.body
+    const { telegramToken, whatsappCode, phone_number_id, waba_id, business_id } = req.body
     if (telegramToken) {
         if (agent.integrations?.telegram?.botToken) {
             const existingBotToken = agent.integrations.telegram.botToken;
@@ -40,10 +43,31 @@ export const integrations = errorWrapper(async (req, res) => {
         }
         await agent.save()
     }
-    if (whatsappToken) {
-        agent.integrations.whatsapp.permanentAccessToken = whatsappToken
-        agent.integrations.whatsapp.updatedAt = new Date()
-        await agent.save()
+    if (whatsappCode && phone_number_id && waba_id && business_id) {
+        const API_VERSION = 'v23.0';
+        try {
+            const response = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
+            agent.integrations.whatsapp.permanentAccessToken = response.data.access_token;
+            agent.integrations.whatsapp.updatedAt = new Date()
+            agent.integrations.whatsapp.phone_number_id = phone_number_id;
+            agent.integrations.whatsapp.waba_id = waba_id;
+            agent.integrations.whatsapp.phoneNumberPin = Math.floor(Math.random() * 900000) + 100000
+            agent.integrations.whatsapp.business_id = business_id;
+            agent.integrations.whatsapp.webhookUrl = `${SERVER_URL}webhook/whatsapp/${agent._id}`;
+            agent.integrations.whatsapp.verificationToken = randomBytes(9).toString('hex');
+            agent.integrations.whatsapp.status = "token_verified";
+            await AgentModel.findByIdAndUpdate(req.params.id, { $set: { "integrations.whatsapp": agent.integrations.whatsapp } })
+            await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": agent.integrations.whatsapp.webhookUrl, "verify_token": agent.integrations.whatsapp.verificationToken }, { headers: { 'Authorization': `Bearer ${agent.integrations.whatsapp.permanentAccessToken}` } });
+            await AgentModel.findByIdAndUpdate(req.params.id, { $set: { "integrations.whatsapp.status": "callback_uri_verified" } })
+            await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': agent.integrations.whatsapp.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${agent.integrations.whatsapp.permanentAccessToken}` } });
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error("Axios error occurred while integrating whatsapp:");
+                if (error.response) console.error("Error details:", { "Response data": error.response.data, "Status code": error.response.status, "Headers": error.response.headers });// Server responded with a status outside 2xx
+                else if (error.request) console.error("No response received:", error.request); // No response received
+                else console.error("Error message:", error.message);// Request setup issue
+            } else console.error("Unexpected error:", error);  // Non-Axios error
+        }
     }
     return { statusCode: 200, message: "Integration Updated", data: agent };
 })
