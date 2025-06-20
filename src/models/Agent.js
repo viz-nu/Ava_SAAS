@@ -51,10 +51,4 @@ const AgentSchema = new Schema({
 }, {
     timestamps: true
 });
-import { randomBytes } from 'crypto';
-AgentSchema.pre('save', function (next) {
-    // if (!this.integrations.whatsapp || !this.integrations.whatsapp.verificationToken) this.integrations.whatsapp = { webhookUrl: `https://chatapi.campusroot.com/webhook/whatsapp/${this._id}`, verificationToken: randomBytes(9).toString('hex') };
-    if (!this.integrations.whatsapp || !this.integrations.whatsapp.verificationToken) this.integrations.whatsapp = { webhookUrl: `${process.env.SERVER_URL}webhook/whatsapp/${this._id}`, verificationToken: randomBytes(9).toString('hex') };
-    next();
-});
 export const AgentModel = model('Agent', AgentSchema, "Agent");
