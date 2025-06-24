@@ -79,55 +79,26 @@ export class StreamEventHandler {
     getEventType(event) {
         // Check for completion signal
         if (event.done === true) return 'completion';
-
         // Check data structure patterns - prioritize specific events first
         if (event.data?.type === 'response_started') return 'response_started';
-        if (event.data?.type === 'response_done') return 'response_done';
+        if (event.data?.type === 'response_done') return 'response_done'; // usage is at event.data?.response?.usage => : {     "input_tokens": 39,     "input_tokens_details": {         "cached_tokens": 0     },     "output_tokens": 434,     "output_tokens_details": {         "reasoning_tokens": 0     },     "total_tokens": 473 },
         if (event.data?.type === 'output_text_delta') return 'text_delta';
-
         // Check for tool-related events (these should be processed first)
         if (event.name === 'tool_called') return 'function_call';
         if (event.name === 'tool_output') return 'function_call_output';
         if (event.name === 'message_output_created') return 'message_output';
-
         // Check for model events - avoid duplicates by being more specific
         if (event.data?.event?.type === 'response.created' && event.data?.event?.sequence_number === 0) return 'response_created';
         if (event.data?.event?.type === 'response.output_text.delta') return 'text_delta';
         if (event.data?.event?.type === 'response.output_text.done') return 'text_done';
-        if (event.data?.event?.type === 'response.completed' && event.type === 'raw_model_stream_event') return 'response_done';
-
+        if (event.data?.event?.type === 'response.completed' && event.type === 'raw_model_stream_event') return 'response_done'; // usage is at event.data?.event?.response?.usage => : {     "input_tokens": 39,     "input_tokens_details": {         "cached_tokens": 0     },     "output_tokens": 434,     "output_tokens_details": {         "reasoning_tokens": 0     },     "total_tokens": 473 },
         // Check for function call in model output - avoid duplicates
         if (event.data?.event?.item?.type === 'function_call' && event.data?.event?.type === 'response.output_item.done') return 'function_call';
-
         // Skip duplicate events
         if (event.data?.event?.type === 'response.completed' && event.data?.providerData) return 'skip';
         if (event.data?.event?.type === 'response.created' && event.data?.event?.sequence_number > 0) return 'skip';
-
         // human in the loop
         if (event.name === 'tool_approval_requested') return 'tool_approval_requested';
-        // {
-        //     "name": "tool_approval_requested",
-        //         "item": {
-        //         "type": "tool_approval_item",
-        //             "rawItem": {
-        //             "providerData": {
-        //                 "type": "function_call"
-        //             },
-        //             "id": "fc_6844782ff0e4819eafd03024cb06fe9e008fb22532a4844b",
-        //                 "type": "function_call",
-        //                     "callId": "call_NGmk9Mbc6kuszIeVpKE3bvuu",
-        //                         "name": "book_deal_slot",
-        //                             "status": "completed",
-        //                                 "arguments": "{\"company_name\":\"Microsoft\",\"preferred_time\":\"2024-06-08T14:00:00Z\",\"contact_email\":\"john.doe@microsoft.com\"}"
-        //         },
-        //         "agent": {
-        //             "name": "AVA"
-        //         }
-        //     },
-        //     "type": "run_item_stream_event"
-        // }
-
-
         return 'unknown';
     }
 
@@ -434,194 +405,3 @@ export class StreamEventHandler {
     }
 }
 
-
-
-
-/**
- * Enhanced Stream Handler with Handoff Support
- * Handles tool calls that require approval before execution
- */
-
-export class HandoffStreamHandler extends StreamEventHandler {
-    constructor() {
-        super();
-        this.pendingHandoffs = new Map(); // Store pending handoffs
-        this.approvalCallbacks = new Map(); // Store approval callbacks
-        this.handoffQueue = [];
-    }
-
-    /**
-     * Enhanced function call handler that checks for handoffs
-     */
-    handleFunctionCall(event) {
-        const processed = super.handleFunctionCall(event);
-
-        if (processed && processed.functionCall) {
-            const { functionCall } = processed;
-
-            // Check if this tool requires approval (handoff)
-            if (this.requiresHandoff(functionCall.name)) {
-                return this.initiateHandoff(functionCall);
-            }
-        }
-
-        return processed;
-    }
-
-    /**
-     * Check if a tool requires handoff/approval
-     */
-    requiresHandoff(toolName) {
-        // This should match your tool definitions
-        const handoffTools = {
-            'book_deal_slot': true,  // Sales meetings need approval
-            'schedule_expert_meeting': false,
-            'fetch_knowledge': false
-        };
-
-        return handoffTools[toolName] || false;
-    }
-
-    /**
-     * Initiate a handoff process
-     */
-    initiateHandoff(functionCall) {
-        const handoffId = `handoff_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-        const handoff = {
-            id: handoffId,
-            functionCall,
-            status: 'pending_approval',
-            timestamp: new Date().toISOString(),
-            approvedBy: null,
-            approvedAt: null
-        };
-
-        this.pendingHandoffs.set(handoffId, handoff);
-        this.handoffQueue.push(handoffId);
-
-        return {
-            type: 'handoff_required',
-            handoff,
-            functionCall,
-            message: `Handoff required for: ${functionCall.name}`
-        };
-    }
-
-    /**
-     * Approve a pending handoff
-     */
-    approveHandoff(handoffId, approvedBy = 'system') {
-        const handoff = this.pendingHandoffs.get(handoffId);
-
-        if (!handoff) {
-            throw new Error(`Handoff ${handoffId} not found`);
-        }
-
-        handoff.status = 'approved';
-        handoff.approvedBy = approvedBy;
-        handoff.approvedAt = new Date().toISOString();
-
-        // Execute the approved callback if it exists
-        const callback = this.approvalCallbacks.get(handoffId);
-        if (callback) {
-            callback(true, handoff);
-            this.approvalCallbacks.delete(handoffId);
-        }
-
-        return {
-            type: 'handoff_approved',
-            handoff,
-            message: `Handoff ${handoffId} approved by ${approvedBy}`
-        };
-    }
-
-    /**
-     * Reject a pending handoff
-     */
-    rejectHandoff(handoffId, rejectedBy = 'system', reason = '') {
-        const handoff = this.pendingHandoffs.get(handoffId);
-
-        if (!handoff) {
-            throw new Error(`Handoff ${handoffId} not found`);
-        }
-
-        handoff.status = 'rejected';
-        handoff.rejectedBy = rejectedBy;
-        handoff.rejectedAt = new Date().toISOString();
-        handoff.rejectionReason = reason;
-
-        // Execute the rejection callback if it exists
-        const callback = this.approvalCallbacks.get(handoffId);
-        if (callback) {
-            callback(false, handoff);
-            this.approvalCallbacks.delete(handoffId);
-        }
-
-        return {
-            type: 'handoff_rejected',
-            handoff,
-            message: `Handoff ${handoffId} rejected by ${rejectedBy}: ${reason}`
-        };
-    }
-
-    /**
-     * Wait for handoff approval (returns a Promise)
-     */
-    waitForHandoffApproval(handoffId, timeoutMs = 300000) { // 5 minute timeout
-        return new Promise((resolve, reject) => {
-            const handoff = this.pendingHandoffs.get(handoffId);
-
-            if (!handoff) {
-                reject(new Error(`Handoff ${handoffId} not found`));
-                return;
-            }
-
-            // Set up timeout
-            const timeout = setTimeout(() => {
-                this.approvalCallbacks.delete(handoffId);
-                reject(new Error(`Handoff ${handoffId} timed out after ${timeoutMs}ms`));
-            }, timeoutMs);
-
-            // Store callback for when approval/rejection happens
-            this.approvalCallbacks.set(handoffId, (approved, handoffData) => {
-                clearTimeout(timeout);
-                resolve({ approved, handoff: handoffData });
-            });
-        });
-    }
-
-    /**
-     * Get all pending handoffs
-     */
-    getPendingHandoffs() {
-        return Array.from(this.pendingHandoffs.values())
-            .filter(handoff => handoff.status === 'pending_approval');
-    }
-
-    /**
-     * Clean up completed handoffs
-     */
-    cleanupHandoffs(olderThanMs = 3600000) { // 1 hour
-        const cutoff = Date.now() - olderThanMs;
-
-        for (const [id, handoff] of this.pendingHandoffs.entries()) {
-            const handoffTime = new Date(handoff.timestamp).getTime();
-
-            if (handoffTime < cutoff && handoff.status !== 'pending_approval') {
-                this.pendingHandoffs.delete(id);
-                this.approvalCallbacks.delete(id);
-            }
-        }
-    }
-
-    /**
-     * Reset handler state including handoffs
-     */
-    reset() {
-        super.reset();
-        this.pendingHandoffs.clear();
-        this.approvalCallbacks.clear();
-        this.handoffQueue = [];
-    }
-}

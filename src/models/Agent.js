@@ -37,6 +37,12 @@ const AgentSchema = new Schema({
             userName: String
         },
         whatsapp: {
+            permanentAccessToken: String,
+            phone_number_id: String,
+            waba_id: String,
+            phoneNumberPin: String,
+            business_id: String,
+            status: String,
             webhookUrl: String,
             verificationToken: String,
             permanentAccessToken: String,

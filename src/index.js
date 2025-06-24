@@ -288,61 +288,8 @@ app.post('/v1/agent', openCors, async (req, res) => {
                     case 'response_started':
                         // console.log('🚀 Response started:', processed.message);
                         break;
-                    case 'text_done':
-                        // console.log('\n✅ Text completed');
-                        break;
-                    case 'response_done':
-                        // processed.response.model  // "model": "gpt-3.5-turbo-0125",
-                        // processed.response.usage
-                        // "usage": {
-                        //   "input_tokens": 846,
-                        //   "input_tokens_details": {
-                        //     "cached_tokens": 0
-                        //   },
-                        //   "output_tokens": 68,
-                        //   "output_tokens_details": {
-                        //     "reasoning_tokens": 0
-                        //   },
-                        //   "total_tokens": 914
-                        // },
-                        console.log('🎉 Response completed');
-                        // "finalOutput": [
-                        //     {
-                        //         "id": "msg_68469c4518548192932e71486953d3930ea65c16d4a79d49",
-                        //         "type": "message",
-                        //         "status": "completed",
-                        //         "content": [
-                        //             {
-                        //                 "type": "output_text",
-                        //                 "annotations": [],
-                        //                 "text": "Hello! I can assist you with that. Please provide me with more details about the deal you'd like to discuss. What company are you representing, and what aspect of the deal would you like to focus on?"
-                        //             }
-                        //         ],
-                        //         "role": "assistant"
-                        //     }
-                        // ]
-                        // "finalOutput": [
-                        //     {
-                        //         "id": "fc_68469c97c714819caacf9fa0c2bc12890cc1f851f53c846f",
-                        //         "type": "function_call",
-                        //         "status": "completed",
-                        //         "arguments": "{\"company_name\":\"Apple\",\"preferred_time\":\"2023-11-09T17:00:00Z\",\"contact_email\":\"viz@apple.com\"}",
-                        //         "call_id": "call_jg18q6ln9SaoUuHXXDnBWz36",
-                        //         "name": "book_deal_slot"
-                        //     }
-                        // ]
-                        message.response = processed.response.finalOutput[0]?.content[0]?.text || null
-                        message.responseTokens.model = processed.response.model
-                        message.responseTokens.usage = processed.response.usage
-                        break;
-                    case 'stream.complete':
-                        console.log('🏁 Stream finished');
-                        console.log(processed);
-                        break;
                     case 'function_call':
-                        // payload.id = "triggeredAction";
-                        // payload.data = processed.functionCall?.name;
-                        // res.write(JSON.stringify(payload) );
+                        message.triggeredActions.push(processed.functionCall?.name);
                         break;
                     case 'function_output':
                         // payload.id = "responseFromAction";
@@ -354,6 +301,18 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         payload.data = processed.delta;
                         payload.responseType = "chunk";
                         res.write(JSON.stringify(payload));
+                        break;
+                    case 'text_done':
+                        // console.log('\n✅ Text completed');
+                        break;
+                    case 'stream.complete':
+                        console.log('🏁 Stream finished');
+                        break;
+                    case 'response_done':
+                        console.log('🎉 Response completed');
+                        message.response = processed.response.finalOutput[0]?.content[0]?.text || JSON.stringify(processed.response.finalOutput);
+                        message.responseTokens.model = processed.response.model
+                        message.responseTokens.usage = processed.response.usage
                         break;
                     case 'error':
                         payload.id = "error";
