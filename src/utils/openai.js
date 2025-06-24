@@ -308,3 +308,106 @@ export const OpenAiLLM = async ({ input = [], model = "gpt-4o-mini", text = {} }
         return null;
     }
 }
+export const pricing = {
+    // GPT-4.1 Series
+    'gpt-4.1-2025-04-14': { input: 0.002, output: 0.008 },
+    'gpt-4.1': { input: 0.002, output: 0.008 }, // Latest alias
+    'gpt-4.1-mini-2025-04-14': { input: 0.0004, output: 0.0016 },
+    'gpt-4.1-nano-2025-04-14': { input: 0.0001, output: 0.0004 },
+
+    // GPT-4.5 Preview
+    'gpt-4.5-preview-2025-02-27': { input: 0.075, output: 0.15 },
+
+    // GPT-4o Series
+    'gpt-4o-2024-08-06': { input: 0.0025, output: 0.01 },
+    'gpt-4o-2024-11-20': { input: 0.0025, output: 0.01 },
+    'gpt-4o-2024-05-13': { input: 0.005, output: 0.015 },
+
+    // GPT-4o Audio Preview
+    'gpt-4o-audio-preview-2024-12-17': { input: 0.0025, output: 0.01 },
+    'gpt-4o-audio-preview-2025-06-03': { input: 0.0025, output: 0.01 },
+    'gpt-4o-audio-preview-2024-10-01': { input: 0.0025, output: 0.01 },
+
+    // GPT-4o Realtime Preview
+    'gpt-4o-realtime-preview-2024-12-17': { input: 0.005, output: 0.02 },
+    'gpt-4o-realtime-preview-2025-06-03': { input: 0.005, output: 0.02 },
+    'gpt-4o-realtime-preview-2024-10-01': { input: 0.005, output: 0.02 },
+
+    // GPT-4o Mini
+    'gpt-4o-mini-2024-07-18': { input: 0.00015, output: 0.0006 },
+    'gpt-4o-mini': { input: 0.00015, output: 0.0006 }, // Latest alias
+
+    // GPT-4o Mini Audio Preview
+    'gpt-4o-mini-audio-preview-2024-12-17': { input: 0.00015, output: 0.0006 },
+
+    // GPT-4o Mini Realtime Preview
+    'gpt-4o-mini-realtime-preview-2024-12-17': { input: 0.0006, output: 0.0024 },
+
+    // GPT-4o Search Preview
+    'gpt-4o-search-preview-2025-03-11': { input: 0.0025, output: 0.01 },
+    'gpt-4o-mini-search-preview-2025-03-11': { input: 0.00015, output: 0.0006 },
+
+    // O1 Series
+    'o1-2024-12-17': { input: 0.015, output: 0.06 },
+    'o1-preview-2024-09-12': { input: 0.015, output: 0.06 },
+    'o1-mini-2024-09-12': { input: 0.0011, output: 0.0044 },
+
+    // O1 Pro
+    'o1-pro-2025-03-19': { input: 0.15, output: 0.6 },
+
+    // O3 Series
+    'o3-2025-04-16': { input: 0.002, output: 0.008 },
+    'o3-mini-2025-01-31': { input: 0.0011, output: 0.0044 },
+    'o3-pro-2025-06-10': { input: 0.02, output: 0.08 },
+
+    // O4 Mini
+    'o4-mini-2025-04-16': { input: 0.0011, output: 0.0044 },
+
+    // Codex
+    'codex-mini-latest': { input: 0.0015, output: 0.006 },
+
+    // Computer Use Preview
+    'computer-use-preview-2025-03-11': { input: 0.003, output: 0.012 },
+
+    // GPT Image
+    'gpt-image-1': { input: 0.005, output: null },
+
+    // ChatGPT-4o Latest
+    'chatgpt-4o-latest': { input: 0.005, output: 0.015 },
+
+    // GPT-4 Turbo
+    'gpt-4-turbo-2024-04-09': { input: 0.01, output: 0.03 },
+    'gpt-4-turbo': { input: 0.01, output: 0.03 }, // Latest alias
+    'gpt-4-0125-preview': { input: 0.01, output: 0.03 },
+    'gpt-4-1106-preview': { input: 0.01, output: 0.03 },
+    'gpt-4-1106-vision-preview': { input: 0.01, output: 0.03 },
+
+    // GPT-4 Original
+    'gpt-4-0613': { input: 0.03, output: 0.06 },
+    'gpt-4': { input: 0.03, output: 0.06 }, // Latest alias
+    'gpt-4-0314': { input: 0.03, output: 0.06 },
+    'gpt-4-32k': { input: 0.06, output: 0.12 },
+
+    // GPT-3.5 Turbo
+    'gpt-3.5-turbo-0125': { input: 0.0005, output: 0.0015 },
+    'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 }, // Latest alias
+    'gpt-3.5-turbo-1106': { input: 0.001, output: 0.002 },
+    'gpt-3.5-turbo-0613': { input: 0.0015, output: 0.002 },
+    'gpt-3.5-0301': { input: 0.0015, output: 0.002 },
+    'gpt-3.5-turbo-instruct': { input: 0.0015, output: 0.002 },
+    'gpt-3.5-turbo-16k-0613': { input: 0.003, output: 0.004 },
+    'text-embedding-3-small': { input: 0.00002, output: null }, // Embedding model
+    // // Davinci and Babbage
+    // 'davinci-002': { input: 0.002, output: 0.002 },
+    // 'babbage-002': { input: 0.0004, output: 0.0004 }
+};
+
+
+// Helper function to calculate cost
+export const calculateCost = (modelName, inputTokens, outputTokens) => {
+    const modelPricing = pricing[modelName] || null;
+    if (!modelPricing) return null;
+    const inputCost = (inputTokens / 1000) * modelPricing.input;
+    const outputCost = outputTokens && modelPricing.output ? (outputTokens / 1000) * modelPricing.output : 0;
+    return { inputCost: inputCost, outputCost: outputCost, totalCost: inputCost + outputCost };
+}

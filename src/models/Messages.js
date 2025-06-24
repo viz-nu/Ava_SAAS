@@ -18,6 +18,7 @@ const MessagesSchema = new Schema({
         model: String,
         usage: { type: Schema.Types.Mixed }
     },
+    triggeredActions: Array,
     context: Array,
     Actions: Array,
     analysis:Array,

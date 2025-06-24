@@ -7,6 +7,7 @@ import { Action } from "../../models/Action.js";
 import { analyzeQueries } from "../../utils/nlp.js";
 import { AgentModel } from "../../models/Agent.js";
 import { Conversation } from "../../models/Conversations.js";
+import { calculateCost } from "../../utils/openai.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -19,7 +20,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
             : Promise.resolve([{ totalKnowledgeTokensUsed: 0 }]),
         Message.aggregate([
             { $match: { business: business._id } },
-            { $group: { _id: null, totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" } } }
+            { $group: { _id: "$responseTokens.model", totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" }, inputChatTokensUsed: { $sum: "$responseTokens.usage.input_tokens" }, outputChatTokensUsed: { $sum: "$responseTokens.usage.output_tokens" } } }
         ]),
         Message.aggregate([
             { $match: { business: business._id } },
@@ -84,8 +85,21 @@ export const Dashboard = errorWrapper(async (req, res) => {
         NewAnalysis,
         locations
     ] = await Promise.all(aggregationQueries);
-    const totalKnowledgeTokensUsed = knowledgeTokensRes[0]?.totalKnowledgeTokensUsed || 0;
-    const totalChatTokensUsed = chatTokensRes[0]?.totalChatTokensUsed || 0;
+    let totalKnowledgeTokensUsed = 0, OverAllKnowledgeCost = 0;
+    for (const ele of knowledgeTokensRes) {
+        totalKnowledgeTokensUsed += ele.totalKnowledgeTokensUsed
+        let { totalCost } = calculateCost("text-embedding-3-small", ele.totalKnowledgeTokensUsed, 0)
+        OverAllKnowledgeCost += totalCost
+    }
+    let totalChatTokensUsed = 0, costOfInputChatTokens = 0, costOfOutputChatTokens = 0, OverAllChatCost = 0;
+    for (const ele of chatTokensRes) {
+        totalChatTokensUsed += Number(ele.totalChatTokensUsed)
+        let { inputCost, outputCost, totalCost } = calculateCost(ele._id, ele.inputChatTokensUsed, ele.outputChatTokensUsed)
+        costOfInputChatTokens += inputCost;
+        costOfOutputChatTokens += outputCost;
+        OverAllChatCost += totalCost;
+    }
+
     const actionTokens = actionTokensRes[0]?.totalActionTokensUsed || 0;
     const analysisTokens = analysisTokensRes[0]?.totalAnalysisTokensUsed || 0
     const reactionCounts = reactionsRes.reduce((acc, { _id, count }) => {
@@ -104,8 +118,19 @@ export const Dashboard = errorWrapper(async (req, res) => {
         data: {
             user: req.user,
             business,
-            totalKnowledgeTokensUsed,
+            chatCosts: {
+                totalChatTokensUsed,
+                costOfInputChatTokens,
+                costOfOutputChatTokens,
+                OverAllChatCost,
+            },
+            knowledgeCosts: {
+                totalKnowledgeTokensUsed,
+                OverAllKnowledgeCost
+            },
+            OverAllCost: OverAllChatCost + OverAllKnowledgeCost,
             totalChatTokensUsed,
+            totalKnowledgeTokensUsed,
             reactionCounts,
             actionsData,
             actionTokens,
