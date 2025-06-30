@@ -91,8 +91,8 @@ export const regenerateToken = async () => {
         await storeNewToken("ZOHO_ACCESS_TOKEN", data.access_token)
         return data.access_token
     } catch (error) {
+        console.error(error);
         return false;
-        // console.error(error);
     }
 }
 
@@ -135,7 +135,7 @@ export const validateAccessToken = async (token) => {
         });
         return true; // Token is valid
     } catch (error) {
-        // console.error(error);
+        console.error(error);
         return false;
     }
 }

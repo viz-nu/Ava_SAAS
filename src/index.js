@@ -251,7 +251,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
         const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [] } = req.body;
-        let [agentDetails, business, conversation, message] = await Promise.all([AgentModel.findById(agentId), Business.findOne({ agents: agentId }), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
+        let [agentDetails, business, conversation, message] = await Promise.all([AgentModel.findById(agentId).populate("actions"), Business.findOne({ agents: agentId }), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
         if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
         if (!business) return res.status(404).json({ error: 'Business not found' });
         let prevMessages = [], state
@@ -266,7 +266,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         } else { conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data }); }
         if (!message) message = await Message.create({ business: business._id, query: userMessage, response: "", conversationId: conversation._id });
         prevMessages.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
-        const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || [];
+        const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
         const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson });
         if (interruptionDecisions.length > 0) {
             state = await RunState.fromString(agent, conversation.state);
@@ -327,7 +327,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 hasInterruptions = true;
                 const interruptionData = stream.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
                 conversation = await Conversation.findByIdAndUpdate(conversation._id, { $set: { pendingInterruptions: interruptionData, state: JSON.stringify(newState) } }, { new: true });
-                const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: { ...rawItem, parameters: agentDetails.tools.find(ele => ele.name === rawItem.name).parameters }, type: type, message: message })) } };
+                const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: { ...rawItem, parameters: agentDetails.tools.length > 0 ? agentDetails.tools.find(ele => ele.name === rawItem.name).parameters : agentDetails.actions.find(ele => ele.intent === rawItem.name) }, type: type, message: message })) } };
                 res.write(JSON.stringify(interruptionPayload));
                 break;
             } else {

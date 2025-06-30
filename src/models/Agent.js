@@ -1,7 +1,6 @@
 import { model, Schema } from 'mongoose';
 
 const AgentSchema = new Schema({
-    collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     appearance: {
         clientMessageBox: { backgroundColor: String, textColor: String },
         avaMessageBox: { backgroundColor: String, textColor: String },
@@ -37,7 +36,6 @@ const AgentSchema = new Schema({
             userName: String
         },
         whatsapp: {
-            permanentAccessToken: String,
             phone_number_id: String,
             waba_id: String,
             phoneNumberPin: String,
@@ -49,6 +47,7 @@ const AgentSchema = new Schema({
             updatedAt: Date
         }
     },
+    channels:[{ type: Schema.Types.ObjectId, ref: 'Channel' }],
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
