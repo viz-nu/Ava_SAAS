@@ -14,7 +14,7 @@ export const fetchToken = async (name) => {
     try {
         return await redisClient.get(name) || null
     } catch (error) {
-        console.error('Error storing token:', error);
+        console.error('Error fetching token:', error);
         throw error;
     }
 }
