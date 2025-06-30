@@ -24,7 +24,7 @@ const ToolParameterSchema = new Schema({
 const ActionSchema = new Schema({
     name: String,
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
-    async: true,
+    async: { type: Boolean, default: true },
     name: String,
     description: String,
     needsApproval: Boolean, // Knowledge fetching doesn't need approval
