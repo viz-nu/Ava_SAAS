@@ -41,6 +41,12 @@ export const sitemapGenerator = async (mainUrl) => {
     return sitemapUrls;
   } catch (error) {
     console.error(`Error processing ${mainUrl}:`, error.message);
+    if (axios.isAxiosError(error)) {
+      console.error('Error status:', error.response?.status);
+      console.error('Error fetching tokens:', error.response?.data || error.message);
+    } else {
+      console.error('Unexpected error:', error);
+    }
     return [];
   }
 };

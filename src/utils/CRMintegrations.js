@@ -64,11 +64,14 @@ async function getZohoTokens(authorizationCode) {
                 code: authorizationCode,
             },
         });
-
-
         const { access_token, refresh_token, expires_in } = response.data;
     } catch (error) {
-        console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
     }
 }
 
@@ -87,12 +90,17 @@ export const regenerateToken = async () => {
                     grant_type: "refresh_token",
                     client_id: clientId
                 }
-            })
-        console.log({ "regeneratedZohoToken": data });
+            }) // data.error = invalid_code
+        if (data.error) return false;
         await storeNewToken("ZOHO_ACCESS_TOKEN", data.access_token)
         return data.access_token
     } catch (error) {
-        console.error(error);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         return false;
     }
 }
@@ -121,7 +129,12 @@ export const createFolder = async (name, parent_id) => {
         );
         return data.data;
     } catch (error) {
-        console.error(error);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
     }
 }
 
@@ -136,7 +149,12 @@ export const validateAccessToken = async (token) => {
         });
         return true; // Token is valid
     } catch (error) {
-        console.error(error);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         return false;
     }
 }
@@ -176,7 +194,12 @@ export const uploadFileToWorkDrive = async ({ originalname, path, mimetype, file
                 break;
         }
     } catch (error) {
-        console.error(error.response?.data || error.message);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         return { success: false, message: 'Error uploading file to WorkDrive', data: error.response?.data || error.message };
     } finally {
         unlinkSync(path);
@@ -214,7 +237,12 @@ export const deleteFileInWorkDrive = async (resource_id) => {
 
     } catch (error) {
         // Log and return error response
-        console.error(error.response?.data || error.message);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response?.data || error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         return {
             success: false,
             message: 'Error deleting file in WorkDrive',

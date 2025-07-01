@@ -26,6 +26,12 @@ export const searchBusiness = async (businessName) => {
         }));
     } catch (error) {
         console.error('Error searching for business:', error.message);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response?.data || error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         throw new Error('Failed to search for business information');
     }
 }
@@ -97,7 +103,7 @@ export const getBusinessInfo = async (businessName) => {
         return {
             facts,
             "frequently asked questions": faqs,
-            tagline, description, address, website, phone 
+            tagline, description, address, website, phone
         };
     } catch (error) {
         console.error('Error getting business information:', error.message);
