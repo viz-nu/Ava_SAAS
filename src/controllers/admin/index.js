@@ -206,11 +206,11 @@ export const updateAction = errorWrapper(async (req, res) => {
 export const deleteAction = errorWrapper(async (req, res) => {
     const action = await Action.findById(req.params.id);
     if (!action) return res.status(404).json({ message: "Action not found" });
-    const [deletedAction, updatedBusiness, updatedAgents] = await Promise.all([
+    const [deletedAction, updatedAgents] = await Promise.all([
         Action.findByIdAndDelete(req.params.id),
         AgentModel.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
     ]);
-    return { statusCode: 200, message: "Action deleted successfully", data: { deletedAction, updatedBusiness, updatedAgents } }
+    return { statusCode: 200, message: "Action deleted successfully", data: { deletedAction, updatedAgents } }
 });
 export const raiseTicket = errorWrapper(async (req, res) => {
     const { issueDetails, attachments } = req.body;
