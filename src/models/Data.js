@@ -13,7 +13,8 @@ const DataSchema = new Schema({
         url: { type: String }
     }
 }, {
-    timestamps: true
+    timestamps: true,
+    suppressReservedKeysWarning: true,
 });
 DataSchema.pre('save', function (next) {
     if (this.content) {
