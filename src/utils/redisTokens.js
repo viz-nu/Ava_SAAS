@@ -4,6 +4,7 @@ const redisClient = await getRedisClient();
 
 export const storeNewToken = async (name, newAccessToken) => {
     try {
+        console.log({ name, newAccessToken });
         await redisClient.set(`${name}`, newAccessToken, { 'EX': 3600 }); // 1 hour
     } catch (error) {
         console.error('Error storing token:', error);

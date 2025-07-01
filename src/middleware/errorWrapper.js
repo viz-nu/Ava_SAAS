@@ -29,7 +29,12 @@ export const errorWrapper = (fn) => {
         }
       }
     } catch (error) {
-      console.error(error);
+      if (axios.isAxiosError(error)) {
+        console.error('Error status:', error.response?.status);
+        console.error('Error data:', error.response?.data);
+      } else {
+        console.error('Unexpected error:', error);
+      }
       await session.abortTransaction();
       next(error);
     }
