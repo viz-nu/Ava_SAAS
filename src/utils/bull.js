@@ -45,7 +45,12 @@ urlProcessingQueue.process(async (job) => {
         }
         return { success: true };
     } catch (error) {
-        console.error(error);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error data:', error.response?.data);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         await Collection.updateOne(
             { _id: collectionId, "contents._id": _id },
             { $push: { "contents.$.metaData.detailedReport": { success: false, url: url, error: error?.message } } }

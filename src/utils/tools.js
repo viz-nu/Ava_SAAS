@@ -93,7 +93,12 @@ export const getLocation = async (latitude, longitude) => {
         const reqFields = { city: data.address.city || data.address.town || data.address.village, country_name: data.address.country, region: data.address.state, postal: data.address.postcode }
         return { latitude, longitude, ...data, ...reqFields }
     } catch (error) {
-        console.log(error);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response?.data || error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         return { latitude, longitude }
     }
 }

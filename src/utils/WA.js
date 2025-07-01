@@ -34,21 +34,12 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
         return data
     } catch (error) {
         console.error("❌ Error sending WhatsApp message:");
-        if (error.response) {
-            // The request was made, server responded with a status code outside 2xx
-            console.error('Error Response:');
-            console.error('Status:', error.response.status);
-            console.error('Data:', error.response.data);
-            console.error('Headers:', error.response.headers);
-        } else if (error.request) {
-            // The request was made but no response received
-            console.error('No Response received:', error.request);
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response?.data || error.message);
         } else {
-            // Something happened in setting up the request
-            console.error('Axios Error Message:', error.message);
+            console.error('Unexpected error:', error);
         }
-        console.error('Config:', error.config);
-        console.log(error);
         return null
     }
 }
@@ -66,7 +57,13 @@ export const getMediaTranscriptions = async ({ token, mediaId, openAiKey, transc
         return transcriptionResponse.data.text;
 
     } catch (error) {
-        console.error("Error occurred while fetching MediaUrl:", error);
+        console.error("Error occurred while fetching MediaUrl:");
+        if (axios.isAxiosError(error)) {
+            console.error('Error status:', error.response?.status);
+            console.error('Error fetching tokens:', error.response?.data || error.message);
+        } else {
+            console.error('Unexpected error:', error);
+        }
         return "some audio that cannot be processed"
     }
 }

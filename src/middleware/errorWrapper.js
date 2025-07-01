@@ -1,6 +1,7 @@
 /**  handles errors inside every req */
 import { startSession } from "mongoose"
 import { generateAPIError } from "../errors/apiError.js"
+import axios from "axios";
 export const errorWrapper = (fn) => {
   return async (req, res, next) => {
     const session = await startSession();
