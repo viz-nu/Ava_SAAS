@@ -11,7 +11,6 @@ AdminRouter.post('/query-analysis', authMiddleware, isAdmin, DetailedAnalysis);
 AdminRouter.put('/edit-business', authMiddleware, isAdmin, editBusiness);
 AdminRouter.post('/raise-ticket', authMiddleware, isAdmin, raiseTicket);
 AdminRouter.post('/actions', authMiddleware, isAdmin, createActions);
-AdminRouter.get('/actions', authMiddleware, isAdmin, getActions);
-AdminRouter.get('/actions/:id', authMiddleware, isAdmin, getActionById);
+AdminRouter.get('/actions/:id', authMiddleware, isAdmin, getActions);
 AdminRouter.put('/actions/:id', authMiddleware, isAdmin, updateAction);
 AdminRouter.delete('/actions/:id', authMiddleware, isAdmin, deleteAction);

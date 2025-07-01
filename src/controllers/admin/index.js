@@ -187,21 +187,16 @@ export const editBusiness = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Business updated", data: business }
 });
 export const createActions = errorWrapper(async (req, res) => {
-    const { intent, workingData } = req.body
-    if (!intent || !workingData) return { statusCode: 404, message: "intend or workingData not found", data: null }
     const business = await Business.findById(req.user.business)
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const action = await Action.create({ business: business._id, ...req.body })
     return { statusCode: 201, message: "Action created successfully", data: action }
 });
 export const getActions = errorWrapper(async (req, res) => {
-    const actions = await Action.find({ business: req.user.business });
-    return { statusCode: 200, message: "Actions fetched successfully", data: actions }
-});
-export const getActionById = errorWrapper(async (req, res) => {
-    const action = await Action.findOne({ _id: req.params.id, business: req.user.business });
-    if (!action) return res.status(404).json({ message: "Action not found" });
-    return { statusCode: 200, message: "Action fetched successfully", data: action }
+    const filter = { business: req.user.business }
+    if (req.params.id) filter.id = req.params.id
+    const actions = await Action.find(filter);
+    return { statusCode: 200, message: `Action${req.params.id ? "" : "s"} fetched successfully`, data: actions }
 });
 export const updateAction = errorWrapper(async (req, res) => {
     const action = await Action.findOneAndUpdate({ _id: req.params.id, business: req.user.business }, { ...req.body }, { new: true });
@@ -213,7 +208,6 @@ export const deleteAction = errorWrapper(async (req, res) => {
     if (!action) return res.status(404).json({ message: "Action not found" });
     const [deletedAction, updatedBusiness, updatedAgents] = await Promise.all([
         Action.findByIdAndDelete(req.params.id),
-        Business.updateOne({ actions: req.params.id }, { $pull: { actions: req.params.id } }),
         AgentModel.updateMany({ actions: req.params.id }, { $pull: { actions: req.params.id } })
     ]);
     return { statusCode: 200, message: "Action deleted successfully", data: { deletedAction, updatedBusiness, updatedAgents } }
