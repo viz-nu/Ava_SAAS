@@ -194,9 +194,9 @@ export const createActions = errorWrapper(async (req, res) => {
 });
 export const getActions = errorWrapper(async (req, res) => {
     const filter = { business: req.user.business }
-    if (req.params.id) filter.id = req.params.id
+    if (req.query.id) filter.id = req.query.id
     const actions = await Action.find(filter);
-    return { statusCode: 200, message: `Action${req.params.id ? "" : "s"} fetched successfully`, data: actions }
+    return { statusCode: 200, message: `Action${req.query.id ? "" : "s"} fetched successfully`, data: actions }
 });
 export const updateAction = errorWrapper(async (req, res) => {
     const action = await Action.findOneAndUpdate({ _id: req.params.id, business: req.user.business }, { ...req.body }, { new: true });
