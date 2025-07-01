@@ -7,53 +7,42 @@ import { agentSchema } from '../../Schema/index.js';
 import { openai } from '../../utils/openai.js';
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    const { appearance, personalInfo, actions, channels } = req.body
+    const { appearance, personalInfo, actions = [], channels = [] } = req.body
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     for (const id of channels) {
-        const channel = await Channel.findById(id);
+        const channel = await Channel.findOne({ _id: id, business: req.user.business });
         if (!channel) return { statusCode: 404, message: "channel not found", data: null }
-        if (channel.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this channel", data: { channelId: id } }
     }
     for (const id of actions) {
-        const action = await Action.findById(id);
+        const action = await Action.findOne({ _id: id, business: req.user.business });
         if (!action) return { statusCode: 404, message: "action not found", data: null }
-        if (action.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this action", data: { actionId: id } }
     }
-    const agent = await AgentModel.create({ appearance, personalInfo, actions, business: business._id, createdBy: req.user._id });
-    business.agents.push(agent._id)
-    await business.save()
+    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, business: business._id, createdBy: req.user._id });
     return { statusCode: 201, message: "New agent added", data: agent };
 });
 export const getAllAgents = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate("agents");
-    if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    return { statusCode: 200, message: "Agents retrieved", data: business.agents }
-});
-export const getAgentById = errorWrapper(async (req, res) => {
-    const agent = await AgentModel.findById(req.params.id).populate('collections business createdBy');
-    if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
-    const business = await Business.findById(req.user.business);
-    if (!business || !business.agents.includes(agent._id)) return { statusCode: 403, message: "Unauthorized", data: null }
-    return { statusCode: 200, message: "Agent retrieved", data: agent };
+    const filter = { business: req.user.business }
+    if (req.params.id) filter._id = req.params.id
+    const agents = await AgentModel.find(filter);
+    return { statusCode: 200, message: "Agents retrieved", data: agents }
 });
 export const updateAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    const [business, agent] = await Promise.all([Business.findById(req.user.business), AgentModel.findById(req.params.id)]);
+    const [business, agent] = await Promise.all([Business.findById(req.user.business), await AgentModel.findOne({ _id: req.params.id, business: req.user.business })]);
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
-    if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    if (!business.agents.includes(req.params.id)) return { statusCode: 403, message: "Unauthorized", data: null }
     const { appearance, personalInfo, actions, channels } = req.body
-    for (const id of channels) {
-        const channel = await Channel.findById(id);
-        if (!channel) return { statusCode: 404, message: "channel not found", data: null }
-        if (channel.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this channel", data: { channelId: id } }
+    if (channels.length > 0) {
+        for (const id of channels) {
+            const channel = await Channel.findOne({ _id: id, business: req.user.business });
+            if (!channel) return { statusCode: 404, message: "channel not found", data: null }
+        }
+        agent.channels = channels;
     }
-    if (actions) {
+    if (actions.length > 0) {
         for (const id of actions) {
-            const action = await Action.findById(id);
+            const action = await Action.findOne({ _id: id, business: req.user.business });
             if (!action) return { statusCode: 404, message: "action not found", data: null }
-            if (action.business.toString() != business._id.toString()) return { statusCode: 404, message: "your business doesn't have access to this action", data: { actionId: id } }
         }
         agent.actions = actions;
     }
@@ -74,15 +63,9 @@ export const updateAgent = errorWrapper(async (req, res) => {
     return { statusCode: 200, message: "Agent updated", data: agent };
 });
 export const deleteAgent = errorWrapper(async (req, res) => {
-    const agent = await AgentModel.findById(req.params.id);
+    const agent = await AgentModel.findOne({ _id: req.params.id, business: req.user.business });
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
-    const business = await Business.findById(req.user.business);
-    if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    if (!business.agents.includes(req.params.id)) return { statusCode: 404, message: "You are not authorized to delete this collection", data: null }
-    await Promise.all([
-        AgentModel.findByIdAndDelete(req.params.id),
-        Business.updateMany({ agents: req.params.id }, { $pull: { agents: req.params.id } })
-    ])
+    await AgentModel.findByIdAndDelete(req.params.id)
     return { statusCode: 200, message: "Agent deleted successfully" };
 });
 export const promptGenerator = errorWrapper(async (req, res) => {

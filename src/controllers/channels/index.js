@@ -7,32 +7,14 @@ import { errorWrapper } from "../../middleware/errorWrapper.js";
 
 
 export const fetchChannels = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business);
-    if (!business) {
-        return { statusCode: 404, message: "Business not found", data: null };
-    }
-
-    const { id, type, status } = req.query;
-
-    // Validate and build filter
-    const filter = { business: business._id };
-    if (id) {
-        if (!/^[a-f\d]{24}$/i.test(id)) {
-            return { statusCode: 400, message: "Invalid channel ID format", data: null };
-        }
-        filter._id = id;
-    }
+    const { type, status } = req.query;
+    const filter = { business: req.user.business };
+    if (req.params.id) filter._id = id;
     if (type) filter.type = type;
     if (status) filter.status = status;
-
-    const channels = await Channel.find(filter).lean();
-    return {
-        statusCode: 200,
-        message: `Channel${id ? '' : 's'} fetched`,
-        data: id && channels.length === 1 ? channels[0] : channels
-    };
+    const channels = await Channel.find(filter);
+    return { statusCode: 200, message: `Channels fetched`, data: channels };
 });
-
 
 export const createChannel = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business);
@@ -110,17 +92,12 @@ export const createChannel = errorWrapper(async (req, res) => {
     await channel.save()
     return { statusCode: 200, message: "Channel Updated", data: Channel };
 })
-
-
 /**
  * PATCH /channels/:id
  * Body may contain any subset of: name, config, systemPrompt, isPublic, UIElements
  */
 export const updateChannel = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business);
-    if (!business) return { statusCode: 404, message: "Business not found", data: null };
-
-    const channel = await Channel.findOne({ _id: req.params.id, business: business._id });
+    const channel = await Channel.findOne({ _id: req.params.id, business: req.user.business });
     if (!channel) return { statusCode: 404, message: "Channel not found", data: null };
 
     // ──────────────────────────────────────────────────────────────
@@ -227,12 +204,8 @@ export const updateChannel = errorWrapper(async (req, res) => {
  * Removes the channel and cleans up provider resources.
  */
 export const deleteChannel = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business);
-    if (!business) return { statusCode: 404, message: "Business not found", data: null };
-
-    const channel = await Channel.findOne({ _id: req.params.id, business: business._id });
+    const channel = await Channel.findOne({ _id: req.params.id, business: req.user.business });
     if (!channel) return { statusCode: 404, message: "Channel not found", data: null };
-
     try {
         switch (channel.type) {
             case "telegram": {
@@ -244,7 +217,6 @@ export const deleteChannel = errorWrapper(async (req, res) => {
                 }
                 break;
             }
-
             case "whatsapp": {
                 const { waba_id, phone_number_id } = channel.config ?? {};
                 const API_VERSION = "v23.0";
@@ -272,9 +244,7 @@ export const deleteChannel = errorWrapper(async (req, res) => {
                 }
                 break;
             }
-
             /* Add teardown for other channel types as needed */
-
             default:
                 break;
         }

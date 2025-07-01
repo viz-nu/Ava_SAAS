@@ -3,21 +3,19 @@ import { Business } from "../../models/Business.js";
 import { Data } from "../../models/Data.js";
 import { Message } from "../../models/Messages.js";
 import { sendMail } from "../../utils/sendEmail.js";
-import { Action } from "../../models/Action.js";
 import { analyzeQueries } from "../../utils/nlp.js";
-import { AgentModel } from "../../models/Agent.js";
 import { Conversation } from "../../models/Conversations.js";
 import { calculateCost } from "../../utils/openai.js";
+import { Collection } from "../../models/Collection.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("agents members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    const collectionsInBusiness = await Collection.find({ business: req.user.business }, "_id")
     const aggregationQueries = [
-        business.collections.length > 0
-            ? Data.aggregate([
-                { $match: { collection: { $in: business.collections } } },
-                { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
-            ])
-            : Promise.resolve([{ totalKnowledgeTokensUsed: 0 }]),
+        Data.aggregate([
+            { $match: { collection: { $in: collectionsInBusiness.map(ele => ele._id) } } },
+            { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
+        ]),
         Message.aggregate([
             { $match: { business: business._id } },
             { $group: { _id: "$responseTokens.model", totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" }, inputChatTokensUsed: { $sum: "$responseTokens.usage.input_tokens" }, outputChatTokensUsed: { $sum: "$responseTokens.usage.output_tokens" } } }
@@ -185,36 +183,6 @@ export const editBusiness = errorWrapper(async (req, res) => {
     if (contact) business.contact = contact;
     await business.save();
     return { statusCode: 200, message: "Business updated", data: business }
-});
-export const createActions = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business)
-    if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const action = await Action.create({ business: business._id, ...req.body })
-    return { statusCode: 201, message: "Action created successfully", data: action }
-});
-export const getActions = errorWrapper(async (req, res) => {
-    const filter = { business: req.user.business }
-    if (req.query.id) filter.id = req.query.id
-    const actions = await Action.find(filter);
-    return { statusCode: 200, message: `Action${req.query.id ? "" : "s"} fetched successfully`, data: actions }
-});
-export const updateAction = errorWrapper(async (req, res) => {
-    const action = await Action.findOneAndUpdate({ _id: req.params.id, business: req.user.business }, { ...req.body }, { new: true });
-    if (!action) return res.status(404).json({ message: "Action not found" });
-    return { statusCode: 200, message: "Action updated successfully", data: action }
-});
-export const deleteAction = errorWrapper(async (req, res) => {
-    const [action, affected] = await Promise.all([
-        Action.findOne({ _id: req.params.id, business: req.user.business }),
-        AgentModel.find({ actions: id }, "_id")
-    ]);
-    if (!action) return res.status(404).json({ message: "Action not found" });
-    await Promise.all([
-        Action.findByIdAndDelete(req.params.id),
-        AgentModel.updateMany({ actions: req.params.id, business: req.user.business }, { $pull: { actions: req.params.id } })
-    ]);
-    const updatedAgents = await AgentModel.find({ _id: { $in: affected.map(a => a._id) } });
-    return { statusCode: 200, message: "Action deleted successfully", data: { updatedAgents } }
 });
 export const raiseTicket = errorWrapper(async (req, res) => {
     const { issueDetails, attachments } = req.body;
