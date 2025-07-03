@@ -69,3 +69,28 @@ export const agentSchema = object({
     isPublic: boolean(),
     isFeatured: boolean(),
 });
+import { z } from "zod"
+/* ───────────────────────────────────────────
+   Schema for UPDATE (respond | resolve)
+─────────────────────────────────────────────*/
+export const updateTicketSchema = z.object({
+    status: z.enum(['responded', 'resolved']),
+    response: z
+        .object({
+            channelId: z.string().min(1, "Channel ID required"),
+            subject: z.string().min(1, 'Subject required'),
+            body: z.string().min(1, 'Body required')
+        })
+        .partial()
+        .optional()
+}).superRefine((data, ctx) => {
+    if (data.status === 'responded') {
+        if (!data.response?.channelId || !data.response?.subject || !data.response?.body) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'channelId , subject and body are required when status is "responded"',
+                path: ['response']
+            });
+        }
+    }
+});

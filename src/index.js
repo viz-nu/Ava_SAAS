@@ -25,6 +25,8 @@ import { DateTime } from "luxon";
 import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
+import { Writable } from "stream";
+import { Ticket } from "./models/Tickets.js";
 await initialize();
 const app = express();
 const server = createServer(app); // Create HTTP server
@@ -247,6 +249,10 @@ app.options('/send-mail', openCors);
 // });
 app.post('/v1/agent', openCors, async (req, res) => {
     const handler = new StreamEventHandler();
+    const writer = Writable.toWeb(res);
+
+    const totals = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+
     try {
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');
@@ -267,7 +273,15 @@ app.post('/v1/agent', openCors, async (req, res) => {
         if (!message) message = await Message.create({ business: business._id, query: userMessage, response: "", conversationId: conversation._id });
         prevMessages.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
         const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
-        const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson });
+
+        const agent = new Agent({
+            name: agentDetails.personalInfo.name,
+            instructions: agentDetails.personalInfo.systemPrompt,
+            model: agentDetails.personalInfo.model,
+            toolChoice: 'auto',
+            temperature: agentDetails.personalInfo.temperature,
+            tools: toolsJson,
+        });
         if (interruptionDecisions.length > 0) {
             state = await RunState.fromString(agent, conversation.state);
             for (const decision of interruptionDecisions) {
@@ -276,13 +290,22 @@ app.post('/v1/agent', openCors, async (req, res) => {
             }
             conversation = await Conversation.findByIdAndUpdate(conversationId, { $set: { pendingInterruptions: [], state: "" } }, { new: true });
         } else { state = prevMessages }
-        let stream = await run(agent, state, { stream: true });
         let hasInterruptions = false;
         do {
-            for await (const delta of stream) {
+            for await (const delta of run(agent, state, { stream: true })) {
+                if (
+                    evt?.data?.type === "model" &&
+                    evt?.data?.event?.type === "response.completed" &&
+                    evt?.data?.event?.response?.usage
+                ) {
+                    const usage = evt.data.event.response.usage;
+                    totals.input_tokens += usage.input_tokens ?? 0;
+                    totals.output_tokens += usage.output_tokens ?? 0;
+                    totals.total_tokens += usage.total_tokens ?? 0;
+                }
                 const processed = handler.handleEvent(delta);
                 if (!processed) continue;
-                if (processed.type === 'stream_complete') break;
+                if (processed.type === "stream_complete" || delta.done === true) break;
                 const payload = { id: "", messageId: message._id, conversationId: conversation._id, responseType: "full", data: null };
                 switch (processed.type) {
                     case 'response_started':
@@ -300,7 +323,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         payload.id = "conversation";
                         payload.data = processed.delta;
                         payload.responseType = "chunk";
-                        res.write(JSON.stringify(payload));
+                        await writer.write(JSON.stringify(payload));
                         break;
                     case 'text_done':
                         // console.log('\n✅ Text completed');
@@ -312,15 +335,15 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         console.log('🎉 Response completed');
                         message.response = processed.response.finalOutput[0]?.content[0]?.text || JSON.stringify(processed.response.finalOutput);
                         message.responseTokens.model = processed.response.model
-                        message.responseTokens.usage = processed.response.usage
+                        message.responseTokens.usage = totals
                         break;
                     case 'error':
                         payload.id = "error";
                         payload.data = processed.error;
-                        res.write(JSON.stringify(payload));
+                        await writer.write(JSON.stringify(payload));
                         break;
                 }
-                res.flush?.(); // flush buffer if supported
+                await writer.close();
             }
             const newState = stream.state;
             if (stream.interruptions?.length) {
@@ -328,7 +351,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 const interruptionData = stream.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
                 conversation = await Conversation.findByIdAndUpdate(conversation._id, { $set: { pendingInterruptions: interruptionData, state: JSON.stringify(newState) } }, { new: true });
                 const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: { ...rawItem, parameters: agentDetails.tools.length > 0 ? agentDetails.tools.find(ele => ele.name === rawItem.name).parameters : agentDetails.actions.find(ele => ele.intent === rawItem.name) }, type: type, message: message })) } };
-                res.write(JSON.stringify(interruptionPayload));
+                await writer.write(JSON.stringify(interruptionPayload));
                 break;
             } else {
                 break;
@@ -338,7 +361,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         return !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
     } catch (error) {
         console.error('Agent error:', error);
-        res.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
+        await writer.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
         return res.end(JSON.stringify({ id: "end" }));
     }
 });
@@ -532,6 +555,15 @@ app.post('/contact-us', openCors, async (req, res) => {
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
+    }
+})
+app.post("/raise-ticket", openCors, async (req, res) => {
+    try {
+        await Ticket.create(req.body);
+        return res.status(201).json({ message: "ticket raised successfully" });
+    } catch (err) {
+        console.error(err);
+        res.status(400).json({ error: err.message });
     }
 })
 app.use("/*", (req, res) => res.status(404).send("Route does not exist"))

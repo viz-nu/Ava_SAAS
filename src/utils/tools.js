@@ -113,7 +113,6 @@ export const parseLLMResponse = (responseText) => {
 
     return { mainText, followups };
 }
-
 export function createToolWrapper(toolDef) {
     const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
     const wrapperBody = `
@@ -175,7 +174,6 @@ export function buildFollowUpButtons(followUps = []) {
 function truncate(text, maxLength) {
     return text.length <= maxLength ? text : text.slice(0, maxLength - 1) + "…";
 }
-
 function generateHeading() {
     const variants = [
         "Here are a few questions you can consider asking:",
