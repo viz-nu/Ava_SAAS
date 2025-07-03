@@ -26,9 +26,9 @@ export const createChannel = errorWrapper(async (req, res) => {
     let webhookUrl
     switch (type) {
         case "email":
-            const { host, port, secure, fromName, defaultRecipients, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
+            const { host, port, secure, fromName, defaultRecipients: { }, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
             let mailConfig
-            channel.config = { host, port, secure, service, fromName, defaultRecipients: {}, verified: false, lastVerifiedAt: new Date() }
+            channel.config = { host, port, secure, service, fromName, defaultRecipients, verified: false, lastVerifiedAt: new Date() }
             channel.secrets = { authType, user, pass, clientId, clientSecret, refreshToken, accessToken, expires }
             if (authType === "login") mailConfig = { host, port, secure, auth: { user, pass } }
             else if (authType === "oauth2") mailConfig = { service, auth: { type: "OAuth2", user, clientId, clientSecret, refreshToken } }
@@ -133,6 +133,22 @@ export const updateChannel = errorWrapper(async (req, res) => {
     if (req.body.config) {
         const newConfig = req.body.config;
         switch (channel.type) {
+            case "email":
+                const { host, port, secure, fromName, defaultRecipients: { }, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
+                let mailConfig
+                channel.config = { host, port, secure, service, fromName, defaultRecipients, verified: false, lastVerifiedAt: new Date() }
+                channel.secrets = { authType, user, pass, clientId, clientSecret, refreshToken, accessToken, expires }
+                if (authType === "login") mailConfig = { host, port, secure, auth: { user, pass } }
+                else if (authType === "oauth2") mailConfig = { service, auth: { type: "OAuth2", user, clientId, clientSecret, refreshToken } }
+                const { success } = await verifyTransporter(mailConfig)
+                if (!success) {
+                    await channel.updateStatus("failed")
+                    return { statusCode: 400, message: "transporter verification failed", data: null }
+                }
+                channel.markModified("config");
+                channel.markModified("secrets");
+                await channel.updateStatus("success")
+                break;
             case "telegram": {
                 const { telegramToken } = newConfig;
                 if (!telegramToken) break;            // nothing to change
