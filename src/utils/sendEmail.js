@@ -35,3 +35,31 @@ export const sendMail = async (emailData) => {
         }
     }
 }
+export const verifyTransporter = async (config) => {
+    try {
+        const transporter = nodemailer.createTransport(config)
+        await transporter.verify();
+        return { success: true }
+    } catch (error) {
+        console.error(error)
+        return { success: false }
+    }
+}
+
+export const sendEmail = async ({ config, emailData }) => {
+    let info
+    try {
+        let transporter = nodemailer.createTransport(config);
+        info = await transporter.sendMail(emailData);
+        console.log("Message sent: %s", info.messageId);
+    } catch (error) {
+        console.error(error);
+        return { status: false, ...error }
+    }
+    finally {
+        return {
+            status: true,
+            ...info
+        }
+    }
+}

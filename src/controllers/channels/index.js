@@ -4,6 +4,7 @@ import { Channel } from "../../models/Channels.js";
 const { wa_client_id, wa_client_secret, SERVER_URL } = process.env;
 import axios from 'axios';
 import { errorWrapper } from "../../middleware/errorWrapper.js";
+import { verifyTransporter } from "../../utils/sendEmail.js";
 
 
 export const fetchChannels = errorWrapper(async (req, res) => {
@@ -12,7 +13,7 @@ export const fetchChannels = errorWrapper(async (req, res) => {
     if (req.params.id) filter._id = id;
     if (type) filter.type = type;
     if (status) filter.status = status;
-    const channels = await Channel.find(filter);
+    const channels = await Channel.find(filter, "-secrets");
     return { statusCode: 200, message: `Channels fetched`, data: channels };
 });
 
@@ -20,9 +21,26 @@ export const createChannel = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     let { name, type, config, systemPrompt, isPublic, UIElements } = req.body;
-    const channel = await Channel.create({ name, business: req.user.business, type, config, status: "initiated", systemPrompt, isPublic, UIElements })
+    if (!type) return { statusCode: 404, message: "type of channel not found", data: null }
+    const channel = await Channel.create({ name, business: req.user.business, type, status: "initiated", systemPrompt: "", isPublic: false, UIElements })
     let webhookUrl
     switch (type) {
+        case "email":
+            const { host, port, secure, fromName, defaultRecipients, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
+            let mailConfig
+            channel.config = { host, port, secure, service, fromName, defaultRecipients: {}, verified: false, lastVerifiedAt: new Date() }
+            channel.secrets = { authType, user, pass, clientId, clientSecret, refreshToken, accessToken, expires }
+            if (authType === "login") mailConfig = { host, port, secure, auth: { user, pass } }
+            else if (authType === "oauth2") mailConfig = { service, auth: { type: "OAuth2", user, clientId, clientSecret, refreshToken } }
+            const { success } = await verifyTransporter(mailConfig)
+            if (!success) {
+                await channel.updateStatus("failed")
+                return { statusCode: 400, message: "transporter verification failed", data: null }
+            }
+            channel.markModified("config");
+            channel.markModified("secrets");
+            await channel.updateStatus("success")
+            break;
         case "telegram":
             const { telegramToken } = config
             const bot = new Telegraf(telegramToken);
@@ -30,28 +48,28 @@ export const createChannel = errorWrapper(async (req, res) => {
             channel.webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
             try {
                 botInfo = await bot.telegram.getMe(); // Fetch bot details 
+                config = botinfo
             } catch (error) {
                 console.log(error);
                 return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
             }
-            channel.status = "fetched bot details"
-            await channel.save()
+            channel.markModified("config");
+            await channel.updateStatus("fetched bot details")
             try {
                 await bot.telegram.setWebhook(webhookUrl);
             } catch (error) {
                 console.log(error);
                 return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
             }
-            channel.status = "bot webhook set"
-            config = { userName: botInfo.username, id: botInfo.id }
-            secrets = { botToken: telegramToken }
+            channel.secrets = { botToken: telegramToken }
+            channel.markModified("secrets");
+            await channel.updateStatus("bot webhook set")
             break;
         case "whatsapp":
             const { whatsappCode, phone_number_id, waba_id, business_id } = config
             const API_VERSION = 'v23.0';
             try {
                 const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
-                channel.status = "fetched access token"
                 channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }
                 channel.webhookUrl = `${SERVER_URL}webhook/whatsapp/${agent._id}`
                 channel.config = { phone_number_id, waba_id, business_id }
@@ -59,22 +77,23 @@ export const createChannel = errorWrapper(async (req, res) => {
                 console.log(error);
                 return { statusCode: 401, message: "whatsapp code verification failed", data: error };
             }
-            await channel.save()
+            channel.markModified("config");
+            channel.markModified("secrets");
+            await channel.updateStatus("fetched access token")
             try {
                 await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": webhookUrl, "verify_token": channel.secrets.verificationToken }, { headers: { 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
-                channel.status = "bot webhook set"
             } catch (error) {
                 console.log(error);
                 return { statusCode: 401, message: "whatsapp webhook verification failed", data: error };
             }
-            await channel.save()
+            await channel.updateStatus("bot webhook set")
             try {
                 await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': channel.secrets.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
-                channel.status = "bot messaging_product set"
             } catch (error) {
                 console.log(error);
                 return { statusCode: 401, message: "registering ", data: error };
             }
+            await channel.updateStatus("bot messaging_product set")
             break;
         case "web":
             break;
@@ -84,13 +103,12 @@ export const createChannel = errorWrapper(async (req, res) => {
             break;
         case "sms":
             break;
-        case "email":
-            break;
         default:
             break;
     }
-    await channel.save()
-    return { statusCode: 200, message: "Channel Updated", data: Channel };
+    const sanitizedChannel = channel.toObject(); // Convert Mongoose doc to plain JS object
+    delete sanitizedChannel.secrets;
+    return { statusCode: 200, message: "Channel Created", data: sanitizedChannel };
 })
 /**
  * PATCH /channels/:id
@@ -128,7 +146,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
                     // Set webhook to new URL
                     await bot.telegram.setWebhook(webhookUrl);
 
-                    channel.config = { userName: botInfo.username, id: botInfo.id };
+                    channel.config = botinfo;
                     channel.secrets = { botToken: telegramToken };
                     channel.webhookUrl = webhookUrl;
                     channel.status = "bot webhook updated";
