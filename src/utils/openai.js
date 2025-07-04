@@ -404,10 +404,18 @@ export const pricing = {
 
 
 // Helper function to calculate cost
-export const calculateCost = (modelName, inputTokens, outputTokens) => {
-    const modelPricing = pricing[modelName] || null;
-    if (!modelPricing) return null;
+export const calculateCost = (modelName, inputTokens = 0, outputTokens = 0) => {
+    const modelPricing = pricing[modelName];
+    if (!modelPricing) {
+        return { inputCost: 0, outputCost: 0, totalCost: 0 };
+    }
+
     const inputCost = (inputTokens / 1000) * modelPricing.input;
-    const outputCost = outputTokens && modelPricing.output ? (outputTokens / 1000) * modelPricing.output : 0;
-    return { inputCost: inputCost || 0, outputCost: outputCost || 0, totalCost: inputCost + outputCost || 0 };
-}
+    const outputCost = (outputTokens / 1000) * (modelPricing.output ?? 0);
+
+    return {
+        inputCost,
+        outputCost,
+        totalCost: inputCost + outputCost,
+    };
+};
