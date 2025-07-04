@@ -77,174 +77,6 @@ app.options('/reaction', openCors);
 app.options('/get-agent', openCors);
 app.options('/send-invite', openCors);
 app.options('/send-mail', openCors);
-// app.post('/v1/agent', openCors, async (req, res) => {
-//     try {
-//         const { userMessage, agentId, streamOption = false, conversationId, geoLocation = {} } = req.body;
-//         let [agent, business, conversation] = await Promise.all([
-//             AgentModel.findById(agentId).populate("actions"),
-//             Business.findOne({ agents: agentId }),
-//             conversationId ? Conversation.findById(conversationId) : null
-//         ]);
-//         if (!agent) return res.status(404).json({ error: 'Agent not found' });
-//         if (!business) return res.status(404).json({ error: 'Business not found' });
-//         let prevMessages = [];
-//         if (conversation) {
-//             const messages = await Message.find({ conversationId }).select("query response");
-//             prevMessages.push(...messages.flatMap(({ query, response }) => {
-//                 const entries = [];
-//                 if (query) entries.push({ role: "user", content: query });
-//                 if (response) entries.push({ role: "assistant", content: response });
-//                 return entries;
-//             }));
-
-//         } else {
-//             conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data });
-//         }
-//         prevMessages.push({ role: "user", content: userMessage });
-//         let listOfIntentions = [{
-//             "intent": "enquiry",
-//             "dataSchema": [{
-//                 "key": "Topic",
-//                 "type": "dynamic",
-//                 "dataType": "string",
-//                 "required": true,
-//                 "comments": "General information requests. The subject of the enquiry (e.g., services, products, policies).",
-//                 "validator": "",
-//                 "data": "",
-//                 "userDefined": true
-//             }]
-//         },
-//         {
-//             "intent": "general_chat", "dataSchema": [{
-//                 "key": "Message",
-//                 "type": "dynamic",
-//                 "dataType": "string",
-//                 "required": true,
-//                 "comments": "A general conversational message from the user.",
-//                 "validator": "",
-//                 "data": "",
-//                 "userDefined": true
-//             }]
-//         }]
-//         listOfIntentions.push(...agent.actions.filter(action => action.intentType === "Query").map(({ intent, workingData }) => ({ intent, dataSchema: workingData.body })));
-//         const { matchedActions, model, usage } = await actions(prevMessages, listOfIntentions);
-//         const message = await Message.create({ business: business._id, query: userMessage, response: "", analysis: matchedActions, analysisTokens: { model, usage }, embeddingTokens: {}, responseTokens: {}, conversationId: conversation._id, context: [], Actions: [], actionTokens: {} });
-//         let tasks = matchedActions.map(async ({ intent, dataSchema, confidence }) => {
-//             if (intent == "enquiry") {
-//                 const { data = userMessage } = dataSchema.find(ele => ele.key == "Topic") || {}
-//                 const { answer, context, embeddingTokens } = await getContextMain(agent.collections, data);
-//                 let config = {
-//                     additional_instructions: `Today:${new Date()} \n Context: ${answer || null}
-// **DATA COMPLETENESS PROTOCOL - CRITICAL:**
-// When you do not have enough information to provide a complete and accurate answer to ANY query, you MUST begin your response with exactly "DATAPOINT_NEXUS" followed by your regular response. This applies to:
-// - Any specific information not included in the context provided
-// - Questions where context is missing, incomplete, or unclear
-// - Requests for details that would require additional data
-// - Any query where you cannot give a confident and complete answer
-// Example:
-// User: "What is the history of..."
-// Your response: "DATAPOINT_NEXUS Hello! I don't have specific information about the history you're asking about. However, I can tell you that... [continue with what you do know]"
-// `,
-//                     assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, signalKeyword: "DATAPOINT_NEXUS", streamOption
-//                 }
-//                 const { responseTokens, response, signalDetected } = await AssistantResponse(req, res, config)
-//                 if (!streamOption) res.write(JSON.stringify({ id: "conversation", messageId: message._id, conversationId: conversation._id, responseType: "chunk", data: response }));
-//                 message.responseTokens = responseTokens
-//                 message.response = response
-//                 message.embeddingTokens = embeddingTokens
-//                 message.context = context
-//                 if (signalDetected && agent.personalInfo.noDataMail) {
-//                     try {
-//                         console.log("sending mail", { to: agent.personalInfo.noDataMail, topic: data });
-//                         let text = `Dear [Support Team],
-//                         While interacting with the chatbot, it failed to fetch content related to "${data}". This issue is affecting the user experience and needs immediate attention.
-//                         User Query:
-//                         "${userMessage}"
-//                         RAG Model Retrieved Context:
-//                         ${answer || "No context retrieved or context was empty."}
-//                         Please investigate and resolve the issue as soon as possible.
-//                         Best regards,
-//                         Team Avakado`
-//                         let html = `<!DOCTYPE html>
-//                         <html>
-//                         <head>
-//                         <meta charset="UTF-8">
-//                         <title>Chatbot Content Fetch Issue</title>
-//                         <style>
-//                         body {
-//                             font-family: Arial, sans-serif;
-//                             background-color: #f4f4f4;
-//                             padding: 20px;
-//                             }
-//                         .container {
-//                         background: #ffffff;
-//                         padding: 20px;
-//                         border-radius: 8px;
-//                         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-//                         }
-//                         h2 {
-//                             color: #d9534f;
-//                         }
-//                         p {
-//                             color: #333;
-//                         }
-//                         .footer {
-//                             margin-top: 20px;
-//                             font-size: 12px;
-//                             color: #777;
-//                         }
-//                         </style>
-//                         </head>
-//                         <body>
-//                         <div class="container">
-//                         <p>Dear <strong>Support Team</strong>,</p>
-//                         <p>While interacting with the chatbot, it failed to retrieve content related to <strong>${data}</strong>. This issue is impacting the user experience and requires immediate attention.</p>
-//                         <p><strong>User Query:</strong></p>
-//                         <div class="code-block">${userMessage}</div>
-//                         <p><strong>RAG Model Retrieved Context:</strong></p>
-//                         <div class="code-block">${answer || "No context retrieved or context was empty."}</div>
-//                         <p>Please investigate and resolve the issue as soon as possible.</p>
-//                         <p>Best regards,</p>
-//                         <p><strong>Team Avakado</strong><br>
-//                         <div class="footer">
-//                             <p>This is an automated email. Please do not reply directly.</p>
-//                         </div>
-//                         </div>
-//                         </body>
-//                         </html>`
-//                         await sendMail({ to: agent.personalInfo.noDataMail, subject: "Urgent: Missing information for AVA", text, html })
-//                         return res.end(JSON.stringify({ id: "end" }))
-//                     } catch (error) {
-//                         console.error(error);
-//                         return res.status(500).json({ error: error.message })
-//                     }
-//                 }
-//             }
-//             else if (intent == "general_chat") {
-//                 let config = { assistant_id: agent.personalInfo.assistantId, prevMessages, messageId: message._id, conversationId: conversation._id, streamOption }
-//                 const { responseTokens, response } = await AssistantResponse(req, res, config)
-//                 if (!streamOption) res.write(JSON.stringify({ id: "conversation", messageId: message._id, conversationId: conversation._id, responseType: "chunk", data: response }));
-//                 message.responseTokens = responseTokens
-//                 message.response = response
-//             }
-//             else {
-//                 const currentAction = agent.actions.find(ele => intent == ele.intent)
-//                 const dataMap = new Map();
-//                 dataSchema.forEach(item => { dataMap.set(item.key, item.data) });
-//                 let respDataSchema = populateStructure(currentAction._doc.workingData.body, dataMap);
-//                 res.write(JSON.stringify({ id: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence }, responseType: "full", conversationId: conversation._id }))
-//                 message.Actions.push({ type: "data-collection", data: { actionId: currentAction._doc._id, intent, dataSchema: respDataSchema, confidence } })
-//             }
-//         })
-//         await Promise.all(tasks);
-//         await message.save()
-//         return res.end(JSON.stringify({ id: "end" }))
-//     } catch (error) {
-//         console.error(error);
-//         return res.end(JSON.stringify({ id: "error" }))
-//         // res.status(500).json({ error: error.message });
-//     }
-// });
 app.post('/v1/agent', openCors, async (req, res) => {
     const handler = new StreamEventHandler();
     const totals = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
@@ -286,8 +118,9 @@ app.post('/v1/agent', openCors, async (req, res) => {
             conversation = await Conversation.findByIdAndUpdate(conversationId, { $set: { pendingInterruptions: [], state: "" } }, { new: true });
         } else { state = prevMessages }
         let hasInterruptions = false;
+        const stream = run(agent, state, { stream: true })
         do {
-            for await (const delta of run(agent, state, { stream: true })) {
+            for await (const delta of stream) {
                 if (
                     delta?.data?.type === "model" &&
                     delta?.data?.event?.type === "response.completed" &&
@@ -355,7 +188,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
     } catch (error) {
         console.error('Agent error:', error);
-        write({ id: "error", responseType: "full", data: error.message });
+        res.write({ id: "error", responseType: "full", data: error.message });
         return res.end(JSON.stringify({ id: "end" }));
     }
 });
