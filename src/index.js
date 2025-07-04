@@ -248,13 +248,19 @@ app.options('/send-mail', openCors);
 //     }
 // });
 app.post('/v1/agent', openCors, async (req, res) => {
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    res.flushHeaders();
+
+
     const handler = new StreamEventHandler();
     const writer = Writable.toWeb(res);
     const totals = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
     try {
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Transfer-Encoding', 'chunked');
+        console.log('body:', req.body);
         const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [] } = req.body;
+
         let [agentDetails, business, conversation, message] = await Promise.all([AgentModel.findById(agentId).populate("actions channels"), Business.findOne({ agents: agentId }), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
         if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
         if (!business) return res.status(404).json({ error: 'Business not found' });
@@ -292,11 +298,11 @@ app.post('/v1/agent', openCors, async (req, res) => {
         do {
             for await (const delta of run(agent, state, { stream: true })) {
                 if (
-                    evt?.data?.type === "model" &&
-                    evt?.data?.event?.type === "response.completed" &&
-                    evt?.data?.event?.response?.usage
+                    delta?.data?.type === "model" &&
+                    delta?.data?.event?.type === "response.completed" &&
+                    delta?.data?.event?.response?.usage
                 ) {
-                    const usage = evt.data.event.response.usage;
+                    const usage = delta.data.event.response.usage;
                     totals.input_tokens += usage.input_tokens ?? 0;
                     totals.output_tokens += usage.output_tokens ?? 0;
                     totals.total_tokens += usage.total_tokens ?? 0;
@@ -356,10 +362,12 @@ app.post('/v1/agent', openCors, async (req, res) => {
             }
         } while (true);
         await message.save()
-        return !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
+        await writer.close();
+        !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
     } catch (error) {
         console.error('Agent error:', error);
         await writer.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
+        await writer.abort(err);
         return res.end(JSON.stringify({ id: "end" }));
     }
 });
