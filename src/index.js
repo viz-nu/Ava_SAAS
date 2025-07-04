@@ -261,7 +261,10 @@ app.post('/v1/agent', openCors, async (req, res) => {
         console.log('body:', req.body);
         const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [] } = req.body;
 
-        let [agentDetails, business, conversation, message] = await Promise.all([AgentModel.findById(agentId).populate("actions channels"), Business.findOne({ agents: agentId }), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
+        let [agentDetails, business, conversation, message] = await Promise.all([AgentModel.findById(agentId).populate("actions"), Business.findOne({ agents: agentId }), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
+        console.log('body:', req.body);
+        console.log({ agentDetails, business, conversation, message });
+
         if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
         if (!business) return res.status(404).json({ error: 'Business not found' });
         let prevMessages = [], state
