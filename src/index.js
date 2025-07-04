@@ -11,7 +11,6 @@ import errorHandlerMiddleware from "./middleware/errorHandler.js";
 import { emailConformation } from "./controllers/auth/register.js";
 import { actions, AssistantResponse, getContextMain } from "./utils/openai.js";
 import { AgentModel } from "./models/Agent.js";
-import { Business } from "./models/Business.js";
 import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 import { createServer } from "http";
@@ -25,7 +24,6 @@ import { DateTime } from "luxon";
 import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
-import { Writable } from "stream";
 import { Ticket } from "./models/Tickets.js";
 await initialize();
 const app = express();
@@ -248,25 +246,12 @@ app.options('/send-mail', openCors);
 //     }
 // });
 app.post('/v1/agent', openCors, async (req, res) => {
-
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Transfer-Encoding', 'chunked');
-    res.flushHeaders();
-
-
     const handler = new StreamEventHandler();
-    const writer = Writable.toWeb(res);
     const totals = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
     try {
-        console.log('body:', req.body);
         const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [] } = req.body;
-
-        let [agentDetails, business, conversation, message] = await Promise.all([AgentModel.findById(agentId).populate("actions"), Business.findOne({ agents: agentId }), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
-        console.log('body:', req.body);
-        console.log({ agentDetails, business, conversation, message });
-
+        let [agentDetails, conversation, message] = await Promise.all([AgentModel.findById(agentId).populate("actions business"), conversationId ? Conversation.findById(conversationId) : null, messageId ? Message.findById(messageId) : null]);
         if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
-        if (!business) return res.status(404).json({ error: 'Business not found' });
         let prevMessages = [], state
         if (conversation) {
             const messages = await Message.find({ conversationId }).select("query response");
@@ -276,11 +261,14 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
                 return entries;
             }));
-        } else { conversation = await Conversation.create({ business: business._id, agent: agentId, geoLocation: geoLocation.data }); }
-        if (!message) message = await Message.create({ business: business._id, query: userMessage, response: "", conversationId: conversation._id });
+        } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, geoLocation: geoLocation.data }); }
+        if (!message) message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
         prevMessages.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Transfer-Encoding', 'chunked');
+        res.flushHeaders();
+        const write = chunk => res.write(JSON.stringify(chunk));
         const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
-
         const agent = new Agent({
             name: agentDetails.personalInfo.name,
             instructions: agentDetails.personalInfo.systemPrompt,
@@ -330,7 +318,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         payload.id = "conversation";
                         payload.data = processed.delta;
                         payload.responseType = "chunk";
-                        await writer.write(JSON.stringify(payload));
+                        write(payload);
                         break;
                     case 'text_done':
                         // console.log('\n✅ Text completed');
@@ -347,10 +335,9 @@ app.post('/v1/agent', openCors, async (req, res) => {
                     case 'error':
                         payload.id = "error";
                         payload.data = processed.error;
-                        await writer.write(JSON.stringify(payload));
+                        write(payload);
                         break;
                 }
-                await writer.close();
             }
             const newState = stream.state;
             if (stream.interruptions?.length) {
@@ -358,19 +345,17 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 const interruptionData = stream.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
                 conversation = await Conversation.findByIdAndUpdate(conversation._id, { $set: { pendingInterruptions: interruptionData, state: JSON.stringify(newState) } }, { new: true });
                 const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: { ...rawItem, parameters: agentDetails.tools.length > 0 ? agentDetails.tools.find(ele => ele.name === rawItem.name).parameters : agentDetails.actions.find(ele => ele.intent === rawItem.name) }, type: type, message: message })) } };
-                await writer.write(JSON.stringify(interruptionPayload));
+                write(interruptionPayload);
                 break;
             } else {
                 break;
             }
         } while (true);
         await message.save()
-        await writer.close();
         !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
     } catch (error) {
         console.error('Agent error:', error);
-        await writer.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
-        await writer.abort(err);
+        write({ id: "error", responseType: "full", data: error.message });
         return res.end(JSON.stringify({ id: "end" }));
     }
 });
