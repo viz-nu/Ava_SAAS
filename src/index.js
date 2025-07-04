@@ -118,7 +118,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
             conversation = await Conversation.findByIdAndUpdate(conversationId, { $set: { pendingInterruptions: [], state: "" } }, { new: true });
         } else { state = prevMessages }
         let hasInterruptions = false;
-        const stream = run(agent, state, { stream: true })
+        const stream = await run(agent, state, { stream: true })
         do {
             for await (const delta of stream) {
                 if (
@@ -188,7 +188,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         !hasInterruptions ? res.end(JSON.stringify({ id: "end" })) : res.end(JSON.stringify({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" }))
     } catch (error) {
         console.error('Agent error:', error);
-        res.write({ id: "error", responseType: "full", data: error.message });
+        res.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
         return res.end(JSON.stringify({ id: "end" }));
     }
 });
