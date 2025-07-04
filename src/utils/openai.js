@@ -409,5 +409,5 @@ export const calculateCost = (modelName, inputTokens, outputTokens) => {
     if (!modelPricing) return null;
     const inputCost = (inputTokens / 1000) * modelPricing.input;
     const outputCost = outputTokens && modelPricing.output ? (outputTokens / 1000) * modelPricing.output : 0;
-    return { inputCost: inputCost, outputCost: outputCost, totalCost: inputCost + outputCost };
+    return { inputCost: inputCost || 0, outputCost: outputCost || 0, totalCost: inputCost + outputCost || 0 };
 }

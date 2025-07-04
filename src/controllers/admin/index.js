@@ -86,13 +86,13 @@ export const Dashboard = errorWrapper(async (req, res) => {
     let totalKnowledgeTokensUsed = 0, OverAllKnowledgeCost = 0;
     for (const ele of knowledgeTokensRes) {
         totalKnowledgeTokensUsed += ele.totalKnowledgeTokensUsed
-        let { totalCost } = calculateCost("text-embedding-3-small", ele.totalKnowledgeTokensUsed, 0)
+        let { totalCost = 0 } = calculateCost("text-embedding-3-small", ele.totalKnowledgeTokensUsed, 0)
         OverAllKnowledgeCost += totalCost
     }
     let totalChatTokensUsed = 0, costOfInputChatTokens = 0, costOfOutputChatTokens = 0, OverAllChatCost = 0;
     for (const ele of chatTokensRes) {
         totalChatTokensUsed += Number(ele.totalChatTokensUsed)
-        let { inputCost, outputCost, totalCost } = calculateCost(ele._id, ele.inputChatTokensUsed, ele.outputChatTokensUsed)
+        let { inputCost = 0, outputCost = 0, totalCost = 0 } = calculateCost(ele._id, ele.inputChatTokensUsed, ele.outputChatTokensUsed)
         costOfInputChatTokens += inputCost;
         costOfOutputChatTokens += outputCost;
         OverAllChatCost += totalCost;
