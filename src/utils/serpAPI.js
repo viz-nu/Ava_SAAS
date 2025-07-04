@@ -81,7 +81,6 @@ export const generateFactsAndFAQs = async (businessName, content) => {
                 format: zodTextFormat(BusinessExtraction, "business_extraction"),
             }
         })
-        console.log("parsed facts and faqs", JSON.stringify(factsAndFaqs, null, 2));
         return factsAndFaqs;
     } catch (error) {
         console.error('Error generating facts and FAQs:', error.message);
