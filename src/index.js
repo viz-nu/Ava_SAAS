@@ -250,9 +250,7 @@ app.options('/send-mail', openCors);
 app.post('/v1/agent', openCors, async (req, res) => {
     const handler = new StreamEventHandler();
     const writer = Writable.toWeb(res);
-
     const totals = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-
     try {
         res.setHeader('Content-Type', 'text/plain');
         res.setHeader('Transfer-Encoding', 'chunked');

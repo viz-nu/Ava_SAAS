@@ -4,6 +4,7 @@ const BusinessSchema = new Schema({
     name: String,
     logoURL: String,
     facts: [String],
+    quickQuestions: [{ label: String, value: String }],
     sector: String,
     tagline: String,
     address: String,
@@ -18,7 +19,7 @@ const BusinessSchema = new Schema({
     docData: { type: Schema.Types.Mixed },
     members: [{ type: Schema.Types.ObjectId, ref: 'Users' }],
     agents: [{ type: Schema.Types.ObjectId, ref: 'Agent' }],
-    actions:[{ type: Schema.Types.ObjectId, ref: 'Action' }],
+    actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }]
 }, {

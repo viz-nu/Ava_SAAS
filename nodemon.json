@@ -2,6 +2,6 @@
     "watch": ["src"],
     "ext": "js,json",
     "ignore": ["node_modules", "logs", "public", ".git"],
-    "exec": "clear && node -r dotenv/config src/index.js"
+    "execMap": {"js":"node -r dotenv/config "}
   }
   

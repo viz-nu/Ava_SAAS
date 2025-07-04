@@ -19,14 +19,11 @@ const AgentSchema = new Schema({
     }],
     personalInfo: {
         name: String,
-        role: String,
         systemPrompt: String,
-        facts: [String],
         quickQuestions: [{ label: String, value: String }],
         welcomeMessage: String,
         model: { type: String, default: 'gpt-4.1-mini' },
         temperature: { type: Number, default: 0.5 },
-        noDataMail: { type: String, default: "vishnu@campusroot.com" },
     },
     integrations: {
         telegram: {

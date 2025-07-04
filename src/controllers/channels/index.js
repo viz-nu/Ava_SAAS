@@ -134,7 +134,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
         const newConfig = req.body.config;
         switch (channel.type) {
             case "email":
-                const { host, port, secure, fromName, defaultRecipients: { }, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
+                const { host, port, secure, fromName, defaultRecipients: { to: [], cc: [], bcc: [], }, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
                 let mailConfig
                 channel.config = { host, port, secure, service, fromName, defaultRecipients, verified: false, lastVerifiedAt: new Date() }
                 channel.secrets = { authType, user, pass, clientId, clientSecret, refreshToken, accessToken, expires }
