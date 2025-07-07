@@ -14,7 +14,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
     const aggregationQueries = [
         Data.aggregate([
             { $match: { collection: { $in: collectionsInBusiness.map(ele => ele._id) } } },
-            { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokensUsed" } } }
+            { $group: { _id: null, totalKnowledgeTokensUsed: { $sum: "$metadata.tokenUsage.embeddingTokens" } } }
         ]),
         Message.aggregate([
             { $match: { business: business._id } },

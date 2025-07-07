@@ -3,13 +3,13 @@ import { digest } from "./setup.js";
 import { Collection } from "../models/Collection.js";
 import { io } from "./io.js";
 export const processYT = async (collectionId, urls, receivers = [], _id) => {
-    let total = urls.length, completed = 0
+    let total = urls.length, completed = 0, topics = []
     try {
         for (const { url, data } of urls) {
             const loader = YoutubeLoader.createFromUrl(url, { language: data.lang || "en", addVideoInfo: true, });
             const docs = await loader.load();
             let text = docs.map(ele => ele.pageContent).join('');
-            await digest(text, url, collectionId)
+            topics = await digest(text, url, collectionId, {}, topics, contentType = "text");
             await Collection.updateOne(
                 { _id: collectionId, "contents._id": _id },
                 {
@@ -17,8 +17,9 @@ export const processYT = async (collectionId, urls, receivers = [], _id) => {
                         "contents.$.metaData.detailedReport": {
                             success: true,
                             url: url
-                        }
-                    }
+                        },
+                    },
+                    $addToSet: { topics: topics }
                 }
             );
             completed += 1

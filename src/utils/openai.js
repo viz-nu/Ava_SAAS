@@ -15,45 +15,85 @@ export const EmbeddingFunct = async (text) => {
         return null;
     }
 }
-export const getSummary = async (chunk) => {
+export const getSummary = async (chunk, topicsSoFar = []) => {
     try {
-        const { choices } = await openai.chat.completions.create({
+        const { choices, usage, model } = await openai.chat.completions.create({
             model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",
-                    content: `Analyze the following content and determine if it contains valuable, non-obvious information worth storing in a vector database.
+                    content: `
+You are a strict evaluator, summarizer and  incremental topic builder.
 
-EVALUATION CRITERIA:
-- Skip common knowledge, basic definitions, or widely known facts
-- Focus on specific, unique, or contextual information
-- Prioritize actionable insights, specific data points, or specialized knowledge
-- Ignore generic content, boilerplate text, or redundant information
+EVALUATION RULES
+● Ignore common knowledge, definitions, boilerplate.
+● Only deem "valuable" if the chunk contains non‑obvious, specific information: data, unique insights,citations, or technical details, URLs, detailed steps, etc.
+● Only summarize content with specific, contextual, or specialized knowledge
 
-OUTPUT INSTRUCTIONS:
-If the content is valuable, create a precise summary with:
-• Specific facts, figures, and data points
-• Unique insights or non-obvious information  
-• Important URLs, references, or citations
-• Key dates, names, and technical details
-• Context-specific information that adds value
+TOPIC RULES
+● Consider the list TOPICS_SO_FAR supplied below.
+● Extract only *new* essential topics in this chunk that are not already in TOPICS_SO_FAR.
+● A “topic” is a short noun phrase (2–6 words) that captures a distinct idea or entity.
+● Do NOT output duplicates, synonyms, or over‑broad words (e.g. use “token‑based rate‑limit” not just “rate‑limit”).
 
-If the content lacks substantial value (common knowledge, generic information, or redundant data), respond with exactly: "false"
-
-Be strict in your evaluation - only summarize content that provides genuine informational value.`
+OUTPUT (valid minified JSON, no comments, no extra keys)
+If *valuable*:
+{
+  "result": true,
+  "summary": "<concise summary>",
+  "new_topics": ["topic A", "topic B"]
+}
+Else:
+{ "result": false }
+Output strictly valid JSON. Do not include commentary or extra text.`
                 },
-                { role: "user", content: chunk }
+                {
+                    role: "user",
+                    content: `
+                    CHUNK:
+                    <<< ${chunk} >>>
+                    TOPICS_SO_FAR:
+                    ${topicsSoFar.join(", ") || "none"}`
+                }
             ],
-            temperature: 0.1, // Lower temperature for more consistent evaluation
+            temperature: 0.1
         });
 
-        const result = choices[0].message.content.trim();
-        return result === "false" ? { result: false, content: result } : { content: result, result: true };
+        const raw = choices[0].message.content.trim();
+        const tokenUsage = {
+            input: usage.prompt_tokens,
+            output: usage.completion_tokens,
+            total: usage.total_tokens,
+            model: model
+        }
+        const parsed = JSON.parse(raw);          // throws if bad JSON
+        if (!parsed.result) return { result: false };
+        // ------ merge topics locally ------
+        const nextTopics = uniqueTopicMerge(topicsSoFar, parsed.new_topics || []);
+
+        return {
+            result: true,
+            summary: parsed.summary,
+            newTopics: parsed.new_topics,
+            topics: nextTopics,          // the full updated list
+            tokenUsage
+        };
     } catch (error) {
-        console.error(error);
-        return null;
+        console.error("OpenAI API error:", error);
+        return { result: false };
     }
-}
+};
+export const normalise = str => str.toLowerCase().replace(/[^\w\s]/g, "").trim();
+
+export const uniqueTopicMerge = (oldArr, newArr) => {
+    const seen = new Set(oldArr.map(normalise));
+    for (const t of newArr || []) {
+        const key = normalise(t);
+        if (!seen.has(key)) seen.add(key);
+    }
+    return [...seen].map(t => t);        // back to plain array
+};
+
 export const actions = async (messages, availableActions) => {
     const systemMessage = {
         role: "system",

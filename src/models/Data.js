@@ -2,15 +2,24 @@ import { model, Schema } from 'mongoose';
 
 const DataSchema = new Schema({
     collection: { type: Schema.Types.ObjectId, ref: "Collection" },
-    content: { type: String },
-    chunkNumber: { type: Number },
-    summary: { type: String },
-    embeddingVector: { type: [Number] },
+    content: String,
+    chunkNumber: Number,
+    summary: String,
+    embeddingVector: [Number],
+    newTopics: [String],
     metadata: {
-        tokensUsed: { type: Number },
-        chunkSize: { type: Number }, // length of content
+        tokensUsed: Number,
+        chunkSize: Number, // length of content
         createdAt: { type: Date, default: Date.now },  // time of creation
-        url: { type: String }
+        url: String,
+        tokenUsage: {
+            embeddingTokens: Number,
+            embeddingModel: String,
+            summarizationInputTokens: Number,
+            summarizationOutputTokens: Number,
+            summarizationTotalTokens: Number,
+            summarizationModel: String
+        }
     }
 }, {
     timestamps: true,
