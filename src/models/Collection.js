@@ -1,10 +1,8 @@
 import { model, Schema } from 'mongoose';
 
 const CollectionSchema = new Schema({
-    name: {
-        type: String,
-        required: true,
-    },
+    name: { type: String, required: true, },
+    topics: [String],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     isPublic: { type: Boolean, default: false },

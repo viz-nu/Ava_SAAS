@@ -125,7 +125,7 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
                 throw new Error("unsupported file type");
             // break;
         }
-        await digest(content, url, collectionId);
+        const topics = await digest(content, url, collectionId, {}, [], contentType = "text");
         await Collection.updateOne(
             { _id: collectionId, "contents._id": _id },
             {
@@ -135,10 +135,7 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
                         url: url
                     },
                 },
-                $set: {
-                    "contents.$.status": "active"
-                }
-
+                $addToSet: { topics: topics }
             }
         );
         fs.unlinkSync(tempFilePath);

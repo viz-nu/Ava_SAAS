@@ -44,9 +44,12 @@ const AgentSchema = new Schema({
             updatedAt: Date
         }
     },
-    channels:[{ type: Schema.Types.ObjectId, ref: 'Channel' }],
+    collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
+    channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+    analysisMetrics: Schema.Types.Mixed,
+    facets: [String],
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     isPublic: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
