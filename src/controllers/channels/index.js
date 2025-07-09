@@ -54,19 +54,14 @@ export const createChannel = errorWrapper(async (req, res) => {
             await channel.save()
             await channel.updateStatus("fetched bot details")
             try {
-                bot.getWebhookInfo().then((info) => {
+                bot.telegram.getWebhookInfo().then((info) => {
                     console.log('Webhook info initially:', info);
                 });
                 console.log(channel.webhookUrl);
                 const resp = await bot.telegram.setWebhook(channel.webhookUrl);
                 console.log({ resp })
-                bot.getWebhookInfo().then((info) => {
+                bot.telegram.getWebhookInfo().then((info) => {
                     console.log('Webhook info after set1:', info);
-                });
-                const resp1 = await bot.setWebhook(channel.webhookUrl);
-                console.log({ resp1 })
-                bot.getWebhookInfo().then((info) => {
-                    console.log('Webhook info after set2:', info);
                 });
             } catch (error) {
                 console.log(error);
