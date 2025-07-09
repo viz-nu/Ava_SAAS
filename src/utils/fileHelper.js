@@ -125,7 +125,7 @@ export const processFile = async (collectionId, url, receivers = [], _id) => {
                 throw new Error("unsupported file type");
             // break;
         }
-        const topics = await digest(content, url, collectionId, {}, [], contentType = "text");
+        const topics = await digest(content, url, collectionId, {}, [], "text");
         await Collection.updateOne(
             { _id: collectionId, "contents._id": _id },
             {

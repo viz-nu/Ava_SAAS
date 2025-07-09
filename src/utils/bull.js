@@ -37,7 +37,7 @@ urlProcessingQueue.process(async (job) => {
         );
         if (data?.data?.markdown) {
             console.log("digesting");
-            const topics = await digest(data.data.markdown, url, collectionId, data.data.metadata, [], contentType = "markdown");
+            const topics = await digest(data.data.markdown, url, collectionId, data.data.metadata, [], "markdown");
             await Collection.updateOne(
                 { _id: collectionId, "contents._id": _id },
                 { $push: { "contents.$.metaData.detailedReport": { success: true, url: url } }, $addToSet: { topics: topics } }

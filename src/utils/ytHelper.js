@@ -9,7 +9,7 @@ export const processYT = async (collectionId, urls, receivers = [], _id) => {
             const loader = YoutubeLoader.createFromUrl(url, { language: data.lang || "en", addVideoInfo: true, });
             const docs = await loader.load();
             let text = docs.map(ele => ele.pageContent).join('');
-            topics = await digest(text, url, collectionId, {}, topics, contentType = "text");
+            topics = await digest(text, url, collectionId, {}, topics, "text");
             await Collection.updateOne(
                 { _id: collectionId, "contents._id": _id },
                 {
