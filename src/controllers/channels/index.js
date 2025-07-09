@@ -54,7 +54,7 @@ export const createChannel = errorWrapper(async (req, res) => {
             await channel.save()
             await channel.updateStatus("fetched bot details")
             try {
-                const resp = await bot.telegram.setWebhook(webhookUrl);
+                const resp = await bot.telegram.setWebhook(channel.webhookUrl);
                 console.log({ resp })
             } catch (error) {
                 console.log(error);
