@@ -54,8 +54,11 @@ export const createChannel = errorWrapper(async (req, res) => {
             await channel.save()
             await channel.updateStatus("fetched bot details")
             try {
+                console.log(channel.webhookUrl);
                 const resp = await bot.telegram.setWebhook(channel.webhookUrl);
                 console.log({ resp })
+                const resp1 = await bot.setWebhook(channel.webhookUrl);
+                console.log({ resp1 })
             } catch (error) {
                 console.log(error);
                 return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
