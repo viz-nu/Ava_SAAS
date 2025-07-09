@@ -397,3 +397,22 @@ app.use("/*", (req, res) => res.status(404).send("Route does not exist"))
 app.use(errorHandlerMiddleware);
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+process.on('SIGINT', async () => {
+    console.log('\nGracefully shutting down...');
+
+    try {
+        server.close();
+
+        // Example: close Redis
+        // if (globalThis.redis) await globalThis.redis.quit();
+
+        // // Example: close MongoDB
+        // if (globalThis.mongo) await globalThis.mongo.disconnect();
+
+        console.log('Shutdown complete.');
+        process.exit(0);
+    } catch (err) {
+        console.error('Error during shutdown:', err);
+        process.exit(1);
+    }
+});

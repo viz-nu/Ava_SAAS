@@ -139,6 +139,81 @@ export const Dashboard = errorWrapper(async (req, res) => {
         }
     };
 });
+export const newDashboard = errorWrapper(async (req, res) => {
+    const business = await Business.findById(req.user.business).populate("members documents").select("name logoURL facts sector tagline address description contact analytics");
+    if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
+    const now = new Date();
+    if (now - lastUpdated < 5 * 60 * 1000) return { statusCode: 200, message: "Dashboard retrieved", data: business }
+
+    const [newConversations, newCollections, chatTokens] = await Promise.all([
+        Conversation.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("agent channel createdAt updatedAt"),
+        Collection.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("createdAt updatedAt"),
+        Message.aggregate([
+            { $match: { business: business._id, createdAt: { $gte: lastUpdated } } },
+            {
+                $group: {
+                    _id: "$responseTokens.model",
+                    totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" },
+                    inputChatTokensUsed: { $sum: "$responseTokens.usage.input_tokens" },
+                    outputChatTokensUsed: { $sum: "$responseTokens.usage.output_tokens" }
+                }
+            }
+        ])
+    ])
+    const knowledgeTokensRes = await Data.aggregate([
+        { $match: { collection: { $in: newCollections.map(ele => ele._id) } } },
+        {
+            $group: {
+                _id: null,
+                totalEmbeddingTokens: { $sum: "$metadata.tokenUsage.embeddingTokens" },
+                TotalSummarizationInputTokens: { $sum: "$metadata.tokenUsage.summarizationInputTokens" },
+                TotalSummarizationOutputTokens: { $sum: "$metadata.tokenUsage.summarizationOutputTokens" },
+                TotalSummarizationTotalTokens: { $sum: "$metadata.tokenUsage.summarizationTotalTokens" }
+            }
+        }
+    ])
+
+    console.log({ knowledgeTokensRes });
+    {
+        knowledgeTokensRes: [
+            {
+                _id: null,
+                totalEmbeddingTokens: 18676022,
+                TotalSummarizationInputTokens: 0,
+                TotalSummarizationOutputTokens: 0,
+                TotalSummarizationTotalTokens: 0
+            }
+        ]
+    }
+
+    let existingKnowledgeCosts = business.analytics.creditsUsage.knowledgeCosts
+    for (const ele of knowledgeTokensRes) {
+    existingKnowledgeCosts.totalEmbeddingTokens += ele.totalEmbeddingTokens
+    existingKnowledgeCosts.TotalSummarizationInputTokens += ele.TotalSummarizationInputTokens
+    existingKnowledgeCosts.TotalSummarizationOutputTokens += ele.TotalSummarizationOutputTokens
+    existingKnowledgeCosts.TotalSummarizationTotalTokens += ele.TotalSummarizationTotalTokens
+    let kt = calculateCost("text-embedding-3-small", ele.totalEmbeddingTokens, 0)
+    let st = calculateCost("gpt-4o-mini", ele.TotalSummarizationInputTokens, ele.TotalSummarizationOutputTokens)
+    existingKnowledgeCosts.OverAllKnowledgeCost += (kt.totalCost + st.totalCost)
+    }
+    let existingChatCosts = business.analytics.creditsUsage.chatCosts;
+    for (const ele of chatTokens) {
+        if (ele._id == null) continue;
+        // Add token counts
+        existingChatCosts.totalChatTokensUsed += Number(ele.totalChatTokensUsed);
+        // Get computed costs
+        const { inputCost, outputCost, totalCost } = calculateCost(ele._id, ele.inputChatTokensUsed, ele.outputChatTokensUsed) || {};
+        // Accumulate cost fields properly
+        existingChatCosts.costOfInputChatTokens += inputCost;
+        existingChatCosts.costOfOutputChatTokens += outputCost;
+        existingChatCosts.OverAllChatCost += totalCost;
+    }
+    for (const conv of newConversations) business.addEngagementAnalytics(conv.agent, new Date(conv.createdAt), new Date(conv.updatedAt), conv.channel)
+    business.pruneOldConversationDates();
+    business.analytics.lastUpdated = now;
+    return { statusCode: 200, message: "Dashboard retrieved", data: business, misc: { business: business._id, createdAt: { $gte: lastUpdated } } }
+});
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;
     const selectedIntents = ["enquiry", "complaint"];
