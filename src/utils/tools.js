@@ -184,3 +184,21 @@ function generateHeading() {
     ];
     return variants[Math.floor(Math.random() * variants.length)];
 }
+/** Mark every hour slot the conversation overlapped */
+export const markHourBuckets = (arr, start, end) => {
+    if (!start || !end || end < start) return;
+
+    // Align cursor to the beginning of the start hour
+    let cursor = new Date(start);
+    cursor.setMinutes(0, 0, 0);
+
+    // Ceil end to the next hour boundary **unless** already on a boundary
+    const endCeil = new Date(end);
+    if (end.getMinutes()) endCeil.setHours(endCeil.getHours() + 1, 0, 0, 0);
+
+    while (cursor < endCeil) {
+        // Each loop is a full 1‑hour slot [hh:00 → hh+1:00)
+        arr[cursor.getHours()]++;
+        cursor.setHours(cursor.getHours() + 1);
+    }
+}
