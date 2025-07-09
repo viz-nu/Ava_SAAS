@@ -45,9 +45,7 @@ export const createChannel = errorWrapper(async (req, res) => {
             const bot = new Telegraf(telegramToken);
             try {
                 const botInfo = await bot.telegram.getMe(); // Fetch bot details 
-                console.log(botInfo);
-                
-                channel.config = { ...botInfo, url: `https://t.me/${botInfo.userName}` }
+                channel.config = { ...botInfo, url: `https://t.me/${botInfo.username}` }
                 channel.webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
             } catch (error) {
                 console.log(error);
@@ -159,8 +157,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
 
                     // Set webhook to new URL
                     await bot.telegram.setWebhook(webhookUrl);
-
-                    channel.config = { ...botinfo, url: `https://t.me/${botInfo.userName}` };
+                    channel.config = { ...botInfo, url: `https://t.me/${botInfo.username}` }
                     channel.secrets = { botToken: telegramToken };
                     channel.webhookUrl = webhookUrl;
                     channel.status = "bot webhook updated";
