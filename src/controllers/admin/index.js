@@ -11,6 +11,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("members documents").select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const collectionsInBusiness = await Collection.find({ business: req.user.business }, "_id")
+    const agentsInBusiness = await AgentModel.find({ business: req.user.business }, "_id")
     const aggregationQueries = [
         Data.aggregate([
             { $match: { collection: { $in: collectionsInBusiness.map(ele => ele._id) } } },
@@ -61,7 +62,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
         ]),
         (async () => {
             const locations = [];
-            for (const ele of business.agents) {
+            for (const ele of agentsInBusiness) {
                 const facets = await Conversation.aggregate([
                     { $match: { business: req.user.business, agent: ele._id, "geoLocation.city": { $exists: true, $ne: "" }, "geoLocation.country_name": { $exists: true, $ne: "" } } },
                     { $group: { _id: { city: "$geoLocation.city", country: "$geoLocation.country_name" }, count: { $sum: 1 } } },
@@ -189,13 +190,13 @@ export const newDashboard = errorWrapper(async (req, res) => {
 
     let existingKnowledgeCosts = business.analytics.creditsUsage.knowledgeCosts
     for (const ele of knowledgeTokensRes) {
-    existingKnowledgeCosts.totalEmbeddingTokens += ele.totalEmbeddingTokens
-    existingKnowledgeCosts.TotalSummarizationInputTokens += ele.TotalSummarizationInputTokens
-    existingKnowledgeCosts.TotalSummarizationOutputTokens += ele.TotalSummarizationOutputTokens
-    existingKnowledgeCosts.TotalSummarizationTotalTokens += ele.TotalSummarizationTotalTokens
-    let kt = calculateCost("text-embedding-3-small", ele.totalEmbeddingTokens, 0)
-    let st = calculateCost("gpt-4o-mini", ele.TotalSummarizationInputTokens, ele.TotalSummarizationOutputTokens)
-    existingKnowledgeCosts.OverAllKnowledgeCost += (kt.totalCost + st.totalCost)
+        existingKnowledgeCosts.totalEmbeddingTokens += ele.totalEmbeddingTokens
+        existingKnowledgeCosts.TotalSummarizationInputTokens += ele.TotalSummarizationInputTokens
+        existingKnowledgeCosts.TotalSummarizationOutputTokens += ele.TotalSummarizationOutputTokens
+        existingKnowledgeCosts.TotalSummarizationTotalTokens += ele.TotalSummarizationTotalTokens
+        let kt = calculateCost("text-embedding-3-small", ele.totalEmbeddingTokens, 0)
+        let st = calculateCost("gpt-4o-mini", ele.TotalSummarizationInputTokens, ele.TotalSummarizationOutputTokens)
+        existingKnowledgeCosts.OverAllKnowledgeCost += (kt.totalCost + st.totalCost)
     }
     let existingChatCosts = business.analytics.creditsUsage.chatCosts;
     for (const ele of chatTokens) {
