@@ -18,6 +18,8 @@ telegramRouter.post('/:botId', async (req, res) => {
         const { latitude, longitude } = message.location || {};
         const { phone_number, first_name, user_id } = message.contact || {};
         const text = message.text || null;
+        console.log({ type: "telegram", botId });
+
         // Respond immediately to prevent retries
         res.status(200).json({ success: true });
         // Process asynchronously to avoid delays
