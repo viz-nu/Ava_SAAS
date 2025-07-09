@@ -52,6 +52,7 @@ export const createChannel = errorWrapper(async (req, res) => {
                 console.log(error);
                 return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
             }
+            await channel.save()
             channel.markModified("config");
             await channel.updateStatus("fetched bot details")
             try {
