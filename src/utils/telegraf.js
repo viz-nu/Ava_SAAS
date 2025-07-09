@@ -1,9 +1,18 @@
 import { AgentModel } from "../models/Agent.js";
+import { Channel } from "../models/Channels.js";
 
-export const getBotDetails = async (botId) => {
+export const getBotDetails = async ({ type, botId }) => {
     try {
-        const agent = await AgentModel.findOne({ "integrations.telegram.id": botId })
-        return agent.toObject()
+        switch (type) {
+            case "telegram":
+                const channel = await Channel.findOne({ "config.id": botId }, "_id")
+                const agent = await AgentModel.findOne({ "channel": channel._id })
+                return agent.toObject()
+            default:
+                break;
+        }
+
+
     } catch (error) {
         console.log(error);
         return null
