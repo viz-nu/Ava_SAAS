@@ -70,7 +70,7 @@ const openCors = cors({
 app.get("/", cors(corsOptions), (req, res) => res.send("Server up and running"));
 app.get("/email/confirmation", cors(corsOptions), emailConformation);
 app.use("/api/v1", cors(corsOptions), indexRouter);
-app.use("/webhook", cors(corsOptions), webhookRouter);
+app.use("/webhook", webhookRouter);
 app.options('/v1/agent', openCors);
 app.options('/trigger', openCors);
 app.options('/reaction', openCors);
