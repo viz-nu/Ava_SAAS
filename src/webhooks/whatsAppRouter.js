@@ -19,6 +19,11 @@ whatsappRouter.get("/main", async (req, res) => {
     return res.sendStatus(500);
   }
 });
+whatsappRouter.post("/main", async (req, res) => {
+  const body = req.body;
+  console.log({ body });
+  res.status(200).send('EVENT_RECEIVED');
+})
 whatsappRouter.get('/:agentId', async (req, res) => {
   try {
     const parsedUrl = parse(req.originalUrl, true);
