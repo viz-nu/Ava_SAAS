@@ -31,7 +31,7 @@ export const updateAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
     const [business, agent] = await Promise.all([Business.findById(req.user.business), await AgentModel.findOne({ _id: req.params.id, business: req.user.business })]);
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
-    const { appearance, personalInfo, actions, channels } = req.body
+    const { appearance, personalInfo, actions = [], channels } = req.body
     if (channels.length > 0) {
         for (const id of channels) {
             const channel = await Channel.findOne({ _id: id, business: req.user.business });
