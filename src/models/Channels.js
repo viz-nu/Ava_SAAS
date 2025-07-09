@@ -84,7 +84,7 @@ const TgConfig = new Schema(
         can_join_groups: Boolean,
         can_read_all_group_messages: Boolean,
         supports_inline_queries: Boolean,
-        url: Boolean
+        url: String
     },
     baseOpts
 );
