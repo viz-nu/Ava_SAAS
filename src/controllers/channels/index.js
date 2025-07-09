@@ -44,9 +44,8 @@ export const createChannel = errorWrapper(async (req, res) => {
         case "telegram":
             const { telegramToken } = config
             const bot = new Telegraf(telegramToken);
-            let botInfo
             try {
-                botInfo = await bot.telegram.getMe(); // Fetch bot details 
+                const  botInfo = await bot.telegram.getMe(); // Fetch bot details 
                 console.log(botInfo);
                 config = botinfo
                 channel.webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
