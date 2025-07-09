@@ -37,8 +37,7 @@ export const createChannel = errorWrapper(async (req, res) => {
                 await channel.updateStatus("failed")
                 return { statusCode: 400, message: "transporter verification failed", data: null }
             }
-            channel.markModified("config");
-            channel.markModified("secrets");
+            await channel.save()
             await channel.updateStatus("success")
             break;
         case "telegram":
@@ -46,14 +45,13 @@ export const createChannel = errorWrapper(async (req, res) => {
             const bot = new Telegraf(telegramToken);
             try {
                 const botInfo = await bot.telegram.getMe(); // Fetch bot details 
-                channel.config = { botInfo, url: `https://t.me/${botInfo.userName}` }
+                channel.config = { ...botInfo, url: `https://t.me/${botInfo.userName}` }
                 channel.webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
             } catch (error) {
                 console.log(error);
                 return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
             }
             await channel.save()
-            channel.markModified("config");
             await channel.updateStatus("fetched bot details")
             try {
                 await bot.telegram.setWebhook(webhookUrl);
@@ -62,7 +60,7 @@ export const createChannel = errorWrapper(async (req, res) => {
                 return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
             }
             channel.secrets = { botToken: telegramToken }
-            channel.markModified("secrets");
+            await channel.save()
             await channel.updateStatus("bot webhook set")
             break;
         case "whatsapp":
@@ -77,8 +75,7 @@ export const createChannel = errorWrapper(async (req, res) => {
                 console.log(error);
                 return { statusCode: 401, message: "whatsapp code verification failed", data: error };
             }
-            channel.markModified("config");
-            channel.markModified("secrets");
+            await channel.save()
             await channel.updateStatus("fetched access token")
             // try {
             //     await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": webhookUrl, "verify_token": channel.secrets.verificationToken }, { headers: { 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
@@ -145,8 +142,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
                     await channel.updateStatus("failed")
                     return { statusCode: 400, message: "transporter verification failed", data: null }
                 }
-                channel.markModified("config");
-                channel.markModified("secrets");
+                await channel.save()
                 await channel.updateStatus("success")
                 break;
             case "telegram": {
@@ -162,7 +158,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
                     // Set webhook to new URL
                     await bot.telegram.setWebhook(webhookUrl);
 
-                    channel.config = botinfo;
+                    channel.config = { ...botinfo, url: `https://t.me/${botInfo.userName}` };
                     channel.secrets = { botToken: telegramToken };
                     channel.webhookUrl = webhookUrl;
                     channel.status = "bot webhook updated";
