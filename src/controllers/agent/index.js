@@ -3,22 +3,27 @@ import { Action } from '../../models/Action.js';
 import { AgentModel } from '../../models/Agent.js';
 import { Business } from '../../models/Business.js';
 import { Channel } from '../../models/Channels.js';
+import { Collection } from '../../models/Collection.js';
 import { agentSchema } from '../../Schema/index.js';
 import { openai } from '../../utils/openai.js';
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    const { appearance, personalInfo, actions = [], channels = [] } = req.body
+    const { appearance, personalInfo, actions = [], channels = [], collections = [] } = req.body
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     for (const id of channels) {
         const channel = await Channel.findOne({ _id: id, business: req.user.business });
         if (!channel) return { statusCode: 404, message: "channel not found", data: null }
     }
+    for (const id of collections) {
+        const collection = await Collection.findOne({ _id: id, business: req.user.business });
+        if (!collection) return { statusCode: 404, message: "collection not found", data: null }
+    }
     for (const id of actions) {
         const action = await Action.findOne({ _id: id, business: req.user.business });
         if (!action) return { statusCode: 404, message: "action not found", data: null }
     }
-    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, business: business._id, createdBy: req.user._id });
+    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: business._id, createdBy: req.user._id });
     return { statusCode: 201, message: "New agent added", data: agent };
 });
 export const getAllAgents = errorWrapper(async (req, res) => {
@@ -31,15 +36,22 @@ export const updateAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
     const [business, agent] = await Promise.all([Business.findById(req.user.business), await AgentModel.findOne({ _id: req.params.id, business: req.user.business })]);
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
-    const { appearance, personalInfo, actions = [], channels } = req.body
-    if (channels.length > 0) {
+    const { appearance, personalInfo, actions, channels, collections } = req.body
+    if (channels != undefined && channels.length > 0) {
         for (const id of channels) {
             const channel = await Channel.findOne({ _id: id, business: req.user.business });
             if (!channel) return { statusCode: 404, message: "channel not found", data: null }
         }
         agent.channels = channels;
     }
-    if (actions.length > 0) {
+    if (collections != undefined && collections.length > 0) {
+        for (const id of collections) {
+            const collection = await Collection.findOne({ _id: id, business: req.user.business });
+            if (!collection) return { statusCode: 404, message: "collection not found", data: null }
+        }
+        agent.collections = collections;
+    }
+    if (actions != undefined && actions.length > 0) {
         for (const id of actions) {
             const action = await Action.findOne({ _id: id, business: req.user.business });
             if (!action) return { statusCode: 404, message: "action not found", data: null }
