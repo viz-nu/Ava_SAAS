@@ -141,6 +141,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                         temperature: agentDetails.personalInfo.temperature,
                         tools: toolsJson,
                     });
+                    state = prevMessages
                     const result = await run(agent, state, { stream: false })
                     console.log({ result });
                     await bot.telegram.sendMessage(chatId, result.response.content[0].text);
