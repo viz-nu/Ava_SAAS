@@ -5,6 +5,7 @@ const { wa_client_id, wa_client_secret, SERVER_URL } = process.env;
 import axios from 'axios';
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { verifyTransporter } from "../../utils/sendEmail.js";
+import { AgentModel } from "../../models/Agent.js";
 
 
 export const fetchChannels = errorWrapper(async (req, res) => {
@@ -280,8 +281,10 @@ export const deleteChannel = errorWrapper(async (req, res) => {
     } catch (err) {
         console.error("Provider clean-up threw:", err);
     }
-
-    // Finally remove the document
-    await channel.deleteOne();
-    return { statusCode: 200, message: "Channel deleted", data: { id: channel._id } };
+    await Promise.all([
+        Channel.findByIdAndDelete(req.params.id),
+        AgentModel.updateMany({ channels: req.params.id, business: req.user.business }, { $pull: { channels: req.params.id } })
+    ]);
+    const updatedAgents = await AgentModel.find({ _id: { $in: affected.map(a => a._id) } });
+    return { statusCode: 200, message: "Channel deleted", data: { updatedAgents } };
 });
