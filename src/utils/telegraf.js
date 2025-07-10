@@ -7,7 +7,7 @@ export const getBotDetails = async ({ type, botId }) => {
             case "telegram":
                 const channelDetails = await Channel.findOne({ "config.id": botId })
                 const agentDetails = await AgentModel.findOne({ "channel": channelDetails._id }).populate("business actions")
-                console.log{ agentDetails, channelDetails };
+                console.log({ agentDetails, channelDetails });
                 
                 return { agentDetails, channelDetails }
             default:
