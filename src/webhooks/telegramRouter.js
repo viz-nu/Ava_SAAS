@@ -143,12 +143,16 @@ telegramRouter.post('/:botId', async (req, res) => {
                     });
                     state = prevMessages
                     const result = await run(agent, state, { stream: false })
-                    console.log(JSON.stringify(result));
-                    await bot.telegram.sendMessage(chatId, result.finalOutput);
-                    message.triggeredActions.push(...result.response.toolCalls.map(ele => ele.name))
-                    message.response = result.finalOutput;
-                    message.responseTokens.model = result.response.model
-                    message.responseTokens.usage = result.response.usage
+
+                    const assistantMessage = result.finalOutput;
+                    await bot.telegram.sendMessage(chatId, assistantMessage);
+                    const toolsUsed = result?.state?.lastProcessedResponse?.toolsUsed ?? [];
+                    message.triggeredActions.push(...toolsUsed.map(tool => tool.name));
+                    message.response = assistantMessage;
+                    message.responseTokens.model = result?.state?.lastModelResponse?.model ?? null;
+                    let usage = result?.state?.modelResponses?.usage
+                    let totals = { input_tokens: usage.inputTokens || 0, output_tokens: usage.outputTokens || 0, total_tokens: usage.totalTokens || 0 };
+                    message.responseTokens.usage = totals
                     await message.save()
                 }
 
