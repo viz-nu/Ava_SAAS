@@ -1,4 +1,5 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
+import { AgentModel } from "../../models/Agent.js";
 import { Business } from "../../models/Business.js";
 import { Collection } from "../../models/Collection.js";
 import { Data } from "../../models/Data.js";
@@ -93,6 +94,7 @@ export const deleteCollection = errorWrapper(async (req, res) => {
     const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
     await Promise.all([
         Collection.findByIdAndDelete(req.params.id),
+        AgentModel.updateMany({ collections: req.params.id, business: req.user.business }, { $pull: { collections: req.params.id } }),
         Data.deleteMany({ collection: req.params.id }),
         ...jobs.filter(job => job.data.collectionId === id).map(job => job.remove())
     ])
