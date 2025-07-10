@@ -143,10 +143,10 @@ telegramRouter.post('/:botId', async (req, res) => {
                     });
                     state = prevMessages
                     const result = await run(agent, state, { stream: false })
-                    console.log({ result });
-                    await bot.telegram.sendMessage(chatId, result.response.content[0].text);
+                    console.log(JSON.stringify(result));
+                    await bot.telegram.sendMessage(chatId, result.finalOutput);
                     message.triggeredActions.push(...result.response.toolCalls.map(ele => ele.name))
-                    message.response = result.response.finalOutput[0]?.content[0]?.text || JSON.stringify(result.response.finalOutput);
+                    message.response = result.finalOutput;
                     message.responseTokens.model = result.response.model
                     message.responseTokens.usage = result.response.usage
                     await message.save()
