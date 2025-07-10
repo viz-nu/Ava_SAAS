@@ -234,7 +234,10 @@ export const updateChannel = errorWrapper(async (req, res) => {
  * Removes the channel and cleans up provider resources.
  */
 export const deleteChannel = errorWrapper(async (req, res) => {
-    const channel = await Channel.findOne({ _id: req.params.id, business: req.user.business });
+    const [channel, affected] = await Promise.all([
+        Channel.findOne({ _id: req.params.id, business: req.user.business }),
+        AgentModel.find({ channels: req.params.id, business: req.user.business }, "_id")
+    ]);
     if (!channel) return { statusCode: 404, message: "Channel not found", data: null };
     try {
         switch (channel.type) {
