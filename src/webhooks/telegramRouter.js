@@ -130,7 +130,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                         }));
                     } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, telegramChatId: chatId, channel: "telegram" }); }
                     await bot.telegram.sendChatAction(chatId, 'typing');
-                    prevMessages.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
+                    prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
                     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
                     const agent = new Agent({
                         name: agentDetails.personalInfo.name,
