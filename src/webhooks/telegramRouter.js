@@ -130,7 +130,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                         }));
                     } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, telegramChatId: chatId, channel: "telegram" }); }
                     await bot.telegram.sendChatAction(chatId, 'typing');
-                    let message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
                     prevMessages.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
                     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
                     const agent = new Agent({
@@ -143,16 +142,14 @@ telegramRouter.post('/:botId', async (req, res) => {
                     });
                     state = prevMessages
                     const result = await run(agent, state, { stream: false })
-                    const assistantMessage = result.finalOutput;
-                    await bot.telegram.sendMessage(chatId, assistantMessage);
+                    let message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: result.finalOutput, conversationId: conversation._id });
+                    await bot.telegram.sendMessage(chatId, result.finalOutput);
                     // const toolsUsed = result?.state?.lastProcessedResponse?.toolsUsed ?? [];
                     // message.triggeredActions.push(...toolsUsed.map(tool => tool.name));
-                    message.response = assistantMessage;
                     // message.responseTokens.model = result?.state?.lastModelResponse?.model ?? null;
                     // let usage = result?.state?.modelResponses?.usage
                     // let totals = { input_tokens: usage.inputTokens || 0, output_tokens: usage.outputTokens || 0, total_tokens: usage.totalTokens || 0 };
                     // message.responseTokens.usage = totals
-                    await message.save()
                 }
 
             } catch (error) {
