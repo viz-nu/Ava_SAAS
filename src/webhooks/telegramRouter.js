@@ -144,13 +144,16 @@ telegramRouter.post('/:botId', async (req, res) => {
                     const result = await run(agent, state, { stream: false })
                     let message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: result.finalOutput, conversationId: conversation._id });
                     await bot.telegram.sendMessage(chatId, result.finalOutput);
-                    loggingResults(result);
+                    const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+                    result.rawResponses.forEach((ele) => {
+                        usage.input_tokens += ele.usage.inputTokens, usage.output_tokens += ele.usage.outputTokens, usage.total_tokens += ele.usage.totalTokens
+                    })
+                    const lastResponse = result.rawResponses[result.rawResponses.length - 1];
+
                     // const toolsUsed = result?.state?.lastProcessedResponse?.toolsUsed ?? [];
                     // message.triggeredActions.push(...toolsUsed.map(tool => tool.name));
-                    // message.responseTokens.model = result?.state?.lastModelResponse?.model ?? null;
-                    // let usage = result?.state?.modelResponses?.usage
-                    // let totals = { input_tokens: usage.inputTokens || 0, output_tokens: usage.outputTokens || 0, total_tokens: usage.totalTokens || 0 };
-                    // message.responseTokens.usage = totals
+                    message.responseTokens.model = agentDetails.personalInfo.model ?? null;
+                    message.responseTokens.usage = usage
                 }
 
             } catch (error) {
