@@ -12,10 +12,10 @@ import { processYT } from "../../utils/ytHelper.js";
 // Create Collection
 export const createCollection = errorWrapper(async (req, res) => {
     await collectionSchema.validate(req.body);
-    const { name, contents } = req.body;
+    const { name, contents, description } = req.body;
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const collection = new Collection({ name, contents, business: business._id, createdBy: req.user._id });
+    const collection = new Collection({ name, description, contents, business: business._id, createdBy: req.user._id });
     await collection.save();
     (async function processCollection(collection, business) {
         try {
@@ -58,12 +58,15 @@ export const getCollections = errorWrapper(async (req, res) => {
 
 export const updateCollection = errorWrapper(async (req, res) => {
     await updateSchema.validate(req.body);
-    const { action, name, removeContents, addContents } = req.body;
+    const { action, name, description, removeContents, addContents } = req.body;
     const collection = await Collection.findOne({ _id: req.params.id, business: req.user.business });
     if (!collection) return { statusCode: 404, message: "Collection not found", data: null }
     switch (action) {
         case 'rename':
             if (name) collection.name = name;
+            break;
+        case 'redescribe':
+            if (description) collection.description = description;
             break;
         case 'addContents':
             collection.contents.push(...addContents)

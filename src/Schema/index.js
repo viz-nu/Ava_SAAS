@@ -40,7 +40,8 @@ export const collectionSchema = object({
             source: string().oneOf(['website', 'youtube', 'file']).required("Should be one of the following 'website', 'youtube', 'file' "),
             metaData: mixed().notRequired()
         })
-    ).optional()
+    ).optional(),
+    description: string().optional()
 });
 
 export const updateSchema = object({
@@ -52,8 +53,8 @@ export const updateSchema = object({
             metaData: mixed().optional()
         })
     ).optional(),
-    removeContentIds: array().optional()
-
+    removeContentIds: array().optional(),
+    description: string().optional()
 });
 import mongoose from 'mongoose';
 
