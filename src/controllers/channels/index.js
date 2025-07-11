@@ -70,7 +70,7 @@ export const createChannel = errorWrapper(async (req, res) => {
             try {
                 const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
                 channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }
-                // channel.webhookUrl = `${SERVER_URL}webhook/whatsapp/${agent._id}`
+                channel.webhookUrl = `${SERVER_URL}webhook/whatsapp/${phone_number_id}`
                 channel.config = { phone_number_id, waba_id, business_id }
             } catch (error) {
                 console.log(error);
@@ -78,20 +78,21 @@ export const createChannel = errorWrapper(async (req, res) => {
             }
             await channel.save()
             await channel.updateStatus("fetched access token")
-            // try {
-            //     await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": webhookUrl, "verify_token": channel.secrets.verificationToken }, { headers: { 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
-            // } catch (error) {
-            //     console.log(error);
-            //     return { statusCode: 401, message: "whatsapp webhook verification failed", data: error };
-            // }
-            // await channel.updateStatus("bot webhook set")
-            // try {
-            //     await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': channel.secrets.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
-            // } catch (error) {
-            //     console.log(error);
-            //     return { statusCode: 401, message: "registering ", data: error };
-            // }
-            // await channel.updateStatus("bot messaging_product set")
+            try {
+                await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": channel.webhookUrl, "verify_token": channel.secrets.verificationToken }, { headers: { 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
+            } catch (error) {
+                console.log(error);
+                return { statusCode: 401, message: "whatsapp webhook verification failed", data: error };
+            }
+            await channel.updateStatus("bot webhook set")
+            try {
+                await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': channel.secrets.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
+            } catch (error) {
+                console.log(error);
+                return { statusCode: 401, message: "registering ", data: error };
+            }
+            await channel.save()
+            await channel.updateStatus("bot messaging_product set")
             break;
         case "web":
             break;

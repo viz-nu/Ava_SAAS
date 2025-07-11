@@ -109,10 +109,7 @@ const WebSecrets = new Schema(
     baseOpts
 );
 
-Channel.discriminator(
-    'web',
-    new Schema({ config: WebConfig, secrets: WebSecrets }, docOpts)
-);
+Channel.discriminator('web', new Schema({ config: WebConfig, secrets: WebSecrets }, docOpts));
 
 /* ───────────────────────────── Phone Call Channel ─────────────────────── */
 const PhoneConfig = new Schema(
