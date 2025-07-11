@@ -144,6 +144,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     const result = await run(agent, state, { stream: false })
                     let message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: result.finalOutput, conversationId: conversation._id });
                     await bot.telegram.sendMessage(chatId, result.finalOutput);
+                    console.log(result);
                     // const toolsUsed = result?.state?.lastProcessedResponse?.toolsUsed ?? [];
                     // message.triggeredActions.push(...toolsUsed.map(tool => tool.name));
                     // message.responseTokens.model = result?.state?.lastModelResponse?.model ?? null;

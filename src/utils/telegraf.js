@@ -44,3 +44,49 @@ export const categorizeTelegramTrigger = (update) => {
 
     return 'unknown';
 }
+export const loggingResults = (result) => {
+    // Log all available properties from RunResultBase
+    console.log('=== COMPLETE AGENT RUN RESULT ===');
+
+    console.log('\n1. HISTORY (input + generated items):');
+    console.log(JSON.stringify(result.history, null, 2));
+
+    console.log('\n2. OUTPUT (new model data):');
+    console.log(JSON.stringify(result.output, null, 2));
+
+    console.log('\n3. INPUT (original input):');
+    console.log(JSON.stringify(result.input, null, 2));
+
+    console.log('\n4. NEW ITEMS (run items with agent associations):');
+    console.log(JSON.stringify(result.newItems, null, 2));
+
+    console.log('\n5. RAW RESPONSES (LLM responses):');
+    console.log(JSON.stringify(result.rawResponses, null, 2));
+
+    console.log('\n6. LAST RESPONSE ID:');
+    console.log(result.lastResponseId);
+
+    console.log('\n7. LAST AGENT:');
+    console.log(result.lastAgent);
+
+    console.log('\n8. INPUT GUARDRAIL RESULTS:');
+    console.log(JSON.stringify(result.inputGuardrailResults, null, 2));
+
+    console.log('\n9. OUTPUT GUARDRAIL RESULTS:');
+    console.log(JSON.stringify(result.outputGuardrailResults, null, 2));
+
+    console.log('\n10. INTERRUPTIONS:');
+    console.log(JSON.stringify(result.interruptions, null, 2));
+
+    console.log('\n11. FINAL OUTPUT:');
+    console.log(JSON.stringify(result.finalOutput, null, 2));
+
+    console.log('\n12. STATE:');
+    console.log(JSON.stringify(result.state, null, 2));
+
+    console.log('\n=== END RESULT LOGGING ===');
+
+    // Also log the entire result object to see if there are any additional properties
+    console.log('\n=== FULL RESULT OBJECT ===');
+    console.log(JSON.stringify(result, null, 2));
+}
