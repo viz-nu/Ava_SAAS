@@ -142,18 +142,12 @@ telegramRouter.post('/:botId', async (req, res) => {
                     });
                     state = prevMessages
                     const result = await run(agent, state, { stream: false })
-                    let message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: result.finalOutput, conversationId: conversation._id });
-                    await bot.telegram.sendMessage(chatId, result.finalOutput);
                     const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
                     result.rawResponses.forEach((ele) => {
                         usage.input_tokens += ele.usage.inputTokens, usage.output_tokens += ele.usage.outputTokens, usage.total_tokens += ele.usage.totalTokens
                     })
-                    const lastResponse = result.rawResponses[result.rawResponses.length - 1];
-
-                    // const toolsUsed = result?.state?.lastProcessedResponse?.toolsUsed ?? [];
-                    // message.triggeredActions.push(...toolsUsed.map(tool => tool.name));
-                    message.responseTokens.model = agentDetails.personalInfo.model ?? null;
-                    message.responseTokens.usage = usage
+                    await Message.create({ business: agentDetails.business._id, query: userMessage, response: result.finalOutput, conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
+                    await bot.telegram.sendMessage(chatId, result.finalOutput);
                 }
 
             } catch (error) {
