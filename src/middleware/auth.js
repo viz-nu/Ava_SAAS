@@ -40,6 +40,10 @@ export const isAdmin = (req, res, next) => {
     if (req.user.role === "admin") return next();
     return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
+export const isSuperAdmin = (req, res, next) => {
+    if (req.user.role === "superAdmin") return next();
+    return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
+}
 // export const isStudent = (req, res, next) => {
 //     if (req.user.userType === "student") return next();
 //     return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });

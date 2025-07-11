@@ -3,15 +3,19 @@ import { Channel } from "../models/Channels.js";
 
 export const getBotDetails = async ({ type, botId }) => {
     try {
+        let channelDetails
         switch (type) {
             case "telegram":
-                const channelDetails = await Channel.findOne({ "config.id": botId })
-                const agentDetails = await AgentModel.findOne({ channels: channelDetails._id }).populate("business actions")
-                return { agentDetails, channelDetails }
+                channelDetails = await Channel.findOne({ "config.id": botId })
+                break;
+            case "whatsapp":
+                channelDetails = await Channel.findOne({ "config.phone_number_id": botId })
+                break;
             default:
                 break;
         }
-
+        const agentDetails = await AgentModel.findOne({ channels: channelDetails._id }).populate("business actions")
+        return { agentDetails, channelDetails }
 
     } catch (error) {
         console.log(error);

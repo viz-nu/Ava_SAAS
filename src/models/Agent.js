@@ -8,15 +8,6 @@ const AgentSchema = new Schema({
         quickQuestionsWelcomeScreenBox: { backgroundColor: String, textColor: String }
     },
     interactionMetrics: Array,
-    tools: [{
-        async: { type: Boolean, default: true },
-        name: String,
-        description: String,
-        needsApproval: { type: Boolean, default: false },
-        parameters: Schema.Types.Mixed,
-        functionString: String,
-        errorFunction: String
-    }],
     personalInfo: {
         name: String,
         systemPrompt: String,
@@ -24,25 +15,6 @@ const AgentSchema = new Schema({
         welcomeMessage: String,
         model: { type: String, default: 'gpt-4.1-mini' },
         temperature: { type: Number, default: 0.5 },
-    },
-    integrations: {
-        telegram: {
-            botToken: String,
-            webhookUrl: String,
-            id: String,
-            userName: String
-        },
-        whatsapp: {
-            phone_number_id: String,
-            waba_id: String,
-            phoneNumberPin: String,
-            business_id: String,
-            status: String,
-            webhookUrl: String,
-            verificationToken: String,
-            permanentAccessToken: String,
-            updatedAt: Date
-        }
     },
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],

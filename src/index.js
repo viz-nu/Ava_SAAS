@@ -100,7 +100,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         res.setHeader('Transfer-Encoding', 'chunked');
         res.flushHeaders();
         const write = chunk => res.write(JSON.stringify(chunk));
-        const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
+        const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
         const agent = new Agent({
             name: agentDetails.personalInfo.name,
             instructions: agentDetails.personalInfo.systemPrompt,
@@ -177,7 +177,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 hasInterruptions = true;
                 const interruptionData = stream.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
                 conversation = await Conversation.findByIdAndUpdate(conversation._id, { $set: { pendingInterruptions: interruptionData, state: JSON.stringify(newState) } }, { new: true });
-                const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: { ...rawItem, parameters: agentDetails.tools.length > 0 ? agentDetails.tools.find(ele => ele.name === rawItem.name).parameters : agentDetails.actions.find(ele => ele.intent === rawItem.name) }, type: type, message: message })) } };
+                const interruptionPayload = { id: "interruptions_pending", conversationId: conversation._id, messageId: message._id, responseType: "interruption", data: { interruptions: interruptionData.map(({ rawItem, type, message }) => ({ rawItem: { ...rawItem, parameters: agentDetails.actions.find(ele => ele.intent === rawItem.name) }, type: type, message: message })) } };
                 write(interruptionPayload);
                 break;
             } else {
