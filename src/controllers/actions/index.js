@@ -10,7 +10,7 @@ export const createActions = errorWrapper(async (req, res) => {
     return { statusCode: 201, message: "Action created successfully", data: action }
 });
 export const getActions = errorWrapper(async (req, res) => {
-    const filter = { business: req.user.business }
+    const filter = { $or: [{ business: req.user.business }, { isPublic: true }] }
     if (req.params.id) filter._id = req.params.id
     const actions = await Action.find(filter);
     return { statusCode: 200, message: `Action${req.params.id ? "" : "s"} fetched successfully`, data: actions }

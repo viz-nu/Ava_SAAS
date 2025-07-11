@@ -9,7 +9,8 @@ const ActionSchema = new Schema({
     parameters: Schema.Types.Mixed,
     functionString: String,
     errorFunction: String,
-    UI: Schema.Types.Mixed
+    UI: Schema.Types.Mixed,
+    isPublic: { type: Boolean, default: false },
 }, {
     timestamps: true
 });

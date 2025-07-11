@@ -8,7 +8,7 @@ import { agentSchema } from '../../Schema/index.js';
 import { openai } from '../../utils/openai.js';
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    const { appearance, personalInfo, actions = [], channels = [], collections = [] } = req.body
+    const { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic } = req.body
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     for (const id of channels) {
@@ -23,42 +23,48 @@ export const createAgent = errorWrapper(async (req, res) => {
         const action = await Action.findOne({ _id: id, business: req.user.business });
         if (!action) return { statusCode: 404, message: "action not found", data: null }
     }
-    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: business._id, createdBy: req.user._id });
+    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: business._id, createdBy: req.user._id, isPublic });
     return { statusCode: 201, message: "New agent added", data: agent };
 });
 export const getAllAgents = errorWrapper(async (req, res) => {
-    const filter = { business: req.user.business }
+    let filter = {
+        $or: [
+            { business: req.user.business },
+            { isPublic: true }
+        ]
+    }
     if (req.params.id) filter._id = req.params.id
     const agents = await AgentModel.find(filter);
     return { statusCode: 200, message: "Agents retrieved", data: agents }
 });
 export const updateAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    const [business, agent] = await Promise.all([Business.findById(req.user.business), await AgentModel.findOne({ _id: req.params.id, business: req.user.business })]);
+    const agent = await AgentModel.findOne({ _id: req.params.id, business: req.user.business });
     if (!agent) return { statusCode: 404, message: "Agent not found", data: null }
-    const { appearance, personalInfo, actions, channels, collections } = req.body
-    if (channels != undefined && channels.length > 0) {
+    const { appearance, personalInfo, actions, channels, collections, isPublic } = req.body
+    if (channels !== undefined && channels.length > 0) {
         for (const id of channels) {
             const channel = await Channel.findOne({ _id: id, business: req.user.business });
             if (!channel) return { statusCode: 404, message: "channel not found", data: null }
         }
         agent.channels = channels;
     }
-    if (collections != undefined && collections.length > 0) {
+    if (collections !== undefined && collections.length > 0) {
         for (const id of collections) {
             const collection = await Collection.findOne({ _id: id, business: req.user.business });
             if (!collection) return { statusCode: 404, message: "collection not found", data: null }
         }
         agent.collections = collections;
     }
-    if (actions != undefined && actions.length > 0) {
+    if (actions !== undefined && actions.length > 0) {
         for (const id of actions) {
             const action = await Action.findOne({ _id: id, business: req.user.business });
             if (!action) return { statusCode: 404, message: "action not found", data: null }
         }
         agent.actions = actions;
     }
-    if (appearance) agent.appearance = appearance;
+    if (appearance !== undefined) agent.appearance = appearance;
+    if (isPublic !== undefined) agent.isPublic = isPublic;
     if (personalInfo) {
         const { name, systemPrompt, role, temperature, model, welcomeMessage, quickQuestions, facts, noDataMail } = personalInfo
         if (noDataMail) agent.personalInfo.noDataMail = noDataMail;
