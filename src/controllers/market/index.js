@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 import { Template } from '../../models/market.js';
+import { errorWrapper } from '../../middleware/errorWrapper.js';
 
 /* ───────────────────────────── CREATE ───────────────────────────── */
 // post 
