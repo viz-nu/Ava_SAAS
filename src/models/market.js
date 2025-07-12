@@ -12,7 +12,9 @@ const TemplateBaseSchema = new Schema(
         type: { type: String, enum: ['agent', 'action'], required: true },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         avatar: String,
+        isPublic: { type: Boolean, default: false },
         UIElements: Schema.Types.Mixed,
+        isFeatured: { type: Boolean, default: false },
     },
     docOpts
 );
@@ -42,9 +44,6 @@ const AgentConfig = new Schema(
         business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
         analysisMetrics: Schema.Types.Mixed,
         facets: [String],
-        createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
-        isPublic: { type: Boolean, default: false },
-        isFeatured: { type: Boolean, default: false },
     },
     baseOpts
 );
@@ -63,7 +62,6 @@ const ActionConfig = new Schema(
         functionString: String,
         errorFunction: String,
         UI: Schema.Types.Mixed,
-        isPublic: { type: Boolean, default: false },
     },
     baseOpts
 );

@@ -8,6 +8,7 @@ import { AgentsRouter } from "./agent.js";
 import { AdminRouter } from "./admin.js";
 import { channelRouter } from "./channel.js";
 import { actionsRouter } from "./actions.js";
+import { marketRouter } from "./market.js";
 export const indexRouter = Router();
 indexRouter.use(xssReqSanitizer())
 indexRouter.use("/auth", authRouter);
@@ -18,3 +19,4 @@ indexRouter.use("/agent", AgentsRouter)
 indexRouter.use("/admin", AdminRouter)
 indexRouter.use("/channels", channelRouter)
 indexRouter.use("/actions", actionsRouter)
+indexRouter.use("/template", marketRouter)
