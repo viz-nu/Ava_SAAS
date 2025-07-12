@@ -31,7 +31,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     res.status(200).send('EVENT_RECEIVED');
     setImmediate(async (params) => {
       try {
-        // let [{ agentDetails, channelDetails }, conversation] = await Promise.all([getBotDetails({ type: "whatsapp", phone_number_id }), chatId ? Conversation.findOne({ telegramChatId: chatId }) : null]);
+        let [{ agentDetails, channelDetails }, conversation] = await Promise.all([getBotDetails({ type: "whatsapp", phone_number_id }), chatId ? Conversation.findOne({  whatsappChatId: from }) : null]);
         // await sendWAMessage({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: mainText } });
 
 
