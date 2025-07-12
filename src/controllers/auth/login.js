@@ -19,7 +19,7 @@ export const Login = errorWrapper(async (req, res) => {
 })
 
 export const superAdminLogin = errorWrapper(async (req, res) => {
-    const { email, password } = req.body;
+    const { email } = req.body;
     const user = await User.findOne({ email: email })
     if (!user) return { statusCode: 401, message: "Invalid email" }
     if (user.role !== "superAdmin") return { statusCode: 401, message: "Invalid Access Requested" }
