@@ -2,12 +2,33 @@ import axios from 'axios';
 import { OpenAiLLM } from './openai.js';
 // TAVILY_API_KEY
 const tavilyApiKey = "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";
-
+const BUSINESS_SECTORS = [
+    "Agriculture & Natural Resources",
+    "Manufacturing & Industrial",
+    "Construction & Infrastructure",
+    "Energy & Utilities",
+    "Retail & Consumer Goods",
+    "Transportation & Logistics",
+    "Hospitality & Tourism",
+    "Food & Beverage",
+    "Healthcare & Wellness",
+    "Education & Training",
+    "Finance & Insurance",
+    "Real Estate & Property",
+    "Legal & Professional Services",
+    "Media & Entertainment",
+    "Technology & Software",
+    "E-commerce & Digital Services",
+    "Government & Public Services",
+    "Nonprofits & NGOs",
+    "Research & Development",
+    "Creative & Design Services"
+];
 export const searchBusiness = async (businessName) => {
     try {
         // Using Tavily API to get search results
         const response = await axios.post('https://api.tavily.com/search', {
-            query: `${businessName} official website, tagline, facts, address, phone, about(description), information, FAQ`,
+            query: `${businessName} official website, tagline, facts, address, phone, about(description), information, FAQ, industry, sector, business type, category, services, products`,
             search_depth: "advanced",
             include_answer: false,
             include_domains: [],
@@ -56,7 +77,8 @@ export const BusinessExtraction = z.object({
     description: z.string().describe("Description of the business"),
     address: z.string().describe("Address of the business"),
     website: z.string().describe("Website of the business"),
-    phone: z.string().describe("Phone number of the business")
+    phone: z.string().describe("Phone number of the business"),
+    sector: z.enum(BUSINESS_SECTORS).describe("The most relevant business sector from the provided list")
 });
 import { zodTextFormat } from "openai/helpers/zod";
 export const generateFactsAndFAQs = async (businessName, content) => {
@@ -66,13 +88,20 @@ export const generateFactsAndFAQs = async (businessName, content) => {
             input: [
                 {
                     role: "system",
-                    content: "Extract business information and format it as structured data."
+                    content: `Extract business information and format it as structured data. 
+                    
+                    For the sector field, choose the most appropriate sector from this list:
+                    ${BUSINESS_SECTORS.map((sector, index) => `${index + 1}. ${sector}`).join('\n')}
+                    
+                    Select only ONE sector that best represents the primary business activity.`
                 },
                 {
                     role: "user",
                     content: `Based on the following information about "${businessName}", extract:
             1. Some interesting and factual points about the business, minimum 6.
             2. Some frequently asked questions that potential customers might have, minimum 6.
+            3. The most relevant business sector from the provided list.
+            
             Information about ${businessName}:
             ${content}`
                 }
@@ -97,18 +126,29 @@ export const getBusinessInfo = async (businessName) => {
         const relevantContent = extractRelevantContent(searchResults);
 
         // Step 3: Use OpenAI to generate facts and FAQs from the content
-        const { facts, faqs, tagline, description, address, website, phone } = await generateFactsAndFAQs(businessName, relevantContent);
+        const { facts, faqs, tagline, description, address, website, phone, sector } = await generateFactsAndFAQs(businessName, relevantContent);
 
         return {
             facts,
             "frequently asked questions": faqs,
-            tagline, description, address, website, phone
+            tagline,
+            description,
+            address,
+            website,
+            phone,
+            sector
         };
     } catch (error) {
         console.error('Error getting business information:', error.message);
         return {
             facts: [],
             "frequently asked questions": [],
+            tagline: "",
+            description: "",
+            address: "",
+            website: "",
+            phone: "",
+            sector: "",
             error: error.message
         };
     }
