@@ -147,7 +147,6 @@ export const newDashboard = errorWrapper(async (req, res) => {
     const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
     const now = new Date();
     if (now - lastUpdated < 5 * 60 * 1000) return { statusCode: 200, message: "Dashboard retrieved", data: business }
-
     const [newConversations, newCollections, chatTokens] = await Promise.all([
         Conversation.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("agent channel createdAt updatedAt"),
         Collection.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("createdAt updatedAt"),
@@ -175,20 +174,6 @@ export const newDashboard = errorWrapper(async (req, res) => {
             }
         }
     ])
-
-    console.log({ knowledgeTokensRes });
-    {
-        knowledgeTokensRes: [
-            {
-                _id: null,
-                totalEmbeddingTokens: 18676022,
-                TotalSummarizationInputTokens: 0,
-                TotalSummarizationOutputTokens: 0,
-                TotalSummarizationTotalTokens: 0
-            }
-        ]
-    }
-
     let existingKnowledgeCosts = business.analytics.creditsUsage.knowledgeCosts
     for (const ele of knowledgeTokensRes) {
         existingKnowledgeCosts.totalEmbeddingTokens += ele.totalEmbeddingTokens

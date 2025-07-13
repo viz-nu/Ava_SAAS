@@ -16,7 +16,7 @@ import { Message } from "./models/Messages.js";
 import { createServer } from "http";
 import { initializeSocket, io } from "./utils/io.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
-import { sendMail } from "./utils/sendEmail.js";
+import { sendEmail, sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
 import { createToolWrapper, dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
 import { Action } from "./models/Action.js";
@@ -297,44 +297,18 @@ app.get("/get-agent", openCors, async (req, res) => {
 })
 app.post('/send-invite', openCors, async (req, res) => {
     try {
-        let { host, attendees, startTime, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = req.body;
-        if (!attendees || !host) return res.status(400).json({ error: 'attendee or host' });
-        if (!startTime) return res.status(400).json({ error: 'Start time required' });
-        attendees = [attendees, host]
-        const calendar = ical({ name: 'Appointment Invitation' });
+        const { meetingDetails = {}, attendees = [], organizerDetails = {} } = req.body;
+        // attendees must be an array of senders
+        if (!Array.isArray(attendees) || attendees.length === 0) return res.status(400).json({ error: 'Attendees must be a non-empty array' });
+        let { subject = 'Appointment Schedule Invitation', text, html, event = 'Appointment Invitation', start, end, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = meetingDetails
+        if (!start || !end) return res.status(400).json({ error: 'Start and end time are required.' });
+        let { host, port, secure, user, pass, name, bcc, cc, service, clientId, clientSecret, refreshToken } = organizerDetails
+        if (!host || !port || !user || !pass) return res.status(400).json({ error: 'SMTP details are missing or invalid' });
+        const calendar = ical({ name: event });
         calendar.method(ICalCalendarMethod.REQUEST);
-        let endTime = new Date(startTime);
-        endTime.setMinutes(endTime.getMinutes() + 30);
-        calendar.createEvent({
-            start: new Date(startTime),
-            end: new Date(endTime),
-            timezone: timezone || DateTime.fromISO(new Date(startTime), { setZone: true }).zoneName,
-            organizer: { name: 'AVA', email: 'no-reply@ava.com' },
-            summary: summary,
-            description: description,
-            location: location,
-            url: url,
-            attendees: attendees.map(email => ({ email }))
-        });
-        await sendMail({
-            to: attendees.join(','),
-            subject: 'Appointment Schedule Invitation',
-            text: `You are invited to a meeting. Summary: ${summary}`,
-            html: `<div style="font-family: Arial, sans-serif; color: #333;">
-                  <h2>You are invited to a meeting</h2>
-                  <p><strong>Summary:</strong> ${summary}</p>
-                  <p><strong>Description:</strong> ${description}</p>
-                  <p><strong>Location:</strong> ${location}</p>
-                  <p><strong>Time:</strong> ${new Date(startTime).toUTCString()} - ${new Date(endTime).toUTCString()} (${timezone})</p>
-                  <p><a href="${url}" style="color: blue;">Join Meeting</a></p>
-               </div>`,
-            attachments: [{
-                filename: 'invite.ics',
-                content: calendar.toString(),
-                contentType: 'text/calendar'
-            }]
-        })
-        res.status(200).json({ success: true, message: 'Appointment Scheduled Successfully' });
+        calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name, email: user }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
+        const EmailResp = await sendEmail({ config: { host, port, secure, auth: { user, pass } }, emailData: { from: `${name} <${user}>`, to: attendees.join(" "), cc, bcc, subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] } })
+        res.status(200).json({ success: true, message: 'Appointment Scheduled Successfully', data: EmailResp });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: error.message })
@@ -416,3 +390,20 @@ process.on('SIGINT', async () => {
         process.exit(1);
     }
 });
+
+
+// await sendMail({
+//     to: attendees.join(','),
+//     subject: ,
+//     text: `You are invited to a meeting. Summary: ${summary}`,
+//     html: `<div style="font-family: Arial, sans-serif; color: #333;">
+//                   <h2>You are invited to a meeting</h2>
+//                   <p><strong>Summary:</strong> ${summary}</p>
+//                   <p><strong>Description:</strong> ${description}</p>
+//                   <p><strong>Location:</strong> ${location}</p>
+//                   <p><strong>Time:</strong> ${new Date(startTime).toUTCString()} - ${new Date(endTime).toUTCString()} (${timezone})</p>
+//                   <p><a href="${url}" style="color: blue;">Join Meeting</a></p>
+//                </div>`,
+// })
+
+
