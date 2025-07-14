@@ -25,7 +25,6 @@ export const createChannel = errorWrapper(async (req, res) => {
     let { name, type, config, systemPrompt, isPublic, UIElements } = req.body;
     if (!type) return { statusCode: 404, message: "type of channel not found", data: null }
     const channel = await Channel.create({ name, business: req.user.business, type, status: "initiated", systemPrompt: "", isPublic: false, UIElements })
-    let webhookUrl
     switch (type) {
         case "email":
             const { host, port, secure, fromName, defaultRecipients: { }, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
@@ -76,7 +75,17 @@ export const createChannel = errorWrapper(async (req, res) => {
                 channel.webhookUrl = `${SERVER_URL}webhook/whatsapp/${phone_number_id}`
                 channel.config = { phone_number_id, waba_id, business_id }
             } catch (error) {
-                console.log(error);
+                if (error.response) {
+                    console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
+                } else if (error.request) {
+                    console.error("The request was made but no response was received");
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    console.error({ request: error.request });
+                } else {
+                    console.error('Error', error.message);
+                }
+                console.error(error.config);
                 return { statusCode: 401, message: "whatsapp code verification failed", data: error };
             }
             await channel.save()
@@ -84,14 +93,34 @@ export const createChannel = errorWrapper(async (req, res) => {
             try {
                 await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": channel.webhookUrl, "verify_token": channel.secrets.verificationToken }, { headers: { 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
             } catch (error) {
-                console.log(error);
+                if (error.response) {
+                    console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
+                } else if (error.request) {
+                    console.error("The request was made but no response was received");
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    console.error({ request: error.request });
+                } else {
+                    console.error('Error', error.message);
+                }
+                console.error(error.config);
                 return { statusCode: 401, message: "whatsapp webhook verification failed", data: error };
             }
             await channel.updateStatus("bot webhook set")
             try {
                 await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': channel.secrets.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
             } catch (error) {
-                console.log(error);
+                if (error.response) {
+                    console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
+                } else if (error.request) {
+                    console.error("The request was made but no response was received");
+                    // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                    // http.ClientRequest in node.js
+                    console.error({ request: error.request });
+                } else {
+                    console.error('Error', error.message);
+                }
+                console.error(error.config);
                 return { statusCode: 401, message: "registering ", data: error };
             }
             await channel.save()
