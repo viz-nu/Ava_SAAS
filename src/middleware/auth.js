@@ -18,6 +18,7 @@ export const authMiddleware = async (req, res, next) => {
                 secure: true,
                 httpOnly: true,
                 sameSite: "None",      // Allows cross-origin requests
+                domain: ".avakado.ai",   
                 maxAge: 30 * 24 * 60 * 60 * 1000
             })
             req.AccessToken = accessToken;
