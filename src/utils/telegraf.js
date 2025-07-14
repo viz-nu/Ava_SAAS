@@ -4,6 +4,7 @@ import { Channel } from "../models/Channels.js";
 export const getBotDetails = async ({ type, botId }) => {
     try {
         let channelDetails
+        console.log({ type, botId });
         switch (type) {
             case "telegram":
                 channelDetails = await Channel.findOne({ "config.id": botId })
