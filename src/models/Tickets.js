@@ -2,7 +2,7 @@ import { model, Schema, Types } from 'mongoose';
 
 const TicketSchema = new Schema(
     {
-        business: { type: { type: Types.ObjectId, ref: 'Businesses' }, default: "" },
+        business: { type: Types.ObjectId, ref: 'Businesses' },
         issueSummary: { type: String, required: true },
         channel: { type: String, enum: ['telegram', 'whatsapp', 'web', 'phone', 'instagram', 'sms', 'email'], required: true, },
         priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium', },
@@ -15,7 +15,7 @@ const TicketSchema = new Schema(
             instagramId: { type: String },
         },
         response: {
-            channelId: { type: { type: Schema.Types.ObjectId, ref: "Channel" }, default: "" },
+            channelId: { type: Schema.Types.ObjectId, ref: "Channel" },
             from: { type: String },
             to: { type: String },
             cc: { type: String },

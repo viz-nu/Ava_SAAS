@@ -22,7 +22,7 @@ const AgentSchema = new Schema({
     business: { type: [{ type: Schema.Types.ObjectId, ref: 'Businesses' }], default: [] },
     analysisMetrics: Schema.Types.Mixed,
     facets: [String],
-    createdBy: { type: { type: Schema.Types.ObjectId, ref: 'Users' }, default: "" },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     isPublic: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
 }, {

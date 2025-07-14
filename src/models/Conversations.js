@@ -1,12 +1,12 @@
 import { model, Schema } from 'mongoose';
 const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive"]
 const ConversationSchema = new Schema({
-    business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, default: "" },
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: String,
     telegramChatId: String,
     whatsappChatId: String,
     contact: Schema.Types.Mixed,
-    agent: { type: { type: Schema.Types.ObjectId, ref: 'Agent' }, default: "" },
+    agent: { type: Schema.Types.ObjectId, ref: 'Agent' },
     status: { type: String, enum: ConversationStatusEnum, default: "initiated" },
     /** Conversation state & runtime extras */
     session: Schema.Types.Mixed,

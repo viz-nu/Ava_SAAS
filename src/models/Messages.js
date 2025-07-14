@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
 
 const MessagesSchema = new Schema({
-    conversationId: { type: { type: Schema.Types.ObjectId, ref: 'conversation' }, default: "" },
-    business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, default: "" },
+    conversationId: { type: Schema.Types.ObjectId, ref: 'conversation' },
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     query: String,
     response: String,
     reaction: { type: String, default: "neutral", enum: ["neutral", "like", "dislike"] },

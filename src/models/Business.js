@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
 
 const AgentEngagementSchema = new Schema({
-    agent: { type: { type: Schema.Types.ObjectId, ref: "Agent" }, default: "" },
-    channel: { type: { type: Schema.Types.ObjectId, ref: "Channel" }, default: "" },
+    agent: { type: Schema.Types.ObjectId, ref: "Agent" },
+    channel: { type: Schema.Types.ObjectId, ref: "Channel" },
     totalConversations: { type: Number, default: 0 },
     // totalDurationInSeconds: { type: Number, default: 0 },
     averageSessionDurationInSeconds: { type: Number, default: 0 },
@@ -29,7 +29,7 @@ const BusinessSchema = new Schema({
         phone: String,
         website: String
     },
-    createdBy: { type: { type: Schema.Types.ObjectId, ref: "Users" }, default: "" },
+    createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
     docData: Schema.Types.Mixed,
     members: { type: [{ type: Schema.Types.ObjectId, ref: "Users" }], default: [] },
     documents: { type: [{ type: Schema.Types.ObjectId, ref: "document" }], default: [] },
