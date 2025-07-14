@@ -89,7 +89,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     setImmediate(async (params) => {
       try {
         for (const message of messages) {
-          switch (type) {
+          switch (message.type) {
             case "status":
               console.dir(message);
               break;
