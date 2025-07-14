@@ -31,8 +31,8 @@ const BusinessSchema = new Schema({
     },
     createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
     docData: Schema.Types.Mixed,
-    members: { type: [{ type: Schema.Types.ObjectId, ref: "Users" }], default: [] },
-    documents: { type: [{ type: Schema.Types.ObjectId, ref: "document" }], default: [] },
+    members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
+    documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
     analytics: {
         lastUpdated: Date,
         engagementOverview: {
