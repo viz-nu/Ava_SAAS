@@ -93,8 +93,6 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     // Async processing after response
     setImmediate(async () => {
       try {
-        console.log({ agentDetails, channelDetails, messages });
-
         for (const message of messages) {
           switch (message.type) {
             case "status":
