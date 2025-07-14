@@ -81,12 +81,17 @@ whatsappRouter.get('/:phone_number_id', async (req, res) => {
 });
 whatsappRouter.post('/:phone_number_id', async (req, res) => {
   try {
-    const { phone_number_id } = req.params
-    const { agentDetails, channelDetails } = await getBotDetails({ type: "whatsapp", phone_number_id })
-    const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id)
-    let messages = bot.parseWebhookMessage(req.body)
+    const { phone_number_id } = req.params;
+    const { agentDetails, channelDetails } = await getBotDetails({ type: "whatsapp", phone_number_id });
+
+    const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id);
+    const messages = bot.parseWebhookMessage(req.body);
+
+    // Respond immediately to avoid webhook retries
     res.status(200).send('EVENT_RECEIVED');
-    setImmediate(async (agentDetails, channelDetails, messages) => {
+
+    // Async processing after response
+    setImmediate(async () => {
       try {
         for (const message of messages) {
           switch (message.type) {
