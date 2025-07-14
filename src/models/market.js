@@ -8,7 +8,7 @@ const docOpts = { timestamps: true, discriminatorKey: 'type' };
 const TemplateBaseSchema = new Schema(
     {
         name: { type: String, required: true, trim: true },
-        createdBy: { type: { type: Schema.Types.ObjectId, ref: "Users" }, default: "" },
+        createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
         type: { type: String, enum: ['agent', 'action'], required: true },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         avatar: String,
@@ -53,7 +53,7 @@ Template.discriminator('agent', new Schema({ config: AgentConfig, secrets: Schem
 const ActionConfig = new Schema(
     {
         name: String,
-        business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, default: "" },
+        business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
         async: { type: Boolean, default: true },
         name: String,
         description: String,
