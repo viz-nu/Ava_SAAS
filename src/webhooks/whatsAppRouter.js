@@ -128,7 +128,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
                 }));
               } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" }); }
               prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
-              const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
+              const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
               const agent = new Agent({
                 name: agentDetails.personalInfo.name,
                 instructions: agentDetails.personalInfo.systemPrompt,
