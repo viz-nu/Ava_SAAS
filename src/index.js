@@ -358,6 +358,56 @@ app.post('/contact-us', openCors, async (req, res) => {
         return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
     }
 })
+// const sendInviteRequest = async () => {
+//     try {
+
+
+//         // variables coming from agent are 
+
+//         // well-defined 
+
+
+//         const response = await fetch('https://chatapi.campusroot.com/send-invite', {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json', },
+//             body: JSON.stringify({
+//                 meetingDetails: {
+//                     subject: 'Team Sync',
+//                     text: 'Please join the team sync meeting.',
+//                     html: '<strong>Please join the team sync meeting.</strong>',
+//                     event: 'Team Sync',
+//                     start: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+//                     end: new Date(Date.now() + 7200000).toISOString(),   // 2 hours from now
+//                     summary: 'Weekly Team Sync',
+//                     description: 'Agenda: Project updates and blockers.',
+//                     location: 'Online',
+//                     timezone: 'Asia/Kolkata',
+//                 },
+//                 attendees: ['john.doe@example.com', 'jane.doe@example.com'],
+//                 organizerDetails: {
+//                     host: 'smtp.example.com',
+//                     port: 587,
+//                     secure: false,
+//                     user: 'organizer@example.com',
+//                     pass: 'your_email_password',
+//                     name: 'Organizer Name',
+//                     cc: 'manager@example.com',
+//                     bcc: 'admin@example.com',
+//                 },
+//             }),
+//         });
+
+//         const result = await response.json();
+
+//         if (!response.ok) {
+//             console.error('Invite failed:', result.error);
+//         } else {
+//             console.log('Invite sent successfully:', result.data);
+//         }
+//     } catch (err) {
+//         console.error('Network error:', err.message);
+//     }
+// };
 app.post("/raise-ticket", openCors, async (req, res) => {
     try {
         // business: { type: Types.ObjectId, ref: 'Businesses' },
