@@ -86,7 +86,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id)
     let messages = bot.parseWebhookMessage(req.body)
     res.status(200).send('EVENT_RECEIVED');
-    setImmediate(async (params) => {
+    setImmediate(async (agentDetails, channelDetails, messages) => {
       try {
         for (const message of messages) {
           switch (message.type) {
