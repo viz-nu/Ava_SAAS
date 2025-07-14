@@ -15,8 +15,9 @@ export const getBotDetails = async ({ type, botId }) => {
                 break;
         }
         const agentDetails = await AgentModel.findOne({ channels: channelDetails._id }).populate("business actions")
+        console.log({ agentDetails, channelDetails });
+        
         return { agentDetails, channelDetails }
-
     } catch (error) {
         console.log(error);
         return null
