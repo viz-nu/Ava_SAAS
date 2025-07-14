@@ -8,7 +8,7 @@ const docOpts = { timestamps: true, discriminatorKey: 'type' };
 const TemplateBaseSchema = new Schema(
     {
         name: { type: String, required: true, trim: true },
-        createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
+        createdBy: { type: { type: Schema.Types.ObjectId, ref: "Users" }, default: "" },
         type: { type: String, enum: ['agent', 'action'], required: true },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         avatar: String,
@@ -38,10 +38,10 @@ const AgentConfig = new Schema(
             model: { type: String, default: 'gpt-4.1-mini' },
             temperature: { type: Number, default: 0.5 },
         },
-        collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
-        channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],
-        actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
-        business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+        collections: { type: [{ type: Schema.Types.ObjectId, ref: 'Collection' }], default: [] },
+        channels: { type: [{ type: Schema.Types.ObjectId, ref: 'Channel' }], default: [] },
+        actions: { type: [{ type: Schema.Types.ObjectId, ref: 'Action' }], default: [] },
+        business: { type: [{ type: Schema.Types.ObjectId, ref: 'Businesses' }], default: [] },
         analysisMetrics: Schema.Types.Mixed,
         facets: [String],
     },
@@ -53,7 +53,7 @@ Template.discriminator('agent', new Schema({ config: AgentConfig, secrets: Schem
 const ActionConfig = new Schema(
     {
         name: String,
-        business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+        business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, default: "" },
         async: { type: Boolean, default: true },
         name: String,
         description: String,

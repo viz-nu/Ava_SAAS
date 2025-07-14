@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
 
 const MessagesSchema = new Schema({
-    conversationId: { type: Schema.Types.ObjectId, ref: 'conversation' },
-    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+    conversationId: { type: { type: Schema.Types.ObjectId, ref: 'conversation' }, default: "" },
+    business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, default: "" },
     query: String,
     response: String,
     reaction: { type: String, default: "neutral", enum: ["neutral", "like", "dislike"] },
@@ -21,7 +21,7 @@ const MessagesSchema = new Schema({
     triggeredActions: Array,
     context: Array,
     Actions: Array,
-    analysis:Array,
+    analysis: Array,
     actionTokens: Object,
 }, {
     timestamps: true
