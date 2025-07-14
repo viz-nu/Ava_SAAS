@@ -43,6 +43,7 @@ export const createChannel = errorWrapper(async (req, res) => {
             break;
         case "telegram":
             const { telegramToken } = config
+            if (!telegramToken || telegramToken.trim === "") return { statusCode: 403, message: "telegramToken not found", data: null }
             const bot = new Telegraf(telegramToken);
             try {
                 const botInfo = await bot.telegram.getMe(); // Fetch bot details 
@@ -67,6 +68,7 @@ export const createChannel = errorWrapper(async (req, res) => {
         case "whatsapp":
             const { whatsappCode, phone_number_id, waba_id, business_id } = config
             const API_VERSION = 'v23.0';
+            if (!whatsappCode || !phone_number_id || !waba_id || !business_id || whatsappCode.trim === "") return { statusCode: 403, message: "requirements not fulfilled", data: null }
             try {
                 const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
                 channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }

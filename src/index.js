@@ -360,6 +360,18 @@ app.post('/contact-us', openCors, async (req, res) => {
 })
 app.post("/raise-ticket", openCors, async (req, res) => {
     try {
+        // business: { type: Types.ObjectId, ref: 'Businesses' },
+        // issueSummary: { type: String, required: true },
+        // channel: { type: String, enum: ['telegram', 'whatsapp', 'web', 'phone', 'instagram', 'sms', 'email'], required: true, },
+        // priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium', },
+        // status: { type: String, enum: ['pending', 'responded', 'resolved'], default: 'pending' },
+        // contactDetails: {
+        //     email: { type: String },
+        //     phone: { type: String },
+        //     telegramId: { type: String },
+        //     whatsappId: { type: String },
+        //     instagramId: { type: String },
+        // }
         await Ticket.create(req.body);
         return res.status(201).json({ message: "ticket raised successfully" });
     } catch (err) {
