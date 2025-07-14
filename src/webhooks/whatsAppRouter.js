@@ -10,6 +10,65 @@ import { Agent, run, tool } from "@openai/agents";
 import { Channel } from "../models/Channels.js";
 import { getBotDetails } from "../utils/telegraf.js";
 export const whatsappRouter = Router()
+whatsappRouter.post("/main", async (req, res) => {
+  try {
+    console.log("📨 Body:", JSON.stringify(req.body, null, 2));
+    const body = req.body;
+    console.log({ params: req.params })
+    // 0|Ava_SAAS  | 📨 Body: {
+    // 0|Ava_SAAS  |   "entry": [
+    // 0|Ava_SAAS  |     {
+    // 0|Ava_SAAS  |       "id": "1219503423001950",
+    // 0|Ava_SAAS  |       "time": 1752478279,
+    // 0|Ava_SAAS  |       "changes": [
+    // 0|Ava_SAAS  |         {
+    // 0|Ava_SAAS  |           "value": {
+    // 0|Ava_SAAS  |             "event": "PARTNER_ADDED",
+    // 0|Ava_SAAS  |             "waba_info": {
+    // 0|Ava_SAAS  |               "waba_id": "1088931445926834",
+    // 0|Ava_SAAS  |               "owner_business_id": "783945933306941"
+    // 0|Ava_SAAS  |             }
+    // 0|Ava_SAAS  |           },
+    // 0|Ava_SAAS  |           "field": "account_update"
+    // 0|Ava_SAAS  |         }
+    // 0|Ava_SAAS  |       ]
+    // 0|Ava_SAAS  |     }
+    // 0|Ava_SAAS  |   ],
+    // 0|Ava_SAAS  |   "object": "whatsapp_business_account"
+    // 0|Ava_SAAS  | }
+
+    // 1|Ava_SAAS  | 📨 Body: {
+    // 1|Ava_SAAS  |   "entry": [
+    // 1|Ava_SAAS  |     {
+    // 1|Ava_SAAS  |       "id": "1219503423001950",
+    // 1|Ava_SAAS  |       "time": 1752478288,
+    // 1|Ava_SAAS  |       "changes": [
+    // 1|Ava_SAAS  |         {
+    // 1|Ava_SAAS  |           "value": {
+    // 1|Ava_SAAS  |             "event": "PARTNER_APP_INSTALLED",
+    // 1|Ava_SAAS  |             "waba_info": {
+    // 1|Ava_SAAS  |               "waba_id": "1088931445926834",
+    // 1|Ava_SAAS  |               "owner_business_id": "783945933306941",
+    // 1|Ava_SAAS  |               "partner_app_id": "1352067905890307"
+    // 1|Ava_SAAS  |             }
+    // 1|Ava_SAAS  |           },
+    // 1|Ava_SAAS  |           "field": "account_update"
+    // 1|Ava_SAAS  |         }
+    // 1|Ava_SAAS  |       ]
+    // 1|Ava_SAAS  |     }
+    // 1|Ava_SAAS  |   ],
+    // 1|Ava_SAAS  |   "object": "whatsapp_business_account"
+    // 1|Ava_SAAS  | }
+
+
+
+
+
+  } catch (error) {
+    console.error('❌ Error in WhatsApp webhook:', error);
+    return res.sendStatus(500);
+  }
+})
 whatsappRouter.get('/:phone_number_id', async (req, res) => {
   try {
     const parsedUrl = parse(req.originalUrl, true);
@@ -31,7 +90,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     res.status(200).send('EVENT_RECEIVED');
     setImmediate(async (params) => {
       try {
-        let [{ agentDetails, channelDetails }, conversation] = await Promise.all([getBotDetails({ type: "whatsapp", phone_number_id }), chatId ? Conversation.findOne({  whatsappChatId: from }) : null]);
+        let [{ agentDetails, channelDetails }, conversation] = await Promise.all([getBotDetails({ type: "whatsapp", phone_number_id }), chatId ? Conversation.findOne({ whatsappChatId: from }) : null]);
         // await sendWAMessage({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: mainText } });
 
 
