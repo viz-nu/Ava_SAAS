@@ -1,11 +1,9 @@
 import { Router } from "express";
 import { parse } from "url";
-import { getMediaTranscriptions, sendWAMessage } from "../utils/WA.js";
-import { actions, AssistantResponse, generateAIResponse, getContextMain } from "../utils/openai.js";
-import { AgentModel } from "../models/Agent.js";
+import { getMediaTranscriptions, WhatsAppBot } from "../utils/WA.js";
 import { Conversation } from "../models/Conversations.js";
 import { Message } from "../models/Messages.js";
-import { buildFollowUpButtons, createToolWrapper, extractMainAndFollowUps } from "../utils/tools.js";
+import { createToolWrapper } from "../utils/tools.js";
 import { Agent, run, tool } from "@openai/agents";
 import { Channel } from "../models/Channels.js";
 import { getBotDetails } from "../utils/telegraf.js";
@@ -15,50 +13,50 @@ whatsappRouter.post("/main", async (req, res) => {
     console.log("📨 Body:", JSON.stringify(req.body, null, 2));
     const body = req.body;
     console.log({ params: req.params })
-    // 0|Ava_SAAS  | 📨 Body: {
-    // 0|Ava_SAAS  |   "entry": [
-    // 0|Ava_SAAS  |     {
-    // 0|Ava_SAAS  |       "id": "1219503423001950",
-    // 0|Ava_SAAS  |       "time": 1752478279,
-    // 0|Ava_SAAS  |       "changes": [
-    // 0|Ava_SAAS  |         {
-    // 0|Ava_SAAS  |           "value": {
-    // 0|Ava_SAAS  |             "event": "PARTNER_ADDED",
-    // 0|Ava_SAAS  |             "waba_info": {
-    // 0|Ava_SAAS  |               "waba_id": "1088931445926834",
-    // 0|Ava_SAAS  |               "owner_business_id": "783945933306941"
-    // 0|Ava_SAAS  |             }
-    // 0|Ava_SAAS  |           },
-    // 0|Ava_SAAS  |           "field": "account_update"
-    // 0|Ava_SAAS  |         }
-    // 0|Ava_SAAS  |       ]
-    // 0|Ava_SAAS  |     }
-    // 0|Ava_SAAS  |   ],
-    // 0|Ava_SAAS  |   "object": "whatsapp_business_account"
-    // 0|Ava_SAAS  | }
+    //  📨 Body: {
+    //    "entry": [
+    //      {
+    //        "id": "1219503423001950",
+    //        "time": 1752478279,
+    //        "changes": [
+    //          {
+    //            "value": {
+    //              "event": "PARTNER_ADDED",
+    //              "waba_info": {
+    //                "waba_id": "1088931445926834",
+    //                "owner_business_id": "783945933306941"
+    //              }
+    //            },
+    //            "field": "account_update"
+    //          }
+    //        ]
+    //      }
+    //    ],
+    //    "object": "whatsapp_business_account"
+    //  }
 
-    // 1|Ava_SAAS  | 📨 Body: {
-    // 1|Ava_SAAS  |   "entry": [
-    // 1|Ava_SAAS  |     {
-    // 1|Ava_SAAS  |       "id": "1219503423001950",
-    // 1|Ava_SAAS  |       "time": 1752478288,
-    // 1|Ava_SAAS  |       "changes": [
-    // 1|Ava_SAAS  |         {
-    // 1|Ava_SAAS  |           "value": {
-    // 1|Ava_SAAS  |             "event": "PARTNER_APP_INSTALLED",
-    // 1|Ava_SAAS  |             "waba_info": {
-    // 1|Ava_SAAS  |               "waba_id": "1088931445926834",
-    // 1|Ava_SAAS  |               "owner_business_id": "783945933306941",
-    // 1|Ava_SAAS  |               "partner_app_id": "1352067905890307"
-    // 1|Ava_SAAS  |             }
-    // 1|Ava_SAAS  |           },
-    // 1|Ava_SAAS  |           "field": "account_update"
-    // 1|Ava_SAAS  |         }
-    // 1|Ava_SAAS  |       ]
-    // 1|Ava_SAAS  |     }
-    // 1|Ava_SAAS  |   ],
-    // 1|Ava_SAAS  |   "object": "whatsapp_business_account"
-    // 1|Ava_SAAS  | }
+    // 📨 Body: {
+    //   "entry": [
+    //     {
+    //       "id": "1219503423001950",
+    //       "time": 1752478288,
+    //       "changes": [
+    //         {
+    //           "value": {
+    //             "event": "PARTNER_APP_INSTALLED",
+    //             "waba_info": {
+    //               "waba_id": "1088931445926834",
+    //               "owner_business_id": "783945933306941",
+    //               "partner_app_id": "1352067905890307"
+    //             }
+    //           },
+    //           "field": "account_update"
+    //         }
+    //       ]
+    //     }
+    //   ],
+    //   "object": "whatsapp_business_account"
+    // }
 
 
 
@@ -83,112 +81,73 @@ whatsappRouter.get('/:phone_number_id', async (req, res) => {
 });
 whatsappRouter.post('/:phone_number_id', async (req, res) => {
   try {
-    console.log("📨 Body:", JSON.stringify(req.body, null, 2));
-    const body = req.body;
     const { phone_number_id } = req.params
-    console.log({ phone_number_id })
+    const { agentDetails, channelDetails } = await getBotDetails({ type: "whatsapp", phone_number_id })
+    const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id)
+    let messages = bot.parseWebhookMessage(req.body)
     res.status(200).send('EVENT_RECEIVED');
     setImmediate(async (params) => {
       try {
-        let [{ agentDetails, channelDetails }, conversation] = await Promise.all([getBotDetails({ type: "whatsapp", phone_number_id }), chatId ? Conversation.findOne({ whatsappChatId: from }) : null]);
-        // await sendWAMessage({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: mainText } });
-
-
-
-        // if (!agentDetails || !agentDetails.integrations?.whatsapp?.permanentAccessToken) return;
-        // if (!body.object === 'whatsapp_business_account' || !Array.isArray(body.entry)) return;
-        // for (const entry of body.entry) {
-        //   if (!entry.changes || !Array.isArray(entry.changes)) continue;
-        //   for (const { value } of entry.changes) {
-        //     const phone_number_id = value.metadata.phone_number_id
-        //     const messaging_product = value.messaging_product
-        //     let notificationType = ""
-        //     if (value.statuses && Array.isArray(value.statuses)) notificationType = "Message Update"
-        //     else if (value.messages && Array.isArray(value.messages)) notificationType = "Incoming Message"
-        //     switch (notificationType) {
-        //       case "Message Update":
-        //         value.statuses.forEach(status => {
-        //           console.log(`📈 Status update for message ${status.id}: ${status.status}`);  //sent,delivered,read
-        //           console.log(`👤 Recipient: ${status.recipient_id}`);
-        //           console.log(`🕒 Timestamp: ${status.timestamp}`);
-        //         });
-        //         break;
-        //       case "Incoming Message":
-        //         for (const message of value.messages) {
-        //           const from = message.from; // => imp
-        //           let contactName = null;
-        //           if (value.contacts && Array.isArray(value.contacts)) {
-        //             const { profile } = value.contacts.find(c => c.wa_id === from); // Find the contact that matches the sender
-        //             if (profile?.name) contactName = profile.name;  // console.log(`👤 Contact identified: ${contactName} (${from})`);  👤 Contact identified: Viz (919490123143)
-        //           }
-        //           // Handle different message types
-        //           let userMessageText = ""; // => imp
-        //           switch (message.type) {
-        //             case "text":
-        //               userMessageText = message.text.body;
-        //               // console.log(`💬 Text message from ${contactName || from}: "${userMessageText}"`); 💬 Text message from Viz: "hi..."
-        //               break;
-        //             case "image":
-        //               userMessageText = message.image.caption || "Image received (no caption)";
-        //               console.log(`📸 Image message from ${contactName || from}: "${userMessageText}"`);
-        //               break;
-        //             case "audio":
-        //               userMessageText = await getMediaTranscriptions({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, mediaId: message.audio.id, transcriptionModel: "whisper-1" });
-        //               console.log(`🔊 Audio message from ${contactName || from}`);
-        //               break;
-        //             case "document":
-        //               userMessageText = message.document.caption || "Document received (no caption)";
-        //               console.log(`📄 Document message from ${contactName || from}: "${userMessageText}"`);
-        //               break;
-        //             default:
-        //               userMessageText = `Message of type ${message.type} received`;
-        //               console.log(`📩 ${message.type} message from ${contactName || from}`);
-        //               break;
-        //           }
-        //           try {
-        //             // Create a personalized system prompt with the user's name
-        //             const conversation = await Conversation.findOneAndUpdate(
-        //               { whatsappChatId: from, createdAt: { $gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
-        //               { $setOnInsert: { agent: agentDetails._id, business: agentDetails.business }, ...(contactName ? { contact: { from, contactName } } : {}) },
-        //               { upsert: true, new: true, strict: false }
-        //             );
-        //             let prevMessages = [], state
-        //             const messages = await Message.find({ conversationId: conversation._id }).select("query response").sort({ createdAt: -1 }).limit(8);
-        //             prevMessages.push(...messages.flatMap(({ query, response }) => {
-        //               const entries = [];
-        //               if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
-        //               if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
-        //               return entries;
-        //             }));
-        //             prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
-        //             const toolsJson = agentDetails.tools?.map(ele => (tool(createToolWrapper(ele)))) || [];
-        //             const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson });
-        //             state = prevMessages
-        //             let { finalOutput, ...moreInfo } = await run(agent, state, { stream: false, maxTurns: 3, context: `User Name: ${contactName || 'Unknown'}\nDate: ${new Date().toDateString()}` });
-        //             console.log(moreInfo);
-        //             // message.responseTokens.model = processed.response.model
-        //             // message.responseTokens.usage = processed.response.usage
-        //             const message = await Message.create({ business: agentDetails.business, query: userMessageText, response: finalOutput, conversationId: conversation._id });
-        //             console.log("response", finalOutput);
-        //             const { mainText, followUps } = extractMainAndFollowUps(finalOutput)
-        //             console.log({ mainText, followUps });
-        //             if (mainText.trim()) await sendWAMessage({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "text", Data: { body: mainText } });
-        //             if (followUps.length > 0) await sendWAMessage({ token: agentDetails.integrations?.whatsapp?.permanentAccessToken, phone_number_id, messaging_product, to: from, type: "interactive", Data: buildFollowUpButtons(followUps) });
-        //             // const { mainText, followups } = parseLLMResponse(response)
-        //             // const buttons = followups.map((q) => [q]); // each row = one button
-        //             // const responseText = await generateAIResponse({ userMessageText, contactName })
-        //             // console.log(`🤖 AI Response to ${contactName || from}: "${responseText}"`);
-        //           } catch (err) {
-        //             console.error(`❌ Error processing message from ${contactName || from}:`, err);
-        //           }
-        //         }
-        //         break;
-        //       default:
-        //         break;
-
-        //     }
-        //   }
-        // }
+        for (const message of messages) {
+          switch (type) {
+            case "status":
+              console.dir(message);
+              break;
+            case "message":
+              let userMessageText = "";
+              switch (message.subType) {
+                case "text":
+                  userMessageText = message.content.text;
+                  break;
+                case "image":
+                  userMessageText = message.content.image.caption || "Image received (no caption)";
+                  console.log(`📸 Image message from ${message.contact.name || message.from}: "${userMessageText}"`);
+                  break;
+                case "audio":
+                  userMessageText = await getMediaTranscriptions({ token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
+                  console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
+                  break;
+                case "document":
+                  userMessageText = message.content.document.caption || "Document received (no caption)";
+                  console.log(`📄 Document message from ${message.contact.name || message.from}: "${userMessageText}"`);
+                  break;
+                default:
+                  userMessageText = `Message of type ${message.subType} received`;
+                  console.log(`📩 ${message.subType} message from ${message.contact.name || message.from}`);
+                  break;
+              }
+              const conversation = await Conversation.findOne({ whatsappChatId: message.from })
+              let prevMessages = [], state
+              if (conversation) {
+                const messages = await Message.find({ conversationId: conversation._id }).limit(8).select("query response");
+                prevMessages.push(...messages.flatMap(({ query, response }) => {
+                  const entries = [];
+                  if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
+                  if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
+                  return entries;
+                }));
+              } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" }); }
+              prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
+              const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
+              const agent = new Agent({
+                name: agentDetails.personalInfo.name,
+                instructions: agentDetails.personalInfo.systemPrompt,
+                model: agentDetails.personalInfo.model,
+                toolChoice: 'auto',
+                temperature: agentDetails.personalInfo.temperature,
+                tools: toolsJson,
+              });
+              state = prevMessages
+              const result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}` })
+              const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+              result.rawResponses.forEach((ele) => { usage.input_tokens += ele.usage.inputTokens, usage.output_tokens += ele.usage.outputTokens, usage.total_tokens += ele.usage.totalTokens })
+              await Message.create({ business: agentDetails.business._id, query: userMessageText, response: result.finalOutput, conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
+              await bot.sendMessage(messaging_product = "whatsapp", to = message.from, type = "text", Data, { body: result.finalOutput });
+              break;
+            default:
+              break;
+          }
+        }
       } catch (error) {
         console.error("Processing error:", error);
       }
