@@ -74,7 +74,7 @@ whatsappRouter.get('/:phone_number_id', async (req, res) => {
     const parsedUrl = parse(req.originalUrl, true);
     const query = parsedUrl.query;
     const { phone_number_id } = req.params
-    const channel = await Channel.findById({ "config.phone_number_id": phone_number_id })
+    const channel = await Channel.findOne({ "config.phone_number_id": phone_number_id })
     return (query['hub.mode'] === 'subscribe' && query['hub.verify_token'] === channel.secrets.verificationToken) ? res.status(200).send(query['hub.challenge']) : res.sendStatus(403);
   } catch (error) {
     console.error('Error in webhook verification:', error);
