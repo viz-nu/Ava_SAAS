@@ -4,7 +4,6 @@ import { Channel } from "../models/Channels.js";
 export const getBotDetails = async ({ type, botId }) => {
     try {
         let channelDetails
-        console.log({ type, botId });
         switch (type) {
             case "telegram":
                 channelDetails = await Channel.findOne({ "config.id": botId })
@@ -16,8 +15,6 @@ export const getBotDetails = async ({ type, botId }) => {
                 break;
         }
         const agentDetails = await AgentModel.findOne({ channels: channelDetails._id }).populate("business actions")
-        console.log({ agentDetails, channelDetails });
-        
         return { agentDetails, channelDetails }
     } catch (error) {
         console.log(error);

@@ -82,7 +82,7 @@ whatsappRouter.get('/:phone_number_id', async (req, res) => {
 whatsappRouter.post('/:phone_number_id', async (req, res) => {
   try {
     const { phone_number_id } = req.params;
-    const { agentDetails, channelDetails } = await getBotDetails({ type: "whatsapp", phone_number_id });
+    const { agentDetails, channelDetails } = await getBotDetails({ type: "whatsapp", botId: phone_number_id });
 
     const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id);
     const messages = bot.parseWebhookMessage(req.body);
