@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
 const ActionSchema = new Schema({
     name: String,
-    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+    business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, default: "" },
     async: { type: Boolean, default: true },
     name: String,
     description: String,

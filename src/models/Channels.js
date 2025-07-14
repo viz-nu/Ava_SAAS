@@ -8,7 +8,7 @@ const docOpts = { timestamps: true, discriminatorKey: 'type' };
 const ChannelBaseSchema = new Schema(
     {
         name: { type: String, required: true, trim: true },
-        business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
+        business: { type: { type: Schema.Types.ObjectId, ref: 'Businesses' }, required: true },
         type: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], required: true },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         webhookUrl: String,

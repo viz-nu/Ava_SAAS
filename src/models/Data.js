@@ -1,7 +1,7 @@
 import { model, Schema } from 'mongoose';
 
 const DataSchema = new Schema({
-    collection: { type: Schema.Types.ObjectId, ref: "Collection" },
+    collection: { type: { type: Schema.Types.ObjectId, ref: "Collection" }, default: "" },
     content: String,
     chunkNumber: Number,
     summary: String,
