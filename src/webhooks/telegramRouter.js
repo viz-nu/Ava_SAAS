@@ -56,6 +56,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     - buttons: array of objects with fields:
                     text (string), callback_data (string or null), url (string or null)
                     If there are no buttons, set buttons to null.
+                    Try to be more interactive with buttons
                     `;
 
                 const agent = new Agent({
@@ -67,8 +68,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                     tools: toolsJson,
                     outputType: BotResponseSchema,
                 });
-                console.log("Agent is ready");
-
                 switch (triggerType) {
                     case "command":
                         userMessage = message.text;
@@ -121,16 +120,13 @@ telegramRouter.post('/:botId', async (req, res) => {
                         return;
                 }
                 if (!state) return;
-                console.log("State is ready");
                 const result = await run(agent, state, { stream: false });
                 const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
                 result.rawResponses.forEach(ele => { usage.input_tokens += ele.usage.inputTokens; usage.output_tokens += ele.usage.outputTokens; usage.total_tokens += ele.usage.totalTokens; });
                 const { message: replyText, buttons } = result.finalOutput;
                 const inlineKeyboard = buttons ? buttons.map(b => [{ text: b.text, callback_data: b.callback_data || undefined, url: b.url || undefined }]) : [];
                 await Message.create({ business: agentDetails.business._id, query: userMessage, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
-                console.log("reply ready")
                 await bot.telegram.sendMessage(chatId, replyText, { reply_markup: { inline_keyboard: inlineKeyboard } });
-                console.log("replied")
                 return;
 
             } catch (error) {
