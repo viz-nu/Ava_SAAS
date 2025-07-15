@@ -109,16 +109,20 @@ telegramRouter.post('/:botId', async (req, res) => {
                         await bot.telegram.answerCbQuery(callback_query.id); // Required
                         prevMessages.push({ role: "user", content: [{ type: "input_text", text: `User clicked button: ${userMessage}` }] });
                         state = prevMessages;
+                        console.log(JSON.stringify({ triggerType, state }));
                         break;
                     case "text_message":
                         userMessage = message.text;
                         await bot.telegram.sendChatAction(chatId, 'typing');
                         prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
                         state = prevMessages;
+                        console.log(JSON.stringify({ triggerType, state }));
                         break;
                     default:
+                        console.log({ triggerType });
                         return;
                 }
+                if (!state) return;
                 const result = await run(agent, state, { stream: false });
                 const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
                 result.rawResponses.forEach(ele => { usage.input_tokens += ele.usage.inputTokens; usage.output_tokens += ele.usage.outputTokens; usage.total_tokens += ele.usage.totalTokens; });
