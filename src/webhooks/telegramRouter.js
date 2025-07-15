@@ -11,17 +11,16 @@ import { Business } from "../models/Business.js";
 
 import { z } from "zod";
 
-const BotResponseSchema = z.object({
-    message: z.string(), // main text
+export const BotResponseSchema = z.object({
+    message: z.string(),
     buttons: z.array(
         z.object({
             text: z.string(),
-            callback_data: z.string().optional(),
-            url: z.string().optional()
+            callback_data: z.string().nullable(), // ✅ Now nullable
+            url: z.string().nullable()            // ✅ Now nullable
         })
-    ).optional()
+    ).nullable() // ✅ The whole buttons array can be null
 });
-
 
 
 export const telegramRouter = Router()
@@ -146,12 +145,12 @@ telegramRouter.post('/:botId', async (req, res) => {
                     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
                     if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections));
 
-                    const extraPrompt = `
-                    Always return a JSON object with:
-                    - message: The text to show the user
-                    - buttons: Optional array of objects with { text, callback_data OR url }
+                    const extraPrompt = `Always return a JSON object with:
+                    - message: string
+                    - buttons: array of objects with fields:
+                    text (string), callback_data (string or null), url (string or null)
+                    If there are no buttons, set buttons to null.
                     `;
-
                     const agent = new Agent({
                         name: agentDetails.personalInfo.name,
                         instructions: agentDetails.personalInfo.systemPrompt + extraPrompt,
