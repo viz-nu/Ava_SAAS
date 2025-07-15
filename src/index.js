@@ -18,7 +18,7 @@ import { initializeSocket, io } from "./utils/io.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendEmail, sendMail } from "./utils/sendEmail.js";
 import { webhookRouter } from "./webhooks/index.js";
-import { createToolWrapper, dataBaker, generateMeetingUrl, populateStructure, updateSession } from "./utils/tools.js";
+import { createToolWrapper, dataBaker, generateMeetingUrl, knowledgeToolBaker, populateStructure, updateSession } from "./utils/tools.js";
 import { Action } from "./models/Action.js";
 import { DateTime } from "luxon";
 import { Lead } from "./models/Lead.js";
@@ -101,6 +101,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         res.flushHeaders();
         const write = chunk => res.write(JSON.stringify(chunk));
         const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
+        if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections))
         const agent = new Agent({
             name: agentDetails.personalInfo.name,
             instructions: agentDetails.personalInfo.systemPrompt,
@@ -358,70 +359,8 @@ app.post('/contact-us', openCors, async (req, res) => {
         return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
     }
 })
-// const sendInviteRequest = async () => {
-//     try {
-
-
-//         // variables coming from agent are 
-
-//         // well-defined 
-
-
-//         const response = await fetch('https://chatapi.campusroot.com/send-invite', {
-//             method: 'POST',
-//             headers: { 'Content-Type': 'application/json', },
-//             body: JSON.stringify({
-//                 meetingDetails: {
-//                     subject: 'Team Sync',
-//                     text: 'Please join the team sync meeting.',
-//                     html: '<strong>Please join the team sync meeting.</strong>',
-//                     event: 'Team Sync',
-//                     start: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-//                     end: new Date(Date.now() + 7200000).toISOString(),   // 2 hours from now
-//                     summary: 'Weekly Team Sync',
-//                     description: 'Agenda: Project updates and blockers.',
-//                     location: 'Online',
-//                     timezone: 'Asia/Kolkata',
-//                 },
-//                 attendees: ['john.doe@example.com', 'jane.doe@example.com'],
-//                 organizerDetails: {
-//                     host: 'smtp.example.com',
-//                     port: 587,
-//                     secure: false,
-//                     user: 'organizer@example.com',
-//                     pass: 'your_email_password',
-//                     name: 'Organizer Name',
-//                     cc: 'manager@example.com',
-//                     bcc: 'admin@example.com',
-//                 },
-//             }),
-//         });
-
-//         const result = await response.json();
-
-//         if (!response.ok) {
-//             console.error('Invite failed:', result.error);
-//         } else {
-//             console.log('Invite sent successfully:', result.data);
-//         }
-//     } catch (err) {
-//         console.error('Network error:', err.message);
-//     }
-// };
 app.post("/raise-ticket", openCors, async (req, res) => {
     try {
-        // business: { type: Types.ObjectId, ref: 'Businesses' },
-        // issueSummary: { type: String, required: true },
-        // channel: { type: String, enum: ['telegram', 'whatsapp', 'web', 'phone', 'instagram', 'sms', 'email'], required: true, },
-        // priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium', },
-        // status: { type: String, enum: ['pending', 'responded', 'resolved'], default: 'pending' },
-        // contactDetails: {
-        //     email: { type: String },
-        //     phone: { type: String },
-        //     telegramId: { type: String },
-        //     whatsappId: { type: String },
-        //     instagramId: { type: String },
-        // }
         await Ticket.create(req.body);
         return res.status(201).json({ message: "ticket raised successfully" });
     } catch (err) {
@@ -435,16 +374,8 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 process.on('SIGINT', async () => {
     console.log('\nGracefully shutting down...');
-
     try {
         server.close();
-
-        // Example: close Redis
-        // if (globalThis.redis) await globalThis.redis.quit();
-
-        // // Example: close MongoDB
-        // if (globalThis.mongo) await globalThis.mongo.disconnect();
-
         console.log('Shutdown complete.');
         process.exit(0);
     } catch (err) {
@@ -452,20 +383,4 @@ process.on('SIGINT', async () => {
         process.exit(1);
     }
 });
-
-
-// await sendMail({
-//     to: attendees.join(','),
-//     subject: ,
-//     text: `You are invited to a meeting. Summary: ${summary}`,
-//     html: `<div style="font-family: Arial, sans-serif; color: #333;">
-//                   <h2>You are invited to a meeting</h2>
-//                   <p><strong>Summary:</strong> ${summary}</p>
-//                   <p><strong>Description:</strong> ${description}</p>
-//                   <p><strong>Location:</strong> ${location}</p>
-//                   <p><strong>Time:</strong> ${new Date(startTime).toUTCString()} - ${new Date(endTime).toUTCString()} (${timezone})</p>
-//                   <p><a href="${url}" style="color: blue;">Join Meeting</a></p>
-//                </div>`,
-// })
-
 

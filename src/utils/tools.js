@@ -202,3 +202,46 @@ export const markHourBuckets = (arr, start, end) => {
         cursor.setHours(cursor.getHours() + 1);
     }
 }
+export const knowledgeToolBaker = (collections) => {
+    if (!collections || collections.length < 1) return null
+    const template = {
+        "async": true,
+        "name": "search_knowledge_base",
+        "description": "Searches the knowledge base using a query and optional source filters.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The text-based search query to retrieve relevant information from the existing vector database."
+                },
+                "options": {
+                    "type": "object",
+                    "description": "Additional search parameters such as filtering by source cluster IDs.",
+                    "properties": {
+                        "source": {
+                            "type": "array",
+                            "description": "Array of knowledge base cluster IDs to narrow the search scope.",
+                            "items": { "type": "string" },
+                            "default": []
+                        }
+                    },
+                    "required": [
+                        "source"
+                    ],
+                    "additionalProperties": false
+                }
+            },
+            "required": [
+                "query",
+                "options"
+            ],
+            "additionalProperties": false
+        },
+        "needsApproval": false,
+        "functionString": "\n    if (!input.query || !input.options.source || !Array.isArray(input.options.source)) {\n        throw new Error('Both \"query\" (string) and \"source\" (array) are required parameters');\n    }\n    if (input.query.trim().length < 3) {\n        throw new Error('Query must be at least 3 characters long');\n    }\n    if (input.options.source.length < 1) {\n        throw new Error('Source array must have at least one collection');\n    }\n    const params = new URLSearchParams({\n        query: input.query,\n        collections: JSON.stringify(input.options.source)\n    });\n    const response = await fetch('https://chatapi.campusroot.com/fetch-from-db?' + params.toString(), {\n        method: 'POST',\n        headers: {\n            'Content-Type': 'application/json'\n        }\n    });\n    const data = await response.json();\n    if (!data.success) {\n        throw new Error(data.message || 'Knowledge base fetch failed');\n    }\n    return `Answer from the knowledge base for query: \"${input.query}\"\\n\\n${data.data}`;\n",
+        "errorFunction": "\n    console.error('Knowledge fetch failed with input:', input);\n    return 'I couldn\\'t retrieve the requested information. Please check your query and source. If the issue persists, try again later.';\n"
+    }
+    template.parameters.options.properties.source.default = collections
+    return template
+}

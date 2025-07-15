@@ -132,6 +132,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     await bot.telegram.sendChatAction(chatId, 'typing');
                     prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
                     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
+                    if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections))
                     const agent = new Agent({
                         name: agentDetails.personalInfo.name,
                         instructions: agentDetails.personalInfo.systemPrompt,

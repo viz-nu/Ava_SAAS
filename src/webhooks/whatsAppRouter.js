@@ -134,6 +134,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" }); }
               prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
               const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+              if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections))
               const agent = new Agent({
                 name: agentDetails.personalInfo.name,
                 instructions: agentDetails.personalInfo.systemPrompt,
@@ -162,3 +163,47 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     return res.sendStatus(500);
   }
 });
+
+// 0|Ava_SAAS  | {
+// 0|Ava_SAAS  |   type: 'status',
+// 0|Ava_SAAS  |   entryId: '1382037933021228',
+// 0|Ava_SAAS  |   phoneNumberId: '751796534676044',
+// 0|Ava_SAAS  |   messageId: 'wamid.HBgMOTE5NDkwMTIzMTQzFQIAERgSREY4OUEyOUQ1Njg3NEM0QUJCAA==',
+// 0|Ava_SAAS  |   recipientId: '919490123143',
+// 0|Ava_SAAS  |   status: 'sent',
+// 0|Ava_SAAS  |   timestamp: '1752505937',
+// 0|Ava_SAAS  |   errors: null
+// 0|Ava_SAAS  | }
+// 1|Ava_SAAS  | Mon, 14 Jul 2025 15:12:19 GMT POST /webhook/whatsapp/751796534676044 200 14 - 690.244 ms
+// 1|Ava_SAAS  | {
+// 1|Ava_SAAS  |   type: 'status',
+// 1|Ava_SAAS  |   entryId: '1382037933021228',
+// 1|Ava_SAAS  |   phoneNumberId: '751796534676044',
+// 1|Ava_SAAS  |   messageId: 'wamid.HBgMOTE5NDkwMTIzMTQzFQIAERgSREY4OUEyOUQ1Njg3NEM0QUJCAA==',
+// 1|Ava_SAAS  |   recipientId: '919490123143',
+// 1|Ava_SAAS  |   status: 'read',
+// 1|Ava_SAAS  |   timestamp: '1752505938',
+// 1|Ava_SAAS  |   errors: null
+// 1|Ava_SAAS  | }
+// 1|Ava_SAAS  | Mon, 14 Jul 2025 15:12:19 GMT POST /webhook/whatsapp/751796534676044 200 14 - 679.076 ms
+// 1|Ava_SAAS  | {
+// 1|Ava_SAAS  |   type: 'status',
+// 1|Ava_SAAS  |   entryId: '1382037933021228',
+// 1|Ava_SAAS  |   phoneNumberId: '751796534676044',
+// 1|Ava_SAAS  |   messageId: 'wamid.HBgMOTE5NDkwMTIzMTQzFQIAERgSREY4OUEyOUQ1Njg3NEM0QUJCAA==',
+// 1|Ava_SAAS  |   recipientId: '919490123143',
+// 1|Ava_SAAS  |   status: 'delivered',
+// 1|Ava_SAAS  |   timestamp: '1752505938',
+// 1|Ava_SAAS  |   errors: null
+// 1|Ava_SAAS  | }
+// 0|Ava_SAAS  | Mon, 14 Jul 2025 15:12:19 GMT POST /webhook/whatsapp/751796534676044 200 14 - 696.207 ms
+// 0|Ava_SAAS  | {
+// 0|Ava_SAAS  |   type: 'status',
+// 0|Ava_SAAS  |   entryId: '1382037933021228',
+// 0|Ava_SAAS  |   phoneNumberId: '751796534676044',
+// 0|Ava_SAAS  |   messageId: 'wamid.HBgMOTE5NDkwMTIzMTQzFQIAERgSREY4OUEyOUQ1Njg3NEM0QUJCAA==',
+// 0|Ava_SAAS  |   recipientId: '919490123143',
+// 0|Ava_SAAS  |   status: 'delivered',
+// 0|Ava_SAAS  |   timestamp: '1752505938',
+// 0|Ava_SAAS  |   errors: null
+// 0|Ava_SAAS  | }
