@@ -143,8 +143,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                     prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
 
                     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
-                    if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections));
-
+                    if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
                     const extraPrompt = `Always return a JSON object with:
                     - message: string
                     - buttons: array of objects with fields:
