@@ -29,7 +29,6 @@ telegramRouter.post('/:botId', async (req, res) => {
     try {
         const { botId } = req.params;
         const { message, callback_query, inline_query } = req.body;
-        console.log(req.body);
         if (!message || !message.chat || !message.chat.id) return res.status(200).json({ success: false, error: "Invalid request" }); // Prevents retries
         const chatId = message?.chat?.id || callback_query?.message?.chat?.id;
         if (!chatId) return res.status(200).json({ success: false, error: "Invalid request" });
@@ -42,8 +41,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                 let prevMessages = [], state, userMessage;
 
                 if (conversation) {
-                    const messages = await Message.find({ conversationId: conversation._id })
-                        .limit(8).select("query response");
+                    const messages = await Message.find({ conversationId: conversation._id }).limit(8).select("query response");
                     prevMessages.push(...messages.flatMap(({ query, response }) => {
                         const entries = [];
                         if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
@@ -51,12 +49,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                         return entries;
                     }));
                 } else {
-                    conversation = await Conversation.create({
-                        business: agentDetails.business._id,
-                        agent: agentDetails._id,
-                        telegramChatId: chatId,
-                        channel: "telegram"
-                    });
+                    conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, telegramChatId: chatId, channel: "telegram" });
                 }
                 const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
                 if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
