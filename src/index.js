@@ -101,7 +101,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         res.flushHeaders();
         const write = chunk => res.write(JSON.stringify(chunk));
         const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
-        if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections))
+        if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
         const agent = new Agent({
             name: agentDetails.personalInfo.name,
             instructions: agentDetails.personalInfo.systemPrompt,

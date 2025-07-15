@@ -134,7 +134,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" }); }
               prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
               const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
-              if (agentDetails.collections.length > 0) toolsJson.push(knowledgeToolBaker(agentDetails.collections))
+              if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
               const agent = new Agent({
                 name: agentDetails.personalInfo.name,
                 instructions: agentDetails.personalInfo.systemPrompt,
@@ -148,7 +148,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
               result.rawResponses.forEach((ele) => { usage.input_tokens += ele.usage.inputTokens, usage.output_tokens += ele.usage.outputTokens, usage.total_tokens += ele.usage.totalTokens })
               await Message.create({ business: agentDetails.business._id, query: userMessageText, response: result.finalOutput, conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
-              await bot.sendMessage("whatsapp",message.from,"text",{ body: result.finalOutput });
+              await bot.sendMessage("whatsapp", message.from, "text", { body: result.finalOutput });
               break;
             default:
               break;
