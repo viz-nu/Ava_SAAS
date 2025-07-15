@@ -4,7 +4,7 @@ import { Telegraf } from "telegraf";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { actions, AssistantResponse, getContextMain } from "../utils/openai.js";
 import { Conversation } from "../models/Conversations.js";
-import { createToolWrapper, getLocation, parseLLMResponse, populateStructure } from "../utils/tools.js";
+import { createToolWrapper, getLocation, knowledgeToolBaker, parseLLMResponse, populateStructure } from "../utils/tools.js";
 import { Message } from "../models/Messages.js";
 import { sendMail } from "../utils/sendEmail.js";
 import { Business } from "../models/Business.js";

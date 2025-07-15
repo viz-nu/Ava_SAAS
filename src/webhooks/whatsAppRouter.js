@@ -3,7 +3,7 @@ import { parse } from "url";
 import { getMediaTranscriptions, WhatsAppBot } from "../utils/WA.js";
 import { Conversation } from "../models/Conversations.js";
 import { Message } from "../models/Messages.js";
-import { createToolWrapper } from "../utils/tools.js";
+import { createToolWrapper, knowledgeToolBaker } from "../utils/tools.js";
 import { Agent, run, tool } from "@openai/agents";
 import { Channel } from "../models/Channels.js";
 import { getBotDetails } from "../utils/telegraf.js";
