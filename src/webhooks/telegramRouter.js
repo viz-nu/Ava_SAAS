@@ -29,10 +29,11 @@ telegramRouter.post('/:botId', async (req, res) => {
     try {
         const { botId } = req.params;
         const { message, callback_query, inline_query } = req.body;
+        console.log(JSON.stringify(req.body));
         if (!message || !message.chat || !message.chat.id) return res.status(200).json({ success: false, error: "Invalid request" }); // Prevents retries
         const chatId = message?.chat?.id || callback_query?.message?.chat?.id;
         const triggerType = categorizeTelegramTrigger(req.body);
-        console.log(JSON.stringify(req.body));
+        
         res.status(200).json({ success: true });
         // setImmediate(async () => {
         //     try {
