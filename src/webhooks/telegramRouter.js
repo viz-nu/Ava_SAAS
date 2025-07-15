@@ -29,9 +29,8 @@ telegramRouter.post('/:botId', async (req, res) => {
     try {
         const { botId } = req.params;
         const { message, callback_query, inline_query } = req.body;
-        console.log(JSON.stringify(req.body));
-        if (!message || !message.chat || !message.chat.id) return res.status(200).json({ success: false, error: "Invalid request" }); // Prevents retries
         const chatId = message?.chat?.id || callback_query?.message?.chat?.id;
+        if (!chatId) return res.status(200).json({ success: false, error: "Invalid request" });
         const triggerType = categorizeTelegramTrigger(req.body);
         res.status(200).json({ success: true });
         setImmediate(async () => {
@@ -39,7 +38,6 @@ telegramRouter.post('/:botId', async (req, res) => {
                 let [{ agentDetails, channelDetails }, conversation] = await Promise.all([getBotDetails({ type: "telegram", botId }), chatId ? Conversation.findOne({ telegramChatId: chatId }) : null]);
                 const bot = new Telegraf(channelDetails.secrets.botToken);
                 let prevMessages = [], state, userMessage;
-
                 if (conversation) {
                     const messages = await Message.find({ conversationId: conversation._id }).limit(8).select("query response");
                     prevMessages.push(...messages.flatMap(({ query, response }) => {
@@ -111,14 +109,12 @@ telegramRouter.post('/:botId', async (req, res) => {
                         await bot.telegram.answerCbQuery(callback_query.id); // Required
                         prevMessages.push({ role: "user", content: [{ type: "input_text", text: `User clicked button: ${userMessage}` }] });
                         state = prevMessages;
-                        console.log(JSON.stringify({ triggerType, state }));
                         break;
                     case "text_message":
                         userMessage = message.text;
                         await bot.telegram.sendChatAction(chatId, 'typing');
                         prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
                         state = prevMessages;
-                        console.log(JSON.stringify({ triggerType, state }));
                         break;
                     default:
                         console.log({ triggerType });
@@ -134,6 +130,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                 await Message.create({ business: agentDetails.business._id, query: userMessage, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
                 console.log("reply ready")
                 await bot.telegram.sendMessage(chatId, replyText, { reply_markup: { inline_keyboard: inlineKeyboard } });
+                console.log("replied")
                 return;
 
             } catch (error) {

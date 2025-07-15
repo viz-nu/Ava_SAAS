@@ -22,6 +22,9 @@ export const getBotDetails = async ({ type, botId }) => {
     }
 }
 export function categorizeTelegramTrigger(body) {
+    // {"update_id":525235049,"message":{"message_id":50,"from":{"id":6233054381,"is_bot":false,"first_name":"Vishnu","language_code":"en"},"chat":{"id":6233054381,"first_name":"Vishnu","type":"private"},"date":1752608910,"text":"Can you say that again?"}}
+
+    // {"update_id":525235051,"callback_query":{"id":"8324020648854304967","from":{"id":6233054381,"is_bot":false,"first_name":"Vishnu","language_code":"en"},"message":{"message_id":53,"from":{"id":8125663159,"is_bot":true,"first_name":"Pilla","username":"Pilla2846_bot"},"chat":{"id":6233054381,"first_name":"Vishnu","type":"private"},"date":1752609003,"text":"I work as a sales assistant designed to help you with product information and support. How can I assist you with your needs today?","reply_markup":{"inline_keyboard":[[{"text":"Product Features","callback_data":"features_info"}],[{"text":"Contact Support","callback_data":"contact_support"}]]}},"chat_instance":"6930704767987197904","data":"features_info"}}
     if (body.message) {
         if (body.message.text && body.message.text.startsWith('/')) return 'command';
         if (body.message.text) return 'text_message';
