@@ -33,6 +33,7 @@ telegramRouter.post('/:botId', async (req, res) => {
         const chatId = message?.chat?.id || callback_query?.message?.chat?.id;
         if (!chatId) return res.status(200).json({ success: false, error: "Invalid request" });
         const triggerType = categorizeTelegramTrigger(req.body);
+        console.log(req.body);
         res.status(200).json({ success: true });
         setImmediate(async () => {
             try {
@@ -69,6 +70,8 @@ telegramRouter.post('/:botId', async (req, res) => {
                     tools: toolsJson,
                     outputType: BotResponseSchema,
                 });
+                console.log("Agent is ready");
+                
                 switch (triggerType) {
                     case "command":
                         userMessage = message.text;
@@ -123,12 +126,14 @@ telegramRouter.post('/:botId', async (req, res) => {
                         return;
                 }
                 if (!state) return;
+                console.log("State is ready");
                 const result = await run(agent, state, { stream: false });
                 const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
                 result.rawResponses.forEach(ele => { usage.input_tokens += ele.usage.inputTokens; usage.output_tokens += ele.usage.outputTokens; usage.total_tokens += ele.usage.totalTokens; });
                 const { message: replyText, buttons } = result.finalOutput;
                 const inlineKeyboard = buttons ? buttons.map(b => [{ text: b.text, callback_data: b.callback_data || undefined, url: b.url || undefined }]) : [];
                 await Message.create({ business: agentDetails.business._id, query: userMessage, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
+                console.log("reply ready")
                 await bot.telegram.sendMessage(chatId, replyText, { reply_markup: { inline_keyboard: inlineKeyboard } });
                 return;
 
