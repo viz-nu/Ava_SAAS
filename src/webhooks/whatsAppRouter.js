@@ -27,6 +27,115 @@ export const WhatsAppBotResponseSchema = z.object({
   ).max(3, "WhatsApp allows maximum 3 buttons")
     .nullable() // allow missing buttons for plain text
 });
+async function processUserMessage(message, userMessage, bot, agentDetails) {
+  const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+  const extraPrompt = `
+  If max turns are exceeded, provide a concise summary or polite closing message.
+
+  Always return a JSON object that follows this schema:
+  {
+    "message": string,        // The main reply text to send
+    "buttons": [              // Optional array of interactive buttons
+      {
+        "id": string,         // Unique identifier for the button
+        "text": string        // The button label shown to the user
+      }
+    ] OR null if there are no buttons
+  }
+
+  Rules:
+  - If there are no buttons, set "buttons" to null (not an empty array).
+  - Keep the message short and conversational.
+  - Buttons should be relevant actions based on the user's query.
+  - Do NOT include any fields other than "message" and "buttons".
+  - Respond in a helpful and professional tone.
+  Example response:
+  {
+    "message": "What would you like to do next?",
+      "buttons": [
+        { "id": "order_status", "text": "Check Order Status" },
+        { "id": "new_order", "text": "Place a New Order" }
+      ]
+  }`;
+  if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
+  const agent = new Agent({
+    name: agentDetails.personalInfo.name,
+    instructions: agentDetails.personalInfo.systemPrompt + extraPrompt,
+    model: agentDetails.personalInfo.model,
+    toolChoice: 'auto',
+    temperature: agentDetails.personalInfo.temperature,
+    tools: toolsJson,
+    outputType: WhatsAppBotResponseSchema,
+  });
+  const { userMessageType, userMessageData } = userMessage
+  let state, conversation = await Conversation.findOne({ whatsappChatId: message.from });
+  if (userMessageType == "text") {
+    state = []
+    if (conversation) {
+      const messages = await Message.find({ conversationId: conversation._id }).sort(-1).limit(8).select("query response");
+      state.push(...messages.flatMap(({ query, response }) => {
+        const entries = [];
+        if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
+        if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
+        return entries;
+      }));
+    } else {
+      conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" });
+    }
+    state.push({ role: "user", content: [{ type: "input_text", text: userMessageData.text }] });
+  }
+  else if (userMessageType == "tool_approval") {
+    const interruptionId = userMessageData.buttonId.replace(userMessageData.approved ? 'approve_' : 'reject_', '');
+    state = await RunState.fromString(agent, conversation.state);
+    const interruption = conversation.pendingInterruptions.find(i => i.id === interruptionId);
+    if (!interruption) {
+      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "❌ Interruption not found. Please try again the same request." });
+      return;
+    }
+    if (userMessageData.approved) {
+      state.approve(interruption);
+      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "✅ Tool approved. Processing..." });
+    } else {
+      state.reject(interruption);
+      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "❌ Tool rejected. Continuing without this action..." });
+    }
+    conversation = await Conversation.findByIdAndUpdate(
+      conversation._id,
+      {
+        $pull: { pendingInterruptions: { id: interruptionId } }, // remove matching interruption
+        $set: { state: state.toString() } // update the state
+      }, { new: true });
+  }
+  let result = await run(agent, state, {
+    stream: false,
+    maxTurns: 3,
+    context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}`
+  });
+  if (result.interruptions?.length > 0) {
+    const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
+    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { pendingInterruptions: { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
+    // Send approval request to user
+    await sendApprovalRequest(bot, message.from, result.interruptions);
+    return; // Exit early, wait for user approval
+  }
+
+  // Process final result
+  const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+  result.rawResponses.forEach((ele) => {
+    usage.input_tokens += ele.usage.inputTokens;
+    usage.output_tokens += ele.usage.outputTokens;
+    usage.total_tokens += ele.usage.totalTokens;
+  });
+  await Message.create({
+    business: agentDetails.business._id,
+    query: userMessageData.text,
+    response: JSON.stringify(result.finalOutput),
+    conversationId: conversation._id,
+    responseTokens: { model: agentDetails.personalInfo.model ?? null, usage }
+  });
+  const { type, Data } = mapToWhatsAppPayload(result.finalOutput);
+  await bot.sendMessage("whatsapp", message.from, type, Data);
+}
 function mapToWhatsAppPayload(finalOutput) {
   const { message, buttons } = finalOutput;
   if (!buttons || buttons.length === 0) {
@@ -129,14 +238,9 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
   try {
     const { phone_number_id } = req.params;
     const { agentDetails, channelDetails } = await getBotDetails({ type: "whatsapp", botId: phone_number_id });
-
     const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id);
     const messages = bot.parseWebhookMessage(req.body);
-
-    // Respond immediately to avoid webhook retries
     res.status(200).send('EVENT_RECEIVED');
-
-    // Async processing after response
     setImmediate(async () => {
       try {
         for (const message of messages) {
@@ -197,126 +301,6 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     return res.sendStatus(500);
   }
 });
-
-async function processUserMessage(message, userMessage, bot, agentDetails) {
-
-  const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
-  const extraPrompt = `
-  If max turns are exceeded, provide a concise summary or polite closing message.
-
-  Always return a JSON object that follows this schema:
-  {
-    "message": string,        // The main reply text to send
-    "buttons": [              // Optional array of interactive buttons
-      {
-        "id": string,         // Unique identifier for the button
-        "text": string        // The button label shown to the user
-      }
-    ] OR null if there are no buttons
-  }
-
-  Rules:
-  - If there are no buttons, set "buttons" to null (not an empty array).
-  - Keep the message short and conversational.
-  - Buttons should be relevant actions based on the user's query.
-  - Do NOT include any fields other than "message" and "buttons".
-  - Respond in a helpful and professional tone.
-  Example response:
-  {
-    "message": "What would you like to do next?",
-      "buttons": [
-        { "id": "order_status", "text": "Check Order Status" },
-        { "id": "new_order", "text": "Place a New Order" }
-      ]
-  }`;
-
-  if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
-  const agent = new Agent({
-    name: agentDetails.personalInfo.name,
-    instructions: agentDetails.personalInfo.systemPrompt + extraPrompt,
-    model: agentDetails.personalInfo.model,
-    toolChoice: 'auto',
-    temperature: agentDetails.personalInfo.temperature,
-    tools: toolsJson,
-    outputType: WhatsAppBotResponseSchema,
-  });
-  const { userMessageType, userMessageData } = userMessage
-  let state, conversation = await Conversation.findOne({ whatsappChatId: message.from });
-  if (userMessageType == "text") {
-    state = []
-    if (conversation) {
-      const messages = await Message.find({ conversationId: conversation._id }).limit(8).select("query response");
-      state.push(...messages.flatMap(({ query, response }) => {
-        const entries = [];
-        if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
-        if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
-        return entries;
-      }));
-    } else {
-      conversation = await Conversation.create({
-        business: agentDetails.business._id,
-        agent: agentDetails._id,
-        whatsappChatId: message.from,
-        channel: "whatsapp"
-      });
-    }
-    state.push({ role: "user", content: [{ type: "input_text", text: userMessageData.text }] });
-  }
-  else if (userMessageType == "tool_approval") {
-    const interruptionId = userMessageData.buttonId.replace(userMessageData.approved ? 'approve_' : 'reject_', '');
-    state = await RunState.fromString(agent, conversation.state);
-    const interruption = conversation.pendingInterruptions.find(i => i.id === interruptionId);
-    if (!interruption) {
-      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "❌ Interruption not found. Please try again the same request." });
-      return;
-    }
-    if (userMessageData.approved) {
-      state.approve(interruption);
-      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "✅ Tool approved. Processing..." });
-    } else {
-      state.reject(interruption);
-      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "❌ Tool rejected. Continuing without this action..." });
-    }
-    conversation = await Conversation.findByIdAndUpdate(
-      conversation._id,
-      {
-        $pull: { pendingInterruptions: { id: interruptionId } }, // remove matching interruption
-        $set: { state: state.toString() } // update the state
-      }, { new: true });
-  }
-  let result = await run(agent, state, {
-    stream: false,
-    maxTurns: 3,
-    context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}`
-  });
-  if (result.interruptions?.length > 0) {
-    const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
-    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { pendingInterruptions: { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
-    // Send approval request to user
-    await sendApprovalRequest(bot, message.from, result.interruptions);
-    return; // Exit early, wait for user approval
-  }
-
-  // Process final result
-  const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-  result.rawResponses.forEach((ele) => {
-    usage.input_tokens += ele.usage.inputTokens;
-    usage.output_tokens += ele.usage.outputTokens;
-    usage.total_tokens += ele.usage.totalTokens;
-  });
-
-  await Message.create({
-    business: agentDetails.business._id,
-    query: userMessageData.text,
-    response: JSON.stringify(result.finalOutput),
-    conversationId: conversation._id,
-    responseTokens: { model: agentDetails.personalInfo.model ?? null, usage }
-  });
-
-  const { type, Data } = mapToWhatsAppPayload(result.finalOutput);
-  await bot.sendMessage("whatsapp", message.from, type, Data);
-}
-
 async function sendApprovalRequest(bot, phoneNumber, interruptions) {
   for (const interruption of interruptions) {
     const approvalMessage = {
