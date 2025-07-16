@@ -36,11 +36,11 @@ function mapToWhatsAppPayload(finalOutput) {
       type: "button",
       body: { text: message },
       action: {
-        buttons: buttons.map((b, index) => ({
+        buttons: buttons.map((b, i) => ({
           type: "reply",
           reply: {
-            id: b.id || `btn_${index + 1}`,  // fallback ID
-            title: b.text || `Option ${index + 1}` // fallback title
+            id: b.id || `btn_${i + 1}`,
+            title: b.text || `Option ${i + 1}`
           }
         }))
       }
@@ -179,7 +179,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               const extraPrompt = `
 
               If max turns are exceeded, provide a concise summary or polite closing message.
-              
+
               Always return a JSON object that follows this schema:
               {
                 "message": string,        // The main reply text to send
