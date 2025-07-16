@@ -22,27 +22,27 @@ export const WhatsAppBotResponseSchema = z.object({
 });
 function mapToWhatsAppPayload(finalOutput) {
   const { message, buttons } = finalOutput;
-
   if (!buttons || buttons.length === 0) {
     return {
       type: "text",
       Data: { body: message }
     };
   }
-
   return {
     type: "interactive",
     Data: {
       type: "button",
       body: { text: message },
       action: {
-        buttons: buttons.map((b, i) => ({
-          type: "reply",
-          reply: {
-            id: b.id || `btn_${i + 1}`,
-            title: b.text || `Option ${i + 1}`
-          }
-        }))
+        buttons: buttons
+          .slice(0, 3) // WhatsApp allows max 3 buttons
+          .map((b, i) => ({
+            type: "reply",
+            reply: {
+              id: (b.id || `btn_${i + 1}`).trim(),
+              title: (b.text || `Option ${i + 1}`).trim()
+            }
+          }))
       }
     }
   };

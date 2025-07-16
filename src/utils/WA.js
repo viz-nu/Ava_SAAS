@@ -102,22 +102,22 @@ export class WhatsAppBot {
                     break;
                 case "image":
                     payload.type = "image";
-                    payload.image = Data;
+                    payload.image = { link: Data.link }; // WhatsApp requires link
                     break;
                 case "audio":
                     payload.type = "audio";
-                    payload.audio = Data;
+                    payload.audio = { link: Data.link };
                     break;
                 case "document":
                     payload.type = "document";
-                    payload.document = Data;
+                    payload.document = { link: Data.link };
                     break;
                 case "interactive":
                     payload.type = "interactive";
                     payload.interactive = Data;
                     break;
                 default:
-                    break;
+                    throw new Error(`Unsupported message type: ${type}`);
             }
             const { data } = await this.client.post(`/${this.phoneNumberId}/messages`, payload);
             return data
