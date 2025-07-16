@@ -195,7 +195,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
 });
 app.post('/fetch-from-db', openCors, async (req, res) => {
     try {
-        const { query, collections } = req.query;
+        const { query, collections } = req.body;
         if (!query.trim()) return res.json({ success: false, message: 'empty query', data: null });
         if (collections.length < 1) return res.json({ success: false, message: 'empty collection', data: null });
         const { answer } = await getContextMain(collections, query);

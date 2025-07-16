@@ -236,7 +236,7 @@ export const knowledgeToolBaker = (collections) => {
         },
         needsApproval: false,
         functionString: `
-    if (!input.query || !input.options.source || !Array.isArray(input.options.source)) {
+    if (!input.query || !input.options?.source || !Array.isArray(input.options?.source)) {
         throw new Error('Both "query" (string) and "source" (array) are required parameters');
     }
     if (input.query.trim().length < 3) {
@@ -245,15 +245,15 @@ export const knowledgeToolBaker = (collections) => {
     if (input.options.source.length < 1) {
         throw new Error('Source array must have at least one collection');
     }
-    const params = new URLSearchParams({
-        query: input.query,
-        collections: JSON.stringify(input.options.source)
-    });
-    const response = await fetch('https://chatapi.campusroot.com/fetch-from-db?' + params.toString(), {
+    const response = await fetch('https://chatapi.campusroot.com/fetch-from-db', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+        query: input.query,
+        collections: input.options.source
+    })
     });
     const data = await response.json();
     if (!data.success) {
