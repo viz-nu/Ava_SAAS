@@ -10,14 +10,21 @@ import { getBotDetails } from "../utils/telegraf.js";
 import { z } from "zod";
 export const whatsappRouter = Router()
 export const WhatsAppBotResponseSchema = z.object({
-  message: z.string(),
-  buttons: z
-    .array(
-      z.object({
-        id: z.string(),   // must be non-null
-        text: z.string()  // must be non-null
-      })
-    )
+  message: z.string()
+    .min(1, "Message cannot be empty")
+    .max(1024, "Message must be 1024 characters or less"),
+  buttons: z.array(
+    z.object({
+      id: z.string()
+        .min(1, "Button ID cannot be empty")
+        .max(256, "Button ID must be 256 characters or less")
+        .regex(/^[a-zA-Z0-9_-]+$/, "Button ID can only contain letters, numbers, underscores, and hyphens"),
+      text: z.string()
+        .min(1, "Button text cannot be empty")
+        .max(20, "Button text must be 20 characters or less")
+        .refine((text) => text.trim().length > 0, "Button text cannot be only whitespace")
+    })
+  ).max(3, "WhatsApp allows maximum 3 buttons")
     .nullable() // allow missing buttons for plain text
 });
 function mapToWhatsAppPayload(finalOutput) {
@@ -40,7 +47,7 @@ function mapToWhatsAppPayload(finalOutput) {
             type: "reply",
             reply: {
               id: (b.id || `btn_${i + 1}`).trim(),
-              title: (b.text || `Option ${i + 1}`).trim()
+              title: (b.text || `Option ${i + 1}`).trim().substring(0, 20)
             }
           }))
       }
