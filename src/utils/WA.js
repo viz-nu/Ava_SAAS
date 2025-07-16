@@ -529,3 +529,27 @@ bot.sendButtonMessage(
     'Select your choice'
 ).then(response => console.log('Button message sent:', response));
 */
+
+
+
+
+// Send Messages
+// Learn how to use the /messages endpoint to send text, media, location, contact, and interactive messages.
+
+// Send Message Templates
+// Send specific message formats to your customers, including reminders, shipping information, and payment updates.
+
+// Mark Messages as Read
+// Use the /messages node to change the status of incoming messages to read.
+
+// Sell Products & Services
+// Learn how to offer your products and services in WhatsApp messages.
+
+// Migrate From On-Premises API to Cloud API
+// Learn how to migrate from On-Premises API to Cloud API.
+
+// Create a Sample App Endpoint for Webhooks Testing
+// Use Glitch to create a sample app with an endpoint to test your webhooks.
+
+// Cloud API Monitoring for Outbound Load Testing
+// Shows you how to use Cloud API monitoring tools for outbound load testing.
