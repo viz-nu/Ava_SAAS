@@ -166,8 +166,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
                   userMessageText = `User clicked button: ${message.content.button_reply.title}`;
                   break;
                 case "interactive":
-                  console.log(JSON.stringify({message}));
-                  userMessageText = `User clicked button: ${message.content.button_reply.title}`;
+                  userMessageText = `User clicked button: ${message.content.interactive.reply.title}`;
                   break;
                 default:
                   userMessageText = `Message of type ${message.subType} received`;
