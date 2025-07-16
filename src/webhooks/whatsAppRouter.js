@@ -8,6 +8,44 @@ import { Agent, run, tool } from "@openai/agents";
 import { Channel } from "../models/Channels.js";
 import { getBotDetails } from "../utils/telegraf.js";
 export const whatsappRouter = Router()
+export const WhatsAppBotResponseSchema = z.object({
+  message: z.string(),
+  buttons: z.array(
+    z.object({
+      id: z.string().nullable(), // WhatsApp requires a unique id for reply
+      text: z.string().nullable() // Button label
+    })
+  ).nullable()
+});
+function mapToWhatsAppPayload(finalOutput) {
+  const { message, buttons } = finalOutput;
+
+  if (!buttons || buttons.length === 0) {
+    // Simple text message
+    return {
+      type: "text",
+      Data: { body: message }
+    };
+  }
+
+  // Interactive button message
+  return {
+    type: "interactive",
+    Data: {
+      type: "button",
+      body: { text: message },
+      action: {
+        buttons: buttons.map(b => ({
+          type: "reply",
+          reply: {
+            id: b.id,
+            title: b.text
+          }
+        }))
+      }
+    }
+  };
+}
 whatsappRouter.post("/main", async (req, res) => {
   try {
     console.log("📨 Body:", JSON.stringify(req.body, null, 2));
@@ -97,7 +135,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
           switch (message.type) {
             case "status":
               console.dir(message);
-              break;
+              continue;
             case "message":
               let userMessageText = "";
               switch (message.subType) {
@@ -115,6 +153,9 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
                 case "document":
                   userMessageText = message.content.document.caption || "Document received (no caption)";
                   console.log(`📄 Document message from ${message.contact.name || message.from}: "${userMessageText}"`);
+                  break;
+                case "button_reply": // ✅ Button clicks from interactive messages
+                  userMessageText = `User clicked button: ${message.content.button_reply.title}`;
                   break;
                 default:
                   userMessageText = `Message of type ${message.subType} received`;
@@ -134,21 +175,49 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               } else { conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" }); }
               prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
               const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+              const extraPrompt = `
+              Always return a JSON object that follows this schema:
+              {
+                "message": string,        // The main reply text to send
+                "buttons": [              // Optional array of interactive buttons
+                  {
+                    "id": string,         // Unique identifier for the button
+                    "text": string        // The button label shown to the user
+                  }
+                ] OR null if there are no buttons
+              }
+
+              Rules:
+              - If there are no buttons, set "buttons" to null (not an empty array).
+              - Keep the message short and conversational.
+              - Buttons should be relevant actions based on the user's query.
+              - Do NOT include any fields other than "message" and "buttons".
+              - Respond in a helpful and professional tone.
+              Example response:
+              {
+                "message": "What would you like to do next?",
+                  "buttons": [
+                    { "id": "order_status", "text": "Check Order Status" },
+                    { "id": "new_order", "text": "Place a New Order" }
+                  ]
+              }`;
               if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
               const agent = new Agent({
                 name: agentDetails.personalInfo.name,
-                instructions: agentDetails.personalInfo.systemPrompt,
+                instructions: agentDetails.personalInfo.systemPrompt + extraPrompt,
                 model: agentDetails.personalInfo.model,
                 toolChoice: 'auto',
                 temperature: agentDetails.personalInfo.temperature,
                 tools: toolsJson,
+                outputType: WhatsAppBotResponseSchema,
               });
               state = prevMessages
               const result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}` })
               const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
               result.rawResponses.forEach((ele) => { usage.input_tokens += ele.usage.inputTokens, usage.output_tokens += ele.usage.outputTokens, usage.total_tokens += ele.usage.totalTokens })
-              await Message.create({ business: agentDetails.business._id, query: userMessageText, response: result.finalOutput, conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
-              await bot.sendMessage("whatsapp", message.from, "text", { body: result.finalOutput });
+              await Message.create({ business: agentDetails.business._id, query: userMessageText, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
+              const { type, Data } = mapToWhatsAppPayload(result.finalOutput);
+              await bot.sendMessage("whatsapp", message.from, type, Data);
               break;
             default:
               break;
