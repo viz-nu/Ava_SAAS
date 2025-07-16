@@ -7,6 +7,7 @@ import { createToolWrapper, knowledgeToolBaker } from "../utils/tools.js";
 import { Agent, run, tool } from "@openai/agents";
 import { Channel } from "../models/Channels.js";
 import { getBotDetails } from "../utils/telegraf.js";
+import { z } from "zod";
 export const whatsappRouter = Router()
 export const WhatsAppBotResponseSchema = z.object({
   message: z.string(),
