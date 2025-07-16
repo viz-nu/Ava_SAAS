@@ -177,6 +177,9 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               prevMessages.push({ role: "user", content: [{ type: "input_text", text: userMessageText }] });
               const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
               const extraPrompt = `
+
+              If max turns are exceeded, provide a concise summary or polite closing message.
+              
               Always return a JSON object that follows this schema:
               {
                 "message": string,        // The main reply text to send

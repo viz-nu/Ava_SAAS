@@ -51,7 +51,9 @@ telegramRouter.post('/:botId', async (req, res) => {
                 }
                 const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
                 if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
-                const extraPrompt = `Always return a JSON object with:
+                const extraPrompt = `
+                If max turns are exceeded, provide a concise summary or polite closing message.
+                Always return a JSON object with:
                     - message: string
                     - buttons: array of objects with fields:
                     text (string), callback_data (string or null), url (string or null)
