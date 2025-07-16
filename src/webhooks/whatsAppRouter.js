@@ -217,7 +217,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
               const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
               result.rawResponses.forEach((ele) => { usage.input_tokens += ele.usage.inputTokens, usage.output_tokens += ele.usage.outputTokens, usage.total_tokens += ele.usage.totalTokens })
               await Message.create({ business: agentDetails.business._id, query: userMessageText, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
-              console.log({ output: result.finalOutput });
+              console.log(JSON.stringify(result.finalOutput));
               const { type, Data } = mapToWhatsAppPayload(result.finalOutput);
               await bot.sendMessage("whatsapp", message.from, type, Data);
               break;
