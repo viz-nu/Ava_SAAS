@@ -11,36 +11,36 @@ import { z } from "zod";
 export const whatsappRouter = Router()
 export const WhatsAppBotResponseSchema = z.object({
   message: z.string(),
-  buttons: z.array(
-    z.object({
-      id: z.string().nullable(), // WhatsApp requires a unique id for reply
-      text: z.string().nullable() // Button label
-    })
-  ).nullable()
+  buttons: z
+    .array(
+      z.object({
+        id: z.string(),   // must be non-null
+        text: z.string()  // must be non-null
+      })
+    )
+    .optional() // allow missing buttons for plain text
 });
 function mapToWhatsAppPayload(finalOutput) {
   const { message, buttons } = finalOutput;
 
   if (!buttons || buttons.length === 0) {
-    // Simple text message
     return {
       type: "text",
       Data: { body: message }
     };
   }
 
-  // Interactive button message
   return {
     type: "interactive",
     Data: {
       type: "button",
       body: { text: message },
       action: {
-        buttons: buttons.map(b => ({
+        buttons: buttons.map((b, index) => ({
           type: "reply",
           reply: {
-            id: b.id,
-            title: b.text
+            id: b.id || `btn_${index + 1}`,  // fallback ID
+            title: b.text || `Option ${index + 1}` // fallback title
           }
         }))
       }
