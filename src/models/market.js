@@ -11,7 +11,11 @@ const TemplateBaseSchema = new Schema(
         createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
         type: { type: String, enum: ['agent', 'action'], required: true },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
-        avatar: String,
+        description: String, //can be removed as tool already has it             
+        imageUrl: String,
+        tags: [String],
+        version: String,
+        applicableSectors: [String], //business sectors the tool is applicable for, useful for filtering in marketplace
         isPublic: { type: Boolean, default: false },
         UIElements: Schema.Types.Mixed,
         isFeatured: { type: Boolean, default: false },
@@ -21,7 +25,7 @@ const TemplateBaseSchema = new Schema(
 export const Template = model('StandardProduct', TemplateBaseSchema, 'StandardProduct');
 
 /* ───────────────────────────── Agent Template ──────────────────────────── */
-const AgentConfig = new Schema(
+const AgentData = new Schema(
     {
         appearance: {
             clientMessageBox: { backgroundColor: String, textColor: String },
@@ -29,7 +33,6 @@ const AgentConfig = new Schema(
             textInputBox: { backgroundColor: String, textColor: String },
             quickQuestionsWelcomeScreenBox: { backgroundColor: String, textColor: String }
         },
-        interactionMetrics: Array,
         personalInfo: {
             name: String,
             systemPrompt: String,
@@ -39,24 +42,19 @@ const AgentConfig = new Schema(
             temperature: { type: Number, default: 0.5 },
         },
         collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
-        channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],
-        actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
-        business: [{ type: Schema.Types.ObjectId, ref: 'Businesses' }],
+        actions: [{ type: Schema.Types.ObjectId, ref: 'StandardProduct' }],
         analysisMetrics: Schema.Types.Mixed,
         facets: [String],
     },
     baseOpts
 );
-Template.discriminator('agent', new Schema({ config: AgentConfig, secrets: Schema.Types.Mixed }, docOpts));
-
+Template.discriminator('agent', new Schema({ data: AgentData, config: Schema.Types.Mixed }, docOpts));
 /* ─────────────────────────── Action Template ─────────────────────────── */
-const ActionConfig = new Schema(
+const ActionData = new Schema(
     {
         name: String,
-        business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
-        async: { type: Boolean, default: true },
-        name: String,
         description: String,
+        async: { type: Boolean, default: true },
         needsApproval: Boolean, // Knowledge fetching doesn't need approval
         parameters: Schema.Types.Mixed,
         functionString: String,
@@ -65,4 +63,49 @@ const ActionConfig = new Schema(
     },
     baseOpts
 );
-Template.discriminator('action', new Schema({ config: ActionConfig, secrets: Schema.Types.Mixed }, docOpts));
+const ActionConfig = new Schema({
+    orgDefinedParams: Schema.Types.Mixed,
+}, baseOpts);
+Template.discriminator('action', new Schema({ data: ActionData, config: ActionConfig }, docOpts));
+
+
+
+AgentStandard = {
+    name: { type: String, required: true, trim: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
+    type: { type: String, enum: ['agent', 'action'], required: true },
+    status: { type: String, default: 'disabled' },   // enabled | disabled | error
+    description: String,
+    imageUrl: String,
+    tags: [String],
+    version: String,
+    applicableSectors: [String], //business sectors the tool is applicable for, useful for filtering in marketplace
+    isPublic: { type: Boolean, default: false },
+    UIElements: Schema.Types.Mixed,
+    isFeatured: { type: Boolean, default: false },
+    data: {
+        appearance: {
+            clientMessageBox: { backgroundColor: String, textColor: String },
+            avaMessageBox: { backgroundColor: String, textColor: String },
+            textInputBox: { backgroundColor: String, textColor: String },
+            quickQuestionsWelcomeScreenBox: { backgroundColor: String, textColor: String }
+        },
+        personalInfo: {
+            name: String,
+            systemPrompt: String,
+            quickQuestions: [{ label: String, value: String }],
+            welcomeMessage: String,
+            model: { type: String, default: 'gpt-4.1-mini' },
+            temperature: { type: Number, default: 0.5 },
+        },
+        collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
+        actions: [{ type: Schema.Types.ObjectId, ref: 'StandardProduct' }],
+        analysisMetrics: Schema.Types.Mixed,
+        facets: [String],
+    },
+    config: Schema.Types.Mixed
+}
+
+
+
+

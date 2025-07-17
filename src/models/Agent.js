@@ -7,7 +7,6 @@ const AgentSchema = new Schema({
         textInputBox: { backgroundColor: String, textColor: String },
         quickQuestionsWelcomeScreenBox: { backgroundColor: String, textColor: String }
     },
-    interactionMetrics: Array,
     personalInfo: {
         name: String,
         systemPrompt: String,
