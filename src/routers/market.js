@@ -4,7 +4,7 @@ import { createTemplate, deleteTemplate, fetchTemplates, partialUpdateTemplate, 
 
 export const marketRouter = Router()
 marketRouter.post('/', authMiddleware, isSuperAdmin, createTemplate);
-marketRouter.get('/', authMiddleware, fetchTemplates);
+marketRouter.get('/', fetchTemplates);
 marketRouter.put('/:id', authMiddleware, isSuperAdmin, updateTemplate);
 marketRouter.patch('/:id', authMiddleware, isSuperAdmin, partialUpdateTemplate);
 marketRouter.delete('/:id', authMiddleware, isSuperAdmin, deleteTemplate);
