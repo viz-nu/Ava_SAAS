@@ -160,17 +160,19 @@ Channel.discriminator(
 /* ─────────────────────────── Instagram Channel ────────────────────────── */
 const IgConfig = new Schema(
     {
+        user_id_graphAPI: String,
         igBusinessId: String,
-        pageId: String,
-        status: { type: String, default: 'UNVERIFIED' },
+        username: String,
+        name: String,
+        account_type: String,
+        profile_picture_url: String
     },
     baseOpts
 );
 
 const IgSecrets = new Schema(
     {
-        appId: String,
-        appSecret: String,
+        permissions: [String],
         accessToken: String,
         refreshAt: Date,
     },
@@ -197,3 +199,13 @@ Channel.discriminator(
 //                             verificationToken: String,
 //                                 permanentAccessToken: String,
 // }
+  // {
+                //     "user_id": "17841476263120799",
+                //         "username": "so.cial4807",
+                //             "name": "Ankit Jain",
+                //                 "account_type": "BUSINESS",
+                //                     "followers_count": 0,
+                //                         "follows_count": 0,
+                //                             "media_count": 0,
+                //                                 "id": "24864751896459011"
+                // }
