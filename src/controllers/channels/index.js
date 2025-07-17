@@ -1,8 +1,9 @@
 import { Telegraf } from "telegraf";
 import { Business } from "../../models/Business.js";
 import { Channel } from "../../models/Channels.js";
-const { wa_client_id, wa_client_secret, SERVER_URL } = process.env;
+const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID } = process.env;
 import axios from 'axios';
+import FormData from 'form-data';
 import { randomBytes } from "crypto"
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { verifyTransporter } from "../../utils/sendEmail.js";
@@ -131,6 +132,67 @@ export const createChannel = errorWrapper(async (req, res) => {
         case "phone":
             break;
         case "instagram":
+            const { instagramCode } = config;
+            if (!instagramCode || instagramCode.trim === "") return { statusCode: 403, message: "instagramCode not found", data: null }
+            try {
+                const form = new FormData();
+                form.append('client_id', IG_ClIENT_ID);
+                form.append('client_secret', IG_CLIENT_Secret);
+                form.append('grant_type', 'authorization_code');
+                form.append('redirect_uri', 'https://www.avakado.ai/integrations/instagram');
+                form.append('code', instagramCode);
+                const { data } = await axios.post('https://api.instagram.com/oauth/access_token', form, {
+                    headers: form.getHeaders()
+                })
+                const { access_token, user_id, permissions } = data;
+                channel.secrets = { accessToken: access_token, permissions, expiresAt: new Date(Date.now() + 60 * 60 * 1000) }; // Set expiresAt to 1 hour from now
+                channel.config = { user_id_graphAPI: user_id };
+                await channel.save();
+                await channel.updateStatus("fetched short living access token");
+            } catch (error) {
+                if (error.response) console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
+                else if (error.request) console.error("The request was made but no response was received", { request: error.request });
+                else console.error('Error', error.message);
+                console.error({ config: error.config });
+                return { statusCode: 401, message: "Error exchanging code for token", data: error.response?.data || error.message };
+            }
+            try {
+                const url = 'https://graph.instagram.com/access_token';
+                const params = {
+                    grant_type: 'ig_exchange_token',
+                    client_secret: IG_CLIENT_Secret,
+                    access_token: channel.secrets.accessToken,
+                };
+                const { data } = await axios.get(url, { params });
+                const { access_token, token_type, expires_in } = data;
+                channel.secrets = { accessToken: access_token, permissions, expiresAt: expires_in * 1000 + Date.now() };
+                await channel.save();
+                await channel.updateStatus("fetched long living access token");
+            } catch (error) {
+                if (error.response) console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
+                else if (error.request) console.error("The request was made but no response was received", { request: error.request });
+                else console.error('Error', error.message);
+                console.error({ config: error.config });
+                return { statusCode: 401, message: "Error exchanging code for token", data: error.response?.data || error.message };
+            }
+            try {
+                const url = `https://graph.instagram.com/v23.0/${channel.config.user_id_graphAPI}`;
+                const params = {
+                    fields: 'user_id,username,name,account_type,profile_picture_url',
+                    access_token: channel.secrets.accessToken
+                };
+                const { data } = await axios.get(url, { params });
+                const { user_id, username, name, account_type, profile_picture_url } = data;
+                channel.config = { ...channel.config, igBusinessId: user_id, username, name, account_type, profile_picture_url };
+                await channel.save();
+                await channel.updateStatus("fetched user details");
+            } catch (error) {
+                if (error.response) console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
+                else if (error.request) console.error("The request was made but no response was received", { request: error.request });
+                else console.error('Error', error.message);
+                console.error({ config: error.config });
+                return { statusCode: 401, message: "Error exchanging code for token", data: error.response?.data || error.message };
+            }
             break;
         case "sms":
             break;
@@ -179,7 +241,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
                 await channel.save()
                 await channel.updateStatus("success")
                 break;
-            case "telegram": {
+            case "telegram":
                 const { telegramToken } = newConfig;
                 if (!telegramToken) break;            // nothing to change
 
@@ -200,9 +262,8 @@ export const updateChannel = errorWrapper(async (req, res) => {
                     return { statusCode: 401, message: "Invalid/new Telegram token", data: err };
                 }
                 break;
-            }
 
-            case "whatsapp": {
+            case "whatsapp":
                 const { whatsappCode, phone_number_id, waba_id, business_id } = newConfig;
                 if (!whatsappCode) break;             // nothing to change
 
@@ -250,7 +311,7 @@ export const updateChannel = errorWrapper(async (req, res) => {
                     return { statusCode: 401, message: "WhatsApp re-configuration failed", data: err };
                 }
                 break;
-            }
+
 
             /* other providers (web / phone / sms / email / instagram) can go here */
             default:

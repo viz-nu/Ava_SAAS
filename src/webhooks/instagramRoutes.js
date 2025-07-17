@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { parse } from "url";
+import { verifyRequestSignature } from "../utils/instagramHelper.js";
 // import { getMediaTranscriptions, WhatsAppBot } from "../utils/WA.js";
 // import { Conversation } from "../models/Conversations.js";
 // import { Message } from "../models/Messages.js";
@@ -20,10 +21,39 @@ InstagramRouter.get("/main", async (req, res) => {
         return res.sendStatus(500);
     }
 })
-InstagramRouter.post("/main", async (req, res) => {
+InstagramRouter.post("/main", verifyRequestSignature, async (req, res) => {
     try {
-        console.log("📨 Body:", JSON.stringify(req.body, null, 2));
-        console.log({ params: req.params })
+        // console.log("📨 Body:", JSON.stringify(req.body, null, 2));
+        const parsedData = parseWebhook(req.body);
+        console.log("📨 Parsed Data:", JSON.stringify(parsedData, null, 2));
+        // https://developers.facebook.com/docs/instagram-platform/webhooks
+        //  📨 Body: {
+        //             "object": "instagram",
+        //                 "entry": [
+        //                     {
+        //                         "time": 1752779559264,
+        //                         "id": "17841476263120799",
+        //                         "messaging": [
+        //                             {
+        //                                 "sender": {
+        //                                     "id": "3667808733353751"
+        //                                 },
+        //                                 "recipient": {
+        //                                     "id": "17841476263120799"
+        //                                 },
+        //                                 "timestamp": 1752779557528,
+        //                                 "message": {
+        //                                     "mid": "aWdfZAG1faXRlbToxOklHTWVzc2FnZAUlEOjE3ODQxNDc2MjYzMTIwNzk5OjM0MDI4MjM2Njg0MTcxMDMwMTI0NDI1OTg1MTY2NDE4MDgwOTA5MzozMjMzMzA3NTkxNTM1NDMwNzQ0MTgzNzQyNzk3MzQyMzEwNAZDZD",
+        //                                     "text": "Hey"
+        //                                 }
+        //                             }
+        //                         ]
+        //                     }
+        //                 ]
+        //         }
+
+        https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login/messaging-api
+        return res.sendStatus(200);
     } catch (error) {
         console.error('❌ Error in WhatsApp webhook:', error);
         return res.sendStatus(500);
