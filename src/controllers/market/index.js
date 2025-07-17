@@ -26,15 +26,14 @@ export const createTemplate = errorWrapper(async (req, res) => {
 /* ───────────────────────────── READ ROUTES ───────────────────────────── */
 export const fetchTemplates = errorWrapper(async (req, res) => {
     const { type, status, createdBy, isPublic, isFeatured, page = 1, limit = 10, id, queryStr } = req.query;
-
     const filter = {};
     // Basic filters
     if (type) filter.type = type;
     if (status) filter.status = status;
     if (createdBy) filter.createdBy = createdBy;
     if (id && Types.ObjectId.isValid(id)) filter._id = id;
-    if (isPublic !== undefined) filter.isPublic = isPublic === 'true';
-    if (isFeatured !== undefined) filter.isFeatured = isFeatured === 'true';
+    if (isPublic !== undefined) filter.isPublic = isPublic === "true";
+    if (isFeatured !== undefined) filter.isFeatured = isFeatured === "true";
     // Text search
     if (queryStr) filter.$or = [{ name: { $regex: queryStr, $options: 'i' } }, { description: { $regex: queryStr, $options: 'i' } }, { 'data.personalInfo.name': { $regex: queryStr, $options: 'i' } },];
     // Pagination

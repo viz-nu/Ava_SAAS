@@ -205,72 +205,6 @@ app.post('/fetch-from-db', openCors, async (req, res) => {
         return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
     }
 })
-app.post('/v1/agent-executer', openCors, async (req, res) => {
-    let functionString = `
-            console.log(input.company_name, input.preferred_time, input.contact_email)
-            if(!input.company_name || !input.preferred_time || !input.contact_email) {
-                throw new Error('Missing required fields: company name, preferred time and contact email are all required')
-            }
-            // Validate email format
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if(!emailRegex.test(input.contact_email)) {
-                throw new Error('Invalid email format provided')
-            }
-            // Validate date format
-            const date = new Date(input.preferred_time);
-            if(isNaN(date.getTime())) {
-                throw new Error('Invalid date format. Please use ISO format like 2024-01-01T14:00:00Z')
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return \`A slot has been booked with the \${input.company_name} team at \${input.preferred_time}. Confirmation sent to \${input.contact_email}.\`;
-        `, errorFunction = `
-            console.error('Deal booking failed:', input);
-            return 'I apologize, but I encountered an error while booking your meeting slot. Please check your details and try again, or contact our support team for assistance.';
-        `, { input } = req.body
-    let fnToBeExecuted = `
-        "use strict";
-        ${functionString}
-    `;
-    const ErrorFnToBeExecuted = `
-        "use strict";
-        ${errorFunction}
-    `
-    const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
-    let mainFn = new AsyncFunction('input', fnToBeExecuted), errorFn = new AsyncFunction('input', ErrorFnToBeExecuted);
-    try {
-        const result = await mainFn(input);
-        return res.status(200).json({ success: true, result });
-    } catch (err) {
-        console.error('Execution error:', err);
-        try {
-            if (errorFunction?.trim()) {
-                const fallback = await errorFn(input);
-                return res.status(400).json({ success: false, error: err.message, message: fallback });
-            }
-            return res.status(500).json({ success: false, error: err.message, message: err.message });
-        } catch (innerErr) {
-            console.error('Error in fallback function:', innerErr);
-            return res.status(500).json({ success: false, error: 'Unexpected server error.' });
-        }
-    }
-})
-app.post("/trigger", openCors, async (req, res) => {
-    try {
-        const { actionId, collectedData, conversationId } = req.body
-        const action = await Action.findById(actionId);
-        if (!action) return res.status(404).json({ message: "Action not found" });
-        const conversation = await Conversation.findById(conversationId);
-        if (!conversation) return res.status(404).json({ message: "Conversation not found" });
-        await updateSession(conversationId, { actionId, collectedData })
-        let body = await dataBaker(action.workingData.body, actionId, conversationId)
-        let headers = await dataBaker(action.workingData.headers, actionId, conversationId)
-        let url = await dataBaker(action.workingData.url, actionId, conversationId)
-        return res.status(200).json({ success: true, message: "received submit request", data: { body: body.body, headers, url: url.url, accessType: action?.accessType, method: action?.workingData?.method } })
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "internal server error", error: error.message });
-    }
-})
 app.put("/reaction", openCors, async (req, res) => {
     const { messageId, reaction } = req.body;
     // Validation for messageId and reaction
@@ -315,21 +249,6 @@ app.post('/send-invite', openCors, async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 });
-app.post('/send-mail', openCors, async (req, res) => {
-    try {
-        const { to, subject, text, html } = req.body;
-        await sendMail({
-            to: to,
-            subject: subject,
-            text: text,
-            html: html
-        })
-        res.json({ message: 'mail sent' });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: error.message })
-    }
-})
 app.post('/contact-us', openCors, async (req, res) => {
     try {
         const { name, contactDetails, purpose } = req.body;
