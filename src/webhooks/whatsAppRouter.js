@@ -225,7 +225,7 @@ whatsappRouter.post("/main", async (req, res) => {
 
 
 
-
+    res.status(200).send('EVENT_RECEIVED');
 
   } catch (error) {
     console.error('❌ Error in WhatsApp webhook:', error);

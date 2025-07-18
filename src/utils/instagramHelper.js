@@ -1,116 +1,215 @@
 import axios from "axios"
 import crypto from "crypto"
+import { Channel } from "../models/Channels.js";
 export class InstagramMessagingAPI {
-    constructor() {
-        this.accessToken = "";
-        this.appSecret = "";
-        this.verifyToken = "";
-        this.instagramId = "";
+    constructor(config) {
+        this.accessToken = config.accessToken;
+        this.instagramId = config.instagramId;
+        this.tokenExpiryTime = config.tokenExpiryTime; // Unix timestamp
+        this.channelId = config.channelId;
         this.baseUrl = 'https://graph.instagram.com/v23.0';
         this.apiVersion = config.apiVersion || 'v23.0';
+    }
+    static async create(config) {
+        const instance = new InstagramMessagingAPI(config);
+        await instance.ensureValidToken();
+        return instance;
+    }
+    // Get user profile information
+    async getUserProfile(userId) {
+        try {
+            const response = await axios.get(
+                `${this.baseUrl}/${userId}`,
+                {
+                    params: {
+                        fields: 'username,name,account_type',
+                        access_token: this.accessToken
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error(`Failed to get user profile: ${error.response?.data?.error?.message || error.message}`);
+        }
+    }
+    // Helper method to make API calls
+    async makeApiCall(endpoint, data) {
+        try {
+            const { data } = await axios.post(
+                `${this.baseUrl}/${this.instagramId}/${endpoint}`,
+                data,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return data;
+        } catch (error) {
+            throw new Error(`Instagram API Error: ${error.response?.data?.error?.message || error.message}`);
+        }
+    }
+    // Token refresh callback function
+    async refreshTokenCallback() {
+        try {
+            const url = 'https://graph.instagram.com/refresh_access_token';
+            const params = {
+                grant_type: 'ig_refresh_token',
+                access_token: this.accessToken
+            };
+            const { data } = await axios.get(url, { params });
+            const { access_token, token_type, expires_in, permissions } = data;
+            this.accessToken = access_token;
+            this.tokenExpiryTime = Date.now() + expires_in * 1000
+            await Channel.findByIdAndUpdate(this.channelId, {
+                'secrets.accessToken': access_token,
+                'secrets.refreshAt': new Date(this.tokenExpiryTime),
+                'secrets.permissions': permissions
+            });
+        } catch (error) {
+            throw new Error(`Token refresh failed: ${error.message}`);
+        }
+    }
+    // Check if token is expired and refresh if needed
+    async ensureValidToken() {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const bufferTime = 3000; // 50 minutes buffer before expiry
+        if (this.tokenExpiryTime && currentTime >= (this.tokenExpiryTime - bufferTime)) await this.refreshTokenCallback()
+    }
+    async sendTypingIndicator(recipientId, action = 'typing_on') {
+        const data = {
+            recipient: { id: recipientId },
+            sender_action: action // 'typing_on', 'typing_off', 'mark_seen'
+        };
+        return await this.makeApiCall('messages', data);
+    }
+    // Send message based on InstagramBotResponseSchema
+    async sendMessage(recipientId, responseData) {
+        const { type, data, metadata } = responseData;
+        try {
+            let result;
+            switch (type) {
+                case 'text':
+                    result = await this.sendTextMessage(recipientId, data.text);
+                    break;
+
+                case 'quick_reply':
+                    result = await this.sendQuickReplyMessage(recipientId, data.text, data.quick_replies);
+                    break;
+
+                case 'button_template':
+                    result = await this.sendButtonTemplate(recipientId, data.text, data.buttons);
+                    break;
+
+                case 'generic_template':
+                    result = await this.sendGenericTemplate(recipientId, data.elements);
+                    break;
+
+                case 'media':
+                    result = await this.sendMediaMessage(recipientId, data.attachment_type, data.url, data.caption);
+                    break;
+
+                case 'postback':
+                    // For postback, we just send the text response
+                    result = await this.sendTextMessage(recipientId, data.text);
+                    break;
+
+                default:
+                    throw new Error(`Unsupported message type: ${type}`);
+            }
+
+            // Log metadata if provided
+            // if (metadata) console.log('Message sent with metadata:', { recipientId, type, metadata, messageId: result.message_id });
+            return result;
+
+        } catch (error) {
+            console.error('Error sending message:', error);
+            // Send fallback text message
+            try {
+                await this.sendTextMessage(recipientId, 'Sorry, I encountered an issue. Please try again.');
+            } catch (fallbackError) {
+                console.error('Fallback message also failed:', fallbackError);
+            }
+            throw error;
+        }
     }
 
     // Send text message
     async sendTextMessage(recipientId, text) {
-        try {
-            const response = await axios.post(
-                `${this.baseUrl}/${this.instagramId}/messages`,
-                {
-                    recipient: { id: recipientId },
-                    message: { text: text }
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error(`Failed to send text message: ${error.response?.data?.error?.message || error.message}`);
-        }
+        const data = {
+            recipient: { id: recipientId },
+            message: { text: text }
+        };
+        return await this.makeApiCall('messages', data);
+    }
+    // Send quick reply message
+    async sendQuickReplyMessage(recipientId, text, quickReplies) {
+        const data = {
+            recipient: { id: recipientId },
+            message: {
+                text: text,
+                quick_replies: quickReplies
+            }
+        };
+        return await this.makeApiCall('messages', data);
     }
 
-    // Send image message
-    async sendImageMessage(recipientId, imageUrl) {
-        try {
-            const response = await axios.post(
-                `${this.baseUrl}/${this.instagramId}/messages`,
-                {
-                    recipient: { id: recipientId },
-                    message: {
-                        attachment: {
-                            type: 'image',
-                            payload: { url: imageUrl }
-                        }
-                    }
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json'
+    // Send button template message
+    async sendButtonTemplate(recipientId, text, buttons) {
+        const data = {
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "button",
+                        text: text,
+                        buttons: buttons
                     }
                 }
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error(`Failed to send image message: ${error.response?.data?.error?.message || error.message}`);
-        }
+            }
+        };
+        return await this.makeApiCall('messages', data);
     }
-
-    // Send video message
-    async sendVideoMessage(recipientId, videoUrl) {
-        try {
-            const response = await axios.post(
-                `${this.baseUrl}/${this.instagramId}/messages`,
-                {
-                    recipient: { id: recipientId },
-                    message: {
-                        attachment: {
-                            type: 'video',
-                            payload: { url: videoUrl }
-                        }
-                    }
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json'
+    async sendMediaMessage(recipientId, attachmentType, url, caption = null) {
+        const data = {
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: attachmentType,
+                    payload: {
+                        url: url,
+                        is_reusable: true
                     }
                 }
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error(`Failed to send video message: ${error.response?.data?.error?.message || error.message}`);
+            }
+        };
+
+        const response = await this.makeApiCall('messages', data);
+
+        // Send caption as separate message if provided
+        if (caption) {
+            await this.sendTextMessage(recipientId, caption);
         }
+
+        return response;
     }
-
-    // Send audio message
-    async sendAudioMessage(recipientId, audioUrl) {
-        try {
-            const response = await axios.post(
-                `${this.baseUrl}/${this.instagramId}/messages`,
-                {
-                    recipient: { id: recipientId },
-                    message: {
-                        attachment: {
-                            type: 'audio',
-                            payload: { url: audioUrl }
-                        }
-                    }
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${this.accessToken}`,
-                        'Content-Type': 'application/json'
+    // Send generic template (carousel)
+    async sendGenericTemplate(recipientId, elements) {
+        const data = {
+            recipient: { id: recipientId },
+            message: {
+                attachment: {
+                    type: "template",
+                    payload: {
+                        template_type: "generic",
+                        elements: elements
                     }
                 }
-            );
-            return response.data;
-        } catch (error) {
-            throw new Error(`Failed to send audio message: ${error.response?.data?.error?.message || error.message}`);
-        }
+            }
+        };
+        return await this.makeApiCall('messages', data);
     }
 
     // Send heart sticker
@@ -348,48 +447,6 @@ export class InstagramMessagingAPI {
             throw new Error(`Failed to mark message as read: ${error.response?.data?.error?.message || error.message}`);
         }
     }
-
-    // Handle webhook events with parsing
-    handleWebhook(req, res, callbacks = {}) {
-        const body = req.body;
-
-        // Verify webhook signature
-        const signature = req.headers['x-hub-signature-256'];
-        if (!this.verifyWebhookSignature(JSON.stringify(body), signature)) {
-            console.error('Invalid webhook signature');
-            return res.sendStatus(403);
-        }
-
-        // Parse webhook data
-        const parsedData = this.parseWebhook(body);
-
-        // Handle different event types
-        if (parsedData.messages.length > 0 && callbacks.onMessage) {
-            parsedData.messages.forEach(message => {
-                callbacks.onMessage(message);
-            });
-        }
-
-        if (parsedData.postbacks.length > 0 && callbacks.onPostback) {
-            parsedData.postbacks.forEach(postback => {
-                callbacks.onPostback(postback);
-            });
-        }
-
-        if (parsedData.reactions.length > 0 && callbacks.onReaction) {
-            parsedData.reactions.forEach(reaction => {
-                callbacks.onReaction(reaction);
-            });
-        }
-
-        if (parsedData.mediaShares.length > 0 && callbacks.onMediaShare) {
-            parsedData.mediaShares.forEach(share => {
-                callbacks.onMediaShare(share);
-            });
-        }
-
-        res.sendStatus(200);
-    }
 }
 export const verifyRequestSignature = (req, res, buf) => {
     var signature = req.headers["x-hub-signature-256"];
@@ -435,7 +492,7 @@ export const parseWebhook = (webhookData) => {
                     // Parse text messages
                     if (message.text) parsedData.messages.push({ type: 'text', accountId, senderId, recipientId, timestamp, messageId: message.mid, text: message.text });
                     // Parse attachments (images, videos, audio)
-                    if (message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0) message.attachments.forEach(attachment => { parsedData.mediaShares.push({ type: 'attachment', senderId, recipientId, timestamp, messageId: message.mid, attachmentType: attachment.type, url: attachment.payload.url }); });
+                    if (message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0) message.attachments.forEach(attachment => { parsedData.mediaShares.push({ type: 'attachment', accountId, senderId, recipientId, timestamp, messageId: message.mid, attachmentType: attachment.type, url: attachment.payload.url }); });
                     // Parse postbacks (button clicks)
                     if (event.postback) parsedData.postbacks.push({ type: "postback", accountId, senderId, recipientId, timestamp, payload: event.postback.payload, title: event.postback.title });
                     // Parse reactions

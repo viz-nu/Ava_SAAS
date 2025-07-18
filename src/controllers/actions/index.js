@@ -23,7 +23,7 @@ export const updateAction = errorWrapper(async (req, res) => {
 export const deleteAction = errorWrapper(async (req, res) => {
     const [action, affected] = await Promise.all([
         Action.findOne({ _id: req.params.id, business: req.user.business }),
-        AgentModel.find({ actions: id }, "_id")
+        AgentModel.find({ actions: req.params.id }, "_id")
     ]);
     if (!action) return res.status(404).json({ message: "Action not found" });
     await Promise.all([
