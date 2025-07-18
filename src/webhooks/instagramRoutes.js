@@ -235,7 +235,8 @@ InstagramRouter.get("/main", async (req, res) => {
         return res.sendStatus(500);
     }
 })
-InstagramRouter.post("/main", verifyRequestSignature, async (req, res) => {
+// verifyRequestSignature
+InstagramRouter.post("/main",  async (req, res) => {
     try {
         // console.log("📨 Body:", JSON.stringify(req.body, null, 2));
         const parsedData = parseWebhook(req.body);
