@@ -17,12 +17,21 @@ export const connectDB = async (retryCount = 0) => {
 };
 export let redisClient;
 
-export const connectRedis = async () => {
+export const connectRedis = async (retryCount = 0) => {
     if (redisClient) return redisClient
     try {
         redisClient = createClient({ url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, });
-        redisClient.on('error', (err) => console.log('Redis Client Error', err));
         await redisClient.connect();
+        redisClient.on('error', (err) => {
+            if (retryCount < 5) {  // Set a maximum number of retries
+                console.error('Error connecting to redisClient. Retrying...', err);
+                setTimeout(() => connectRedis(retryCount + 1), 5000); // Retry after 5 seconds
+            } else {
+                console.error('Failed to connect to redisClient after multiple attempts:', err);
+                process.exit(1);  // Exit the process after max retries
+            }
+        });
+        
         console.log('Connected to Redis');
         return redisClient;
     } catch (err) {
