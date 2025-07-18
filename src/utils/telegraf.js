@@ -3,27 +3,40 @@ import { Channel } from "../models/Channels.js";
 
 export const getBotDetails = async ({ type, botId }) => {
     try {
-        let channelDetails
+        let channelDetails;
+
         switch (type) {
             case "telegram":
-                channelDetails = await Channel.findOne({ "config.id": botId })
+                channelDetails = await Channel.findOne({ "config.id": botId });
                 break;
             case "whatsapp":
-                channelDetails = await Channel.findOne({ "config.phone_number_id": botId })
+                channelDetails = await Channel.findOne({ "config.phone_number_id": botId });
                 break;
             case "instagram":
-                channelDetails = await Channel.findOne({ "config.igBusinessId": botId })
+                channelDetails = await Channel.findOne({ "config.igBusinessId": botId });
                 break;
             default:
-                break;
+                return { agentDetails: null, channelDetails: null };
         }
-        const agentDetails = await AgentModel.findOne({ channels: channelDetails._id }).populate("business actions")
-        return { agentDetails, channelDetails }
+
+        if (!channelDetails) {
+            console.warn(`Channel not found for type: ${type}, botId: ${botId}`);
+            return { agentDetails: null, channelDetails: null };
+        }
+
+        const agentDetails = await AgentModel.findOne({ channels: channelDetails._id }).populate("business actions");
+
+        if (!agentDetails) {
+            console.warn(`Agent not found for channelId: ${channelDetails._id}`);
+        }
+
+        return { agentDetails, channelDetails };
+
     } catch (error) {
-        console.log(error);
-        return null
+        console.error("Error in getBotDetails:", error);
+        return { agentDetails: null, channelDetails: null };
     }
-}
+};
 export function categorizeTelegramTrigger(body) {
     // {"update_id":525235049,"message":{"message_id":50,"from":{"id":6233054381,"is_bot":false,"first_name":"Vishnu","language_code":"en"},"chat":{"id":6233054381,"first_name":"Vishnu","type":"private"},"date":1752608910,"text":"Can you say that again?"}}
 
