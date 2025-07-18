@@ -236,7 +236,7 @@ InstagramRouter.get("/main", async (req, res) => {
     }
 })
 // verifyRequestSignature
-InstagramRouter.post("/main",  async (req, res) => {
+InstagramRouter.post("/main", async (req, res) => {
     try {
         // console.log("📨 Body:", JSON.stringify(req.body, null, 2));
         const parsedData = parseWebhook(req.body);
@@ -272,7 +272,7 @@ InstagramRouter.post("/main",  async (req, res) => {
         setImmediate(async () => {
             const { object, messages, postbacks, reactions, mediaShares } = parsedData;
             switch (object) {
-                case "page":
+                case "instagram":
                     for (const message of messages) {
                         const { type, accountId, senderId, recipientId, timestamp } = message;
                         const { agentDetails, channelDetails } = await getBotDetails({ type: "instagram", botId: accountId });
