@@ -11,6 +11,9 @@ export const getBotDetails = async ({ type, botId }) => {
             case "whatsapp":
                 channelDetails = await Channel.findOne({ "config.phone_number_id": botId })
                 break;
+            case "instagram":
+                channelDetails = await Channel.findOne({ "config.igBusinessId": botId })
+                break;
             default:
                 break;
         }
