@@ -256,8 +256,11 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     setImmediate(async () => {
       try {
         for (const message of messages) {
+          console.log("📨 Message:", JSON.stringify(message, null, 2));
+
           if (message.type == "message" && message.subType === "audio") {
-            userMessageText = await getMediaTranscriptions({ openAiKey: process.env.OPENAI_API_KEY, token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
+            const userMessageText = await getMediaTranscriptions({ openAiKey: process.env.OPENAI_API_KEY, token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
+            console.log("📨 transcript:", userMessageText);
             console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
             await bot.sendMessage("whatsapp", message.from, "text", { body: userMessageText || "Audio received (no transcription available)" });
           }
