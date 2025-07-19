@@ -8,6 +8,7 @@ import { Agent, run, RunState, tool } from "@openai/agents";
 import { Channel } from "../models/Channels.js";
 import { getBotDetails } from "../utils/telegraf.js";
 import { z } from "zod";
+import "dotenv/config.js";
 export const whatsappRouter = Router()
 export const WhatsAppBotResponseSchema = z.object({
   message: z.string()
@@ -256,7 +257,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
       try {
         for (const message of messages) {
           if (message.type == "message" && message.subType === "audio") {
-            userMessageText = await getMediaTranscriptions({ token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
+            userMessageText = await getMediaTranscriptions({ openAiKey: process.env.OPENAI_API_KEY, token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
             console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
             await bot.sendMessage("whatsapp", message.from, "text", { body: userMessageText || "Audio received (no transcription available)" });
           }
