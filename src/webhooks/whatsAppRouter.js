@@ -251,58 +251,66 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
     const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phone_number_id);
     const messages = bot.parseWebhookMessage(req.body);
     res.status(200).send('EVENT_RECEIVED');
+
     setImmediate(async () => {
       try {
         for (const message of messages) {
-          switch (message.type) {
-            case "status":
-              console.dir(message);
-              continue;
-            case "message":
-              let userMessageText = "";
-              switch (message.subType) {
-                case "text":
-                  userMessageText = message.content.text;
-                  break;
-                case "image":
-                  userMessageText = message.content.image.caption || "Image received (no caption)";
-                  console.log(`📸 Image message from ${message.contact.name || message.from}: "${userMessageText}"`);
-                  break;
-                case "audio":
-                  userMessageText = await getMediaTranscriptions({ token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
-                  console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
-                  await bot.sendMessage("whatsapp", message.from, "text", { body: userMessageText || "Audio received (no transcription available)" });
-                  break;
-                case "document":
-                  userMessageText = message.content.document.caption || "Document received (no caption)";
-                  console.log(`📄 Document message from ${message.contact.name || message.from}: "${userMessageText}"`);
-                  break;
-                case "button_reply": // ✅ Button clicks from interactive messages
-                  userMessageText = `User clicked button: ${message.content.button_reply.title}`;
-                  break;
-                case "interactive":
-                  if (message.content.interactive.reply.id.startsWith('approve_')) {
-                    await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: true } }, bot, agentDetails);
-                    continue;
-                  } else if (message.content.interactive.reply.id.startsWith('reject_')) {
-                    await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: false } }, bot, agentDetails);
-                    continue;
-                  }
-                  userMessageText = `User clicked button: ${message.content.interactive.reply.title}`;
-                  break;
-                default:
-                  userMessageText = `Message of type ${message.subType} received`;
-                  console.log(`📩 ${message.subType} message from ${message.contact.name || message.from}`);
-                  break;
-              }
-              await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessageText } }, bot, agentDetails);
-              break;
-            default:
-              console.log("unknown message type:", message.type)
-              continue;
-              break;
+          if (message.type == "message" && message.subType === "audio") {
+            userMessageText = await getMediaTranscriptions({ token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
+            console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
+            await bot.sendMessage("whatsapp", message.from, "text", { body: userMessageText || "Audio received (no transcription available)" });
           }
         }
+        // for (const message of messages) {
+        //   switch (message.type) {
+        //     case "status":
+        //       console.dir(message);
+        //       continue;
+        //     case "message":
+        //       let userMessageText = "";
+        //       switch (message.subType) {
+        //         case "text":
+        //           userMessageText = message.content.text;
+        //           break;
+        //         case "image":
+        //           userMessageText = message.content.image.caption || "Image received (no caption)";
+        //           console.log(`📸 Image message from ${message.contact.name || message.from}: "${userMessageText}"`);
+        //           break;
+        //         case "audio":
+        // userMessageText = await getMediaTranscriptions({ token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
+        // console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
+        // await bot.sendMessage("whatsapp", message.from, "text", { body: userMessageText || "Audio received (no transcription available)" });
+        //           break;
+        //         case "document":
+        //           userMessageText = message.content.document.caption || "Document received (no caption)";
+        //           console.log(`📄 Document message from ${message.contact.name || message.from}: "${userMessageText}"`);
+        //           break;
+        //         case "button_reply": // ✅ Button clicks from interactive messages
+        //           userMessageText = `User clicked button: ${message.content.button_reply.title}`;
+        //           break;
+        //         case "interactive":
+        //           if (message.content.interactive.reply.id.startsWith('approve_')) {
+        //             await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: true } }, bot, agentDetails);
+        //             continue;
+        //           } else if (message.content.interactive.reply.id.startsWith('reject_')) {
+        //             await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: false } }, bot, agentDetails);
+        //             continue;
+        //           }
+        //           userMessageText = `User clicked button: ${message.content.interactive.reply.title}`;
+        //           break;
+        //         default:
+        //           userMessageText = `Message of type ${message.subType} received`;
+        //           console.log(`📩 ${message.subType} message from ${message.contact.name || message.from}`);
+        //           break;
+        //       }
+        //       await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessageText } }, bot, agentDetails);
+        //       break;
+        //     default:
+        //       console.log("unknown message type:", message.type)
+        //       continue;
+        //       break;
+        //   }
+        // }
       } catch (error) {
         console.error("Processing error:", error);
       }
