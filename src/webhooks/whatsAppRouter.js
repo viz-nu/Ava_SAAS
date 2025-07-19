@@ -271,6 +271,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
                 case "audio":
                   userMessageText = await getMediaTranscriptions({ token: bot.accessToken, mediaId: message.content.audio.id, transcriptionModel: "whisper-1" });
                   console.log(`🔊 Audio message from ${message.contact.name || message.from}`);
+                  await bot.sendMessage("whatsapp", message.from, "text", { body: userMessageText || "Audio received (no transcription available)" });
                   break;
                 case "document":
                   userMessageText = message.content.document.caption || "Document received (no caption)";
