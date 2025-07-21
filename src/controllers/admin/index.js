@@ -144,10 +144,9 @@ export const Dashboard = errorWrapper(async (req, res) => {
 export const newDashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).populate("members documents").select("name logoURL facts sector tagline address description contact analytics");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const lastUpdated = new Date(0);
-    // const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
+    const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
     const now = new Date();
-    // if (now - lastUpdated < 5 * 60 * 1000) return { statusCode: 200, message: "Dashboard retrieved", data: business }
+    if (now - lastUpdated < 5 * 60 * 1000) return { statusCode: 200, message: "Dashboard retrieved", data: business }
     const [newConversations, newCollections, chatTokens] = await Promise.all([
         Conversation.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("agent channel createdAt updatedAt"),
         Collection.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("createdAt updatedAt"),
@@ -163,8 +162,6 @@ export const newDashboard = errorWrapper(async (req, res) => {
             }
         ])
     ])
-    console.log({ newConversations, newCollections, chatTokens });
-
     const knowledgeTokensRes = await Data.aggregate([
         { $match: { collection: { $in: newCollections.map(ele => ele._id) } } },
         {
