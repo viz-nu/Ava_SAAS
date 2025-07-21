@@ -334,6 +334,8 @@ async function sendApprovalRequest(bot, phoneNumber, interruptions) {
 whatsappRouter.post("/send-message", async (req, res) => {
   try {
     const { to, phoneNumber_id, Data } = req.body;
+    console.log({ to, phoneNumber_id});
+
     if (!phoneNumber_id) return res.status(400).json({ error: "phoneNumber_id is required" });
     const { channelDetails } = await getBotDetails({ type: "whatsapp", botId: phoneNumber_id });
     const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phoneNumber_id);
