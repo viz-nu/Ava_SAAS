@@ -125,7 +125,6 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 geoLocation: geoLocation.data
             });
         }
-
         // ✅ Create message if not exists
         if (!message) {
             message = await Message.create({
@@ -135,7 +134,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 conversationId: conversation._id
             });
         }
-
+        console.log({ conversation, message });
         // ✅ State preparation logic
         let state;
         if (interruptionDecisions.length > 0 && conversation.state) {
