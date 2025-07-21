@@ -50,6 +50,7 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
   - Buttons should be relevant actions based on the user's query.
   - Do NOT include any fields other than "message" and "buttons".
   - Respond in a helpful and professional tone.
+  "Always return valid JSON ONLY as per schema. No text outside JSON."
   Example response:
   {
     "message": "What would you like to do next?",
