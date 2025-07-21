@@ -134,7 +134,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 conversationId: conversation._id
             });
         }
-        console.log({ conversation, message });
+        console.log({ agentDetails,conversation, message });
         // ✅ State preparation logic
         let state;
         if (interruptionDecisions.length > 0 && conversation.state) {
