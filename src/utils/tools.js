@@ -126,7 +126,7 @@ export function createToolWrapper(toolDef) {
     return {
         name: toolDef.name,
         description: toolDef.description,
-        parameters: toolDef.parameters,
+        parameters: buildJSONSchema(toolDef.parameters),
         execute: toolDef.async ? new AsyncFunction('input', wrapperBody) : new Function('input', wrapperBody),
         strict: true,
         errorFunction: errorFn,
@@ -272,3 +272,63 @@ export const knowledgeToolBaker = (collections) => {
 
     return template;
 };
+import { z } from "zod";
+
+// type Struct = {
+//     dataType: "object" | "string" | "number" | "boolean" | "integer" | "array" | "null",
+//     dataFormat?: any,
+//     isRequired: boolean,
+//     key: string,
+//     validation?: string,
+//     description: string,
+//     properties?: { [key: string]: Struct },
+//     additionalProperties: boolean
+// };
+
+function buildJSONSchema(def) {
+    const schema = {
+        type: def.dataType,
+        description: def.description
+    };
+
+    // Add optional common fields if provided
+    if (def.default !== undefined) {
+        schema.default = def.default;
+    }
+    if (def.enum && Array.isArray(def.enum)) {
+        schema.enum = def.enum;
+    }
+    if (def.pattern) {
+        schema.pattern = def.pattern;
+    }
+    if (def.dataFormat) {
+        schema.format = def.dataFormat;
+    }
+
+    // For object type
+    if (def.dataType === "object") {
+        schema.properties = {};
+        const requiredKeys = [];
+
+        if (def.properties) {
+            for (const [key, value] of Object.entries(def.properties)) {
+                schema.properties[key] = buildJSONSchema(value);
+                if (value.isRequired) requiredKeys.push(key);
+            }
+        }
+
+        if (requiredKeys.length > 0) schema.required = requiredKeys;
+        schema.additionalProperties = def.additionalProperties;
+    }
+
+    // For array type
+    if (def.dataType === "array") {
+        if (def.properties && def.properties.items) {
+            schema.items = buildJSONSchema(def.properties.items);
+        } else {
+            schema.items = { type: "any" };
+        }
+    }
+
+    return schema;
+}
