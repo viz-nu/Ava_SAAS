@@ -164,6 +164,21 @@ function mapToWhatsAppPayload(finalOutput) {
     }
   };
 }
+whatsappRouter.post("/send-message", async (req, res) => {
+  try {
+    const { to, phoneNumber_id, Data } = req.body;
+    console.log({ to, phoneNumber_id});
+
+    if (!phoneNumber_id) return res.status(400).json({ error: "phoneNumber_id is required" });
+    const { channelDetails } = await getBotDetails({ type: "whatsapp", botId: phoneNumber_id });
+    const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phoneNumber_id);
+    const response = await bot.sendMessage("whatsapp", to, "text", Data);
+    return res.status(200).json({ success: true, response });
+  } catch (error) {
+    console.error('❌ Error sending WhatsApp message:', error);
+    return res.status(500).json({ error: "Failed to send message" });
+  }
+});
 whatsappRouter.get("/main", async (req, res) => {
   try {
     const parsedUrl = parse(req.originalUrl, true);
@@ -331,21 +346,7 @@ async function sendApprovalRequest(bot, phoneNumber, interruptions) {
     await bot.sendMessage("whatsapp", phoneNumber, type, Data);
   }
 }
-whatsappRouter.post("/send-message", async (req, res) => {
-  try {
-    const { to, phoneNumber_id, Data } = req.body;
-    console.log({ to, phoneNumber_id});
 
-    if (!phoneNumber_id) return res.status(400).json({ error: "phoneNumber_id is required" });
-    const { channelDetails } = await getBotDetails({ type: "whatsapp", botId: phoneNumber_id });
-    const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phoneNumber_id);
-    const response = await bot.sendMessage("whatsapp", to, "text", Data);
-    return res.status(200).json({ success: true, response });
-  } catch (error) {
-    console.error('❌ Error sending WhatsApp message:', error);
-    return res.status(500).json({ error: "Failed to send message" });
-  }
-});
 
 
 // {
