@@ -369,6 +369,17 @@ app.post('/send-invite', openCors, async (req, res) => {
         return res.status(500).json({ error: error.message })
     }
 });
+app.post('/send-mail', openCors, async (req, res) => {
+    try {
+        const { to, subject, text, html, attachments = [] } = req.body;
+        if (!to || !subject || !text) return res.status(400).json({ error: 'To, subject and text are required' });
+        const emailResp = await sendMail({ to, subject, text, html, attachments });
+        return res.json({ success: true, message: 'Email sent successfully', data: emailResp });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
+    }
+});
 app.post('/contact-us', openCors, async (req, res) => {
     try {
         const { name, contactDetails, purpose } = req.body;
