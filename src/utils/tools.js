@@ -319,7 +319,7 @@ function buildJSONSchema(def) {
         }
 
         if (requiredKeys.length > 0) schema.required = requiredKeys;
-        schema.additionalProperties = def.additionalProperties;
+        schema.additionalProperties = Boolean(def.additionalProperties);
     }
 
     // For array type
