@@ -352,16 +352,20 @@ app.get("/get-agent", openCors, async (req, res) => {
 })
 app.post('/send-invite', openCors, async (req, res) => {
     try {
-        const { meetingDetails = {}, attendees = [], organizerDetails = {} } = req.body;
+        const { meetingDetails = {}, attendees = [], organizerDetails = {}, sender = "AVA" } = req.body;
         // attendees must be an array of senders
         if (!Array.isArray(attendees) || attendees.length === 0) return res.status(400).json({ error: 'Attendees must be a non-empty array' });
         let { subject = 'Appointment Schedule Invitation', text, html, event = 'Appointment Invitation', start, end, timezone, summary = "Meeting Invitation", description = "You are invited to a meeting.", location = "Online", url = generateMeetingUrl("Invitation") } = meetingDetails
         if (!start || !end) return res.status(400).json({ error: 'Start and end time are required.' });
-        let { host, port, secure, user, pass, name, bcc, cc, service, clientId, clientSecret, refreshToken } = organizerDetails
-        if (!host || !port || !user || !pass) return res.status(400).json({ error: 'SMTP details are missing or invalid' });
         const calendar = ical({ name: event });
         calendar.method(ICalCalendarMethod.REQUEST);
         calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name, email: user }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
+        if (sender === "AVA") {
+            const emailResp = await sendMail({ to: attendees.join(" "), subject, text, html, attachments });
+            return res.json({ success: true, message: 'Email sent successfully', data: emailResp });
+        }
+        let { host, port, secure, user, pass, name, bcc, cc, service, clientId, clientSecret, refreshToken } = organizerDetails
+        if (!host || !port || !user || !pass) return res.status(400).json({ error: 'SMTP details are missing or invalid' });
         const EmailResp = await sendEmail({ config: { host, port, secure, auth: { user, pass } }, emailData: { from: `${name} <${user}>`, to: attendees.join(" "), cc, bcc, subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] } })
         res.status(200).json({ success: true, message: 'Appointment Scheduled Successfully', data: EmailResp });
     } catch (error) {
