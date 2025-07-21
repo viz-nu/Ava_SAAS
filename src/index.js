@@ -162,8 +162,12 @@ app.post('/v1/agent', openCors, async (req, res) => {
                         break;
                     case 'response_done':
                         console.log('🎉 Response completed');
-                        message.response = processed.response.finalOutput[0]?.content[0]?.text || JSON.stringify(processed.response.finalOutput);
-                        message.responseTokens.model = processed.response.model
+                        if (Array.isArray(processed.response.finalOutput) && processed.response.finalOutput.length > 0) {
+                            const firstContent = processed.response.finalOutput[0]?.content?.[0]?.text;
+                            message.response = firstContent || JSON.stringify(processed.response.finalOutput);
+                        } else {
+                            message.response = "Interrupted"; // or fallback message
+                        } message.responseTokens.model = processed.response.model
                         message.responseTokens.usage = totals
                         break;
                     case 'error':

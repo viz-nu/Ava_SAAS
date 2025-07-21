@@ -132,7 +132,6 @@ export function createToolWrapper(toolDef) {
         errorFunction: errorFn,
         needsApproval: toolDef.needsApproval
     }
-    console.log("Tool schema created:", toolSchema);
     
     return toolSchema;
 }
@@ -331,7 +330,5 @@ function buildJSONSchema(def) {
             schema.items = { type: "any" };
         }
     }
-console.log(schema);
-
     return schema;
 }
