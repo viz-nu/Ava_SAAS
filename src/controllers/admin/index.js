@@ -146,7 +146,7 @@ export const newDashboard = errorWrapper(async (req, res) => {
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const lastUpdated = new Date(0);
     // const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
-    // const now = new Date();
+    const now = new Date();
     // if (now - lastUpdated < 5 * 60 * 1000) return { statusCode: 200, message: "Dashboard retrieved", data: business }
     const [newConversations, newCollections, chatTokens] = await Promise.all([
         Conversation.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("agent channel createdAt updatedAt"),
