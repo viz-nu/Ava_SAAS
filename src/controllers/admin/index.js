@@ -163,6 +163,8 @@ export const newDashboard = errorWrapper(async (req, res) => {
             }
         ])
     ])
+    console.log({ newConversations, newCollections, chatTokens });
+
     const knowledgeTokensRes = await Data.aggregate([
         { $match: { collection: { $in: newCollections.map(ele => ele._id) } } },
         {
@@ -200,6 +202,7 @@ export const newDashboard = errorWrapper(async (req, res) => {
     for (const conv of newConversations) business.addEngagementAnalytics(conv.agent, new Date(conv.createdAt), new Date(conv.updatedAt), conv.channel)
     business.pruneOldConversationDates();
     business.analytics.lastUpdated = now;
+    await business.save();
     return { statusCode: 200, message: "Dashboard retrieved", data: business, misc: { business: business._id, createdAt: { $gte: lastUpdated } } }
 });
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
