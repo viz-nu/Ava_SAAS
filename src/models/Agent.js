@@ -18,7 +18,7 @@ const AgentSchema = new Schema({
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],
-    business: [{ type: Schema.Types.ObjectId, ref: 'Businesses' }],
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     analysisMetrics: Schema.Types.Mixed,
     facets: [String],
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
