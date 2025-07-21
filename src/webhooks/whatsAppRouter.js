@@ -167,12 +167,10 @@ function mapToWhatsAppPayload(finalOutput) {
 whatsappRouter.post("/send-message", async (req, res) => {
   try {
     const { to, phoneNumber_id, Data } = req.body;
-    console.log({ to, phoneNumber_id});
-
     if (!phoneNumber_id) return res.status(400).json({ error: "phoneNumber_id is required" });
     const { channelDetails } = await getBotDetails({ type: "whatsapp", botId: phoneNumber_id });
     const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phoneNumber_id);
-    const response = await bot.sendMessage("whatsapp", to, "text", Data);
+    const response = await bot.sendMessage("whatsapp", to, "interactive", Data);
     return res.status(200).json({ success: true, response });
   } catch (error) {
     console.error('❌ Error sending WhatsApp message:', error);
