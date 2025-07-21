@@ -80,24 +80,34 @@ app.options('/send-mail', openCors);
 app.post('/v1/agent', openCors, async (req, res) => {
     const handler = new StreamEventHandler();
     const totals = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+
     try {
         const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [] } = req.body;
-        // Fetch agent + conversation + message
+
+        // ✅ Fetch agent, conversation, and message in parallel
         let [agentDetails, conversation, message] = await Promise.all([
             AgentModel.findById(agentId).populate("actions business"),
             conversationId ? Conversation.findById(conversationId) : null,
             messageId ? Message.findById(messageId) : null
         ]);
+
         if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
 
-        // Streaming setup
+        // ✅ Setup response streaming
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Transfer-Encoding', 'chunked');
         res.flushHeaders();
-        const write = chunk => res.write(JSON.stringify(chunk));
-        // Tools
+        const write = chunk => {
+            if (!res.writableEnded) res.write(JSON.stringify(chunk));
+        };
+
+        // ✅ Prepare tools
         const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
-        if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
+        if (agentDetails.collections.length > 0) {
+            toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
+        }
+
+        // ✅ Create agent
         const agent = new Agent({
             name: agentDetails.personalInfo.name,
             instructions: agentDetails.personalInfo.systemPrompt,
@@ -107,46 +117,78 @@ app.post('/v1/agent', openCors, async (req, res) => {
             tools: toolsJson,
         });
 
-        // Prepare state
+        // ✅ Initialize conversation if not exists
+        if (!conversation) {
+            conversation = await Conversation.create({
+                business: agentDetails.business._id,
+                agent: agentId,
+                geoLocation: geoLocation.data
+            });
+        }
+
+        // ✅ Create message if not exists
+        if (!message) {
+            message = await Message.create({
+                business: agentDetails.business._id,
+                query: userMessage,
+                response: "",
+                conversationId: conversation._id
+            });
+        }
+
+        // ✅ State preparation logic
         let state;
         if (interruptionDecisions.length > 0 && conversation.state) {
-            state = await RunState.fromString(agent, conversation.state);
-            for (const decision of interruptionDecisions) {
-                const interruption = conversation.pendingInterruptions.find(ele => ele.rawItem.id == decision.id);
-                if (interruption) {
-                    decision.action === 'approve' ? state.approve(interruption) : state.reject(interruption);
+            try {
+                // Restore previous state if available
+                state = await RunState.fromString(agent, conversation.state);
+            } catch (err) {
+                console.warn("Invalid conversation state, fallback to prevMessages:", err.message);
+            }
+
+            // Apply interruption decisions (approve/reject)
+            if (state) {
+                for (const decision of interruptionDecisions) {
+                    const interruption = conversation.pendingInterruptions.find(ele => ele.rawItem.id == decision.id);
+                    if (interruption) {
+                        decision.action === 'approve' ? state.approve(interruption) : state.reject(interruption);
+                    }
                 }
             }
-            await Conversation.findByIdAndUpdate(conversationId, { $set: { pendingInterruptions: [], state: "" } });
-        }
-        else if (!state) {
-            // Build context from last 8 user messages only
-            if (conversation) {
-                state = []
-                const messages = await Message.find({ conversationId })
-                    .sort({ createdAt: -1 })
-                    .limit(8)
-                    .select("query");
-                state = messages.reverse().flatMap(({ query, response }) => {
-                    const entries = [];
-                    if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
-                    if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
-                    return entries;
-                });
-                state.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
-            } else {
-                conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, geoLocation: geoLocation.data });
-            }
-        }
-        // Create message entry
-        if (!message) message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
 
+            // Clear old interruptions and state in DB
+            await Conversation.findByIdAndUpdate(conversationId, {
+                $set: { pendingInterruptions: [], state: "" }
+            });
+        }
+
+        if (!state) {
+            // ✅ Build context from last 8 messages (user + assistant)
+            const messages = await Message.find({ conversationId: conversation._id })
+                .sort({ createdAt: -1 })
+                .limit(8)
+                .select("query response");
+
+            const contextMessages = messages.reverse().flatMap(({ query, response }) => {
+                const entries = [];
+                if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
+                if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
+                return entries;
+            });
+
+            // ✅ Add current user input
+            contextMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
+            state = contextMessages;
+        }
+
+        // ✅ Start agent run with streaming
         let hasInterruptions = false;
         let collectedText = "";
         const stream = await run(agent, state, { stream: true });
 
         try {
             for await (const delta of stream) {
+                // ✅ Track token usage
                 if (
                     delta?.data?.type === "model" &&
                     delta?.data?.event?.type === "response.completed" &&
@@ -158,9 +200,11 @@ app.post('/v1/agent', openCors, async (req, res) => {
                     totals.total_tokens += usage.total_tokens ?? 0;
                 }
 
+                // ✅ Process streaming event
                 const processed = handler.handleEvent(delta);
                 if (!processed) continue;
 
+                // ✅ Break when done
                 if (processed.type === "stream_complete" || delta.done === true) break;
 
                 const payload = {
@@ -182,8 +226,10 @@ app.post('/v1/agent', openCors, async (req, res) => {
 
                     case 'response_done':
                         message.response = collectedText.trim() || "Interrupted";
-                        message.responseTokens.model = processed.response.model;
-                        message.responseTokens.usage = totals;
+                        message.responseTokens = {
+                            model: processed.response.model,
+                            usage: totals
+                        };
                         break;
 
                     case 'error':
@@ -194,13 +240,23 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 }
             }
 
-            // Check for interruptions
+            // ✅ Handle interruptions (partial response + approval required)
             if (stream.interruptions?.length) {
                 hasInterruptions = true;
                 const newState = sanitizeState(stream.state);
-                const interruptionData = stream.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
 
-                await Conversation.findByIdAndUpdate(conversation._id, { $set: { pendingInterruptions: interruptionData, state: JSON.stringify(newState) } });
+                const interruptionData = stream.interruptions.map(interruption => ({
+                    ...interruption,
+                    timestamp: new Date(),
+                    status: 'pending'
+                }));
+
+                await Conversation.findByIdAndUpdate(conversation._id, {
+                    $set: {
+                        pendingInterruptions: interruptionData,
+                        state: JSON.stringify(newState)
+                    }
+                });
 
                 const interruptionPayload = {
                     id: "interruptions_pending",
@@ -221,19 +277,31 @@ app.post('/v1/agent', openCors, async (req, res) => {
                 };
                 write(interruptionPayload);
             }
+
         } finally {
+            // ✅ Save message with final response or partial
             await message.save();
-            res.end(JSON.stringify({
-                id: hasInterruptions ? "awaiting_approval" : "end",
-                conversationId,
-                messageId: message._id
-            }));
+
+            // ✅ End response safely
+            if (!hasInterruptions) {
+                write({ id: "end" });
+            } else {
+                write({
+                    id: "awaiting_approval",
+                    conversationId,
+                    messageId: message._id,
+                    message: "Waiting for user approval of pending actions"
+                });
+            }
+            if (!res.writableEnded) res.end();
         }
 
     } catch (error) {
         console.error('Agent error:', error);
-        res.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
-        return res.end(JSON.stringify({ id: "end" }));
+        if (!res.writableEnded) {
+            res.write(JSON.stringify({ id: "error", responseType: "full", data: error.message }));
+            res.end(JSON.stringify({ id: "end" }));
+        }
     }
 });
 
@@ -251,7 +319,6 @@ function sanitizeState(state) {
         return {};
     }
 }
-
 
 app.post('/fetch-from-db', openCors, async (req, res) => {
     try {
