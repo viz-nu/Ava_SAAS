@@ -283,16 +283,9 @@ app.post('/v1/agent', openCors, async (req, res) => {
             await message.save();
 
             // ✅ End response safely
-            if (!hasInterruptions) {
-                write({ id: "end" });
-            } else {
-                write({
-                    id: "awaiting_approval",
-                    conversationId,
-                    messageId: message._id,
-                    message: "Waiting for user approval of pending actions"
-                });
-            }
+
+            !hasInterruptions ? write({ id: "end" }) : write({ id: "awaiting_approval", conversationId, messageId: message._id, message: "Waiting for user approval of pending actions" });
+
             if (!res.writableEnded) res.end();
         }
 
