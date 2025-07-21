@@ -328,6 +328,7 @@ function buildJSONSchema(def) {
             schema.items = { type: "any" };
         }
     }
+console.log(schema);
 
     return schema;
 }
