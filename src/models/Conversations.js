@@ -11,13 +11,7 @@ const ConversationSchema = new Schema({
     /** Conversation state & runtime extras */
     session: Schema.Types.Mixed,
     state: String,
-    pendingInterruptions: [{
-        id: String,
-        type: String,
-        functionCall: Schema.Types.Mixed,
-        timestamp: { type: Date, default: Date.now },
-        status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
-    }],
+    pendingInterruptions: [{ type: Schema.Types.Mixed }],
     /** ---------------- Analytics buckets ---------------- */
     geoLocation: Schema.Types.Mixed,
     analysisMetrics: Schema.Types.Mixed,
