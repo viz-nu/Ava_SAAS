@@ -116,6 +116,10 @@ export class WhatsAppBot {
                     payload.type = "interactive";
                     payload.interactive = Data;
                     break;
+                case "template":
+                    payload.type = "template";
+                    payload.template = Data;
+                    break;
                 default:
                     throw new Error(`Unsupported message type: ${type}`);
             }

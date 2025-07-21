@@ -331,6 +331,73 @@ async function sendApprovalRequest(bot, phoneNumber, interruptions) {
     await bot.sendMessage("whatsapp", phoneNumber, type, Data);
   }
 }
+whatsappRouter.post("/send-message", async (req, res) => {
+  try {
+    const { to, phoneNumber_id, Data } = req.body;
+    if (!phoneNumber_id) return res.status(400).json({ error: "phoneNumber_id is required" });
+    const { channelDetails } = await getBotDetails({ type: "whatsapp", botId: phoneNumber_id });
+    const bot = new WhatsAppBot(channelDetails.secrets.permanentAccessToken, phoneNumber_id);
+    const response = await bot.sendMessage("whatsapp", to, "text", Data);
+    return res.status(200).json({ success: true, response });
+  } catch (error) {
+    console.error('❌ Error sending WhatsApp message:', error);
+    return res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+
+// {
+//   "template": {
+//     "name": "event_feedback_request",
+//       "language": {
+//       "code": "en_US"
+//     },
+//     "components": [
+//       {
+//         "type": "header",
+//         "parameters": [
+//           {
+//             "type": "image",
+//             "image": {
+//               "link": "https://www.jito.org/images/events/jito-event.jpg"
+//             }
+//           }
+//         ]
+//       },
+//       {
+//         "type": "body",
+//         "parameters": [
+//           {
+//             "type": "text",
+//             "text": "Hi {{1}}, thank you for attending *Forge Factory - Building JITO Industry for INDIA*! Your feedback is invaluable to us in shaping future events. 🌟"
+//           }
+//         ]
+//       },
+//       {
+//         "type": "button",
+//         "sub_type": "quick_reply",
+//         "index": "0",
+//         "parameters": [
+//           {
+//             "type": "payload",
+//             "payload": "GIVE_FEEDBACK"
+//           }
+//         ]
+//       },
+//       {
+//         "type": "button",
+//         "sub_type": "quick_reply",
+//         "index": "1",
+//         "parameters": [
+//           {
+//             "type": "payload",
+//             "payload": "LATER"
+//           }
+//         ]
+//       }
+//     ]
+//   }
+// }
 
 
 // 0|Ava_SAAS  | {
