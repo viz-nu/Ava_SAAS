@@ -272,7 +272,6 @@ export const knowledgeToolBaker = (collections) => {
 
     return template;
 };
-import { z } from "zod";
 
 // type Struct = {
 //     dataType: "object" | "string" | "number" | "boolean" | "integer" | "array" | "null",
