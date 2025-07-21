@@ -123,7 +123,7 @@ export function createToolWrapper(toolDef) {
         "use strict";
         ${toolDef.errorFunction}
     `: null
-    return {
+    let toolSchema= {
         name: toolDef.name,
         description: toolDef.description,
         parameters: buildJSONSchema(toolDef.parameters),
@@ -131,7 +131,10 @@ export function createToolWrapper(toolDef) {
         strict: true,
         errorFunction: errorFn,
         needsApproval: toolDef.needsApproval
-    };
+    }
+    console.log("Tool schema created:", toolSchema);
+    
+    return toolSchema;
 }
 export function extractMainAndFollowUps(llmResponse) {
     const followupRegex = /\$followupquestions\$(.*?)\$\/followupquestions\$/s;
