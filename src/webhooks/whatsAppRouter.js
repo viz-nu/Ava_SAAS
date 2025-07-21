@@ -73,7 +73,7 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
   if (userMessageType == "text") {
     state = []
     if (conversation) {
-      const messages = await Message.find({ conversationId: conversation._id }).sort(-1).limit(8).select("query response");
+      const messages = await Message.find({ conversationId: conversation._id }).sort({ createdAt: -1 }).limit(8).select("query response");
       state.push(...messages.flatMap(({ query, response }) => {
         const entries = [];
         if (query) entries.push({ role: "user", content: [{ type: "input_text", text: query }] });
