@@ -106,8 +106,6 @@ app.post('/v1/agent', openCors, async (req, res) => {
             temperature: agentDetails.personalInfo.temperature,
             tools: toolsJson,
         });
-        // Create message entry
-        if (!message) message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
 
         // Prepare state
         let state;
@@ -135,11 +133,14 @@ app.post('/v1/agent', openCors, async (req, res) => {
                     if (response) entries.push({ role: "assistant", content: [{ type: "output_text", text: response }] });
                     return entries;
                 });
-                state.push({ role: "user", content: [{ type: "input_text", text: message.query }] });
+                state.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
             } else {
                 conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, geoLocation: geoLocation.data });
             }
         }
+        // Create message entry
+        if (!message) message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
+
         let hasInterruptions = false;
         let collectedText = "";
         const stream = await run(agent, state, { stream: true });
