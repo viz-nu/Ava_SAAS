@@ -352,7 +352,6 @@ app.post('/send-invite', openCors, async (req, res) => {
         if (!start || !end) return res.status(400).json({ error: 'Start and end time are required.' });
         const calendar = ical({ name: event });
         calendar.method(ICalCalendarMethod.REQUEST);
-        calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name, email: user }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
         if (sender === "AVA") {
             calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name: "AVA", email: process.env.EMAIL_SMTP_AUTH }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
             const emailResp = await sendMail({ to: attendees.join(" "), subject, text, html, attachments });
