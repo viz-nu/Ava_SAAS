@@ -123,7 +123,7 @@ export function createToolWrapper(toolDef) {
         "use strict";
         ${toolDef.errorFunction}
     `: null
-    let toolSchema= {
+    let toolSchema = {
         name: toolDef.name,
         description: toolDef.description,
         parameters: buildJSONSchema(toolDef.parameters),
@@ -132,7 +132,7 @@ export function createToolWrapper(toolDef) {
         errorFunction: errorFn,
         needsApproval: toolDef.needsApproval
     }
-    
+
     return toolSchema;
 }
 export function extractMainAndFollowUps(llmResponse) {
@@ -287,48 +287,26 @@ export const knowledgeToolBaker = (collections) => {
 // };
 
 function buildJSONSchema(def) {
-    const schema = {
-        type: def.dataType,
-        description: def.description
-    };
-
+    const schema = { type: def.dataType, description: def.description, additionalProperties: false };
     // Add optional common fields if provided
-    if (def.default !== undefined) {
-        schema.default = def.default;
-    }
-    if (def.enum && Array.isArray(def.enum)) {
-        schema.enum = def.enum;
-    }
-    if (def.pattern) {
-        schema.pattern = def.pattern;
-    }
-    if (def.dataFormat) {
-        schema.format = def.dataFormat;
-    }
-
+    if (def.default !== undefined) schema.default = def.default;
+    if (def.enum && Array.isArray(def.enum)) schema.enum = def.enum;
+    if (def.pattern) schema.pattern = def.pattern;
+    if (def.dataFormat) schema.format = def.dataFormat;
     // For object type
     if (def.dataType === "object") {
         schema.properties = {};
         const requiredKeys = [];
-
         if (def.properties) {
             for (const [key, value] of Object.entries(def.properties)) {
                 schema.properties[key] = buildJSONSchema(value);
                 if (value.isRequired) requiredKeys.push(key);
             }
         }
-
         if (requiredKeys.length > 0) schema.required = requiredKeys;
         schema.additionalProperties = Boolean(def.additionalProperties);
     }
-
     // For array type
-    if (def.dataType === "array") {
-        if (def.properties && def.properties.items) {
-            schema.items = buildJSONSchema(def.properties.items);
-        } else {
-            schema.items = { type: "any" };
-        }
-    }
+    if (def.dataType === "array") schema.items = (def.properties && def.properties.items) ? buildJSONSchema(def.properties.items) : { type: "any" };
     return schema;
 }
