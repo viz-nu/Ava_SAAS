@@ -7,48 +7,36 @@
             "parameters": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": [
-                    "contactDetails",
-                    "channel",
-                    "priority",
-                    "issueSummary"
-                ],
                 "properties": {
                     "contactDetails": {
                         "type": "object",
                         "description": "if channel is web then collect contact details of the user like email, phone else get the contact details from the given context",
                         "additionalProperties": false,
-                        "required": [],
                         "properties": {
                             "email": {
                                 "type": "string",
                                 "description": "email of the user",
-                                "additionalProperties": false,
-                                "required": []
+                                "additionalProperties": false
                             },
                             "phone": {
                                 "type": "string",
                                 "description": "phone number of the user",
-                                "additionalProperties": false,
-                                "required": []
+                                "additionalProperties": false
                             },
                             "telegramId": {
                                 "type": "string",
                                 "description": "telegram id of the user",
-                                "additionalProperties": false,
-                                "required": []
+                                "additionalProperties": false
                             },
                             "whatsappId": {
                                 "type": "string",
                                 "description": "whatsapp id of the user",
-                                "additionalProperties": false,
-                                "required": []
+                                "additionalProperties": false
                             },
                             "instagramId": {
                                 "type": "string",
                                 "description": "instagram id of the user",
-                                "additionalProperties": false,
-                                "required": []
+                                "additionalProperties": false
                             }
                         }
                     },
@@ -56,7 +44,6 @@
                         "type": "string",
                         "description": "Channel through which the issue was raised",
                         "additionalProperties": false,
-                        "required": [],
                         "enum": [
                             "telegram",
                             "whatsapp",
@@ -71,7 +58,6 @@
                         "type": "string",
                         "description": "Priority of the issue",
                         "additionalProperties": false,
-                        "required": [],
                         "enum": [
                             "low",
                             "medium",
@@ -81,10 +67,15 @@
                     "issueSummary": {
                         "type": "string",
                         "description": "Summary of the issue faced by the user",
-                        "additionalProperties": false,
-                        "required": []
+                        "additionalProperties": false
                     }
-                }
+                },
+                "required": [
+                    "contactDetails",
+                    "channel",
+                    "priority",
+                    "issueSummary"
+                ]
             },
             "strict": true
         }
