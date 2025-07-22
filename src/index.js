@@ -354,7 +354,7 @@ app.post('/send-invite', openCors, async (req, res) => {
         calendar.method(ICalCalendarMethod.REQUEST);
         if (sender === "AVA") {
             calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name: "AVA", email: process.env.EMAIL_SMTP_AUTH }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
-            const emailResp = await sendMail({ to: attendees.join(" "), subject, text, html, attachments });
+            const emailResp = await sendMail({ to: attendees.join(" "), subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] });
             return res.json({ success: true, message: 'Email sent successfully', data: emailResp });
         }
         let { host, port, secure, user, pass, name, bcc, cc, service, clientId, clientSecret, refreshToken } = organizerDetails
