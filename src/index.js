@@ -101,11 +101,11 @@ app.post('/v1/agent', openCors, async (req, res) => {
         };
 
         // ✅ Prepare tools
+        console.log(JSON.stringify({ actions: agentDetails.actions }));
         const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+        console.log(JSON.stringify({ toolsJson }));
         if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
         // ✅ Create agent
-        console.log(JSON.stringify({ tools: toolsJson }));
-
         const agent = new Agent({
             name: agentDetails.personalInfo.name,
             instructions: agentDetails.personalInfo.systemPrompt,
