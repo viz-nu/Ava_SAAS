@@ -211,7 +211,6 @@ export const knowledgeToolBaker = (collections) => {
         async: true,
         name: "search_knowledge_base",
         description: "Searches the knowledge base using a query and optional source filters.",
-        type: "object",
         parameters: {
             type: "object",
             properties: {
