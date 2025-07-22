@@ -354,14 +354,14 @@ app.post('/send-invite', openCors, async (req, res) => {
         calendar.method(ICalCalendarMethod.REQUEST);
         if (sender === "AVA") {
             calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name: "AVA", email: process.env.EMAIL_SMTP_AUTH }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
-            const emailResp = await sendMail({ to: attendees.join(" "), subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] });
-            return res.json({ success: true, message: 'Email sent successfully', data: emailResp });
+            sendMail({ to: attendees.join(" "), subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] });
+            return res.json({ success: true, message: 'Appointment Scheduled Successfully you will get email shorty to your inbox' });
         }
         let { host, port, secure, user, pass, name, bcc, cc, service, clientId, clientSecret, refreshToken } = organizerDetails
         if (!host || !port || !user || !pass) return res.status(400).json({ error: 'SMTP details are missing or invalid' });
         calendar.createEvent({ start: new Date(start), end: new Date(end), timezone: timezone || DateTime.fromISO(new Date(start), { setZone: true }).zoneName, organizer: { name, email: user }, summary, description, location, url, attendees: attendees.map(email => ({ email, name: email.split('@')[0], rsvp: true, partstat: 'NEEDS-ACTION', role: 'REQ-PARTICIPANT' })) });
-        const EmailResp = await sendEmail({ config: { host, port, secure, auth: { user, pass } }, emailData: { from: `${name} <${user}>`, to: attendees.join(" "), cc, bcc, subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] } })
-        res.status(200).json({ success: true, message: 'Appointment Scheduled Successfully', data: EmailResp });
+        sendEmail({ config: { host, port, secure, auth: { user, pass } }, emailData: { from: `${name} <${user}>`, to: attendees.join(" "), cc, bcc, subject, text, html, attachments: [{ filename: 'invite.ics', content: calendar.toString(), contentType: 'text/calendar' }] } })
+        res.status(200).json({ success: true, message: 'Appointment Scheduled Successfully you will get email shorty to your inbox' });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: error.message })
