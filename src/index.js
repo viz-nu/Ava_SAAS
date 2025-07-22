@@ -178,7 +178,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
         // ✅ Start agent run with streaming
         let hasInterruptions = false;
         let collectedText = "";
-        const stream = await run(agent, state, { stream: true, context: `time now ${new Date()}` });
+        const stream = await run(agent, state, { stream: true, context: `Current time: ${new Date().toISOString()}\n Channel: Web \n` });
         try {
             for await (const delta of stream) {
                 // ✅ Track token usage
@@ -409,19 +409,8 @@ app.post('/contact-us', openCors, async (req, res) => {
 })
 app.post("/raise-ticket", openCors, async (req, res) => {
     try {
-        // business: { type: Types.ObjectId, ref: 'Businesses' },
-        // issueSummary: { type: String, required: true },
-        // channel: { type: String, enum: ['telegram', 'whatsapp', 'web', 'phone', 'instagram', 'sms', 'email'], required: true, },
-        // priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium', },
-        // status: { type: String, enum: ['pending', 'responded', 'resolved'], default: 'pending' },
-        // contactDetails: {
-        //     email: { type: String },
-        //     phone: { type: String },
-        //     telegramId: { type: String },
-        //     whatsappId: { type: String },
-        //     instagramId: { type: String },
-        // }
-        await Ticket.create(req.body);
+        const { business, issueSummary, channel, priority, contactDetails, notifierEmail } = req.body;
+        await Ticket.create({ business, issueSummary, channel, priority, contactDetails, notifierEmail });
         return res.status(201).json({ message: "ticket raised successfully" });
     } catch (err) {
         console.error(err);
