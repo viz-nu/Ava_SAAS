@@ -14,6 +14,7 @@ const TicketSchema = new Schema(
             whatsappId: { type: String },
             instagramId: { type: String },
         },
+        notifierEmail: { type: String, required: true },
         response: {
             channelId: { type: Schema.Types.ObjectId, ref: "Channel" },
             from: { type: String },
