@@ -288,7 +288,7 @@ export const knowledgeToolBaker = (collections) => {
 // };
 
 function buildJSONSchema(def) {
-    const schema = { type: def.dataType, description: def.description, additionalProperties: false ,required:[]};
+    const schema = { type: def.dataType, description: def.description, additionalProperties: false};
     // Add optional common fields if provided
     if (def.default !== undefined) schema.default = def.default;
     if (def.enum && Array.isArray(def.enum)) schema.enum = def.enum;
@@ -304,7 +304,7 @@ function buildJSONSchema(def) {
                 if (value.isRequired) requiredKeys.push(key);
             }
         }
-        if (requiredKeys.length > 0) schema.required.push(...requiredKeys)
+        if (requiredKeys.length > 0) schema.required=requiredKeys
         schema.additionalProperties = Boolean(def.additionalProperties);
     }
     // For array type

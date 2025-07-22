@@ -1,0 +1,92 @@
+{
+    "toolsJson": [
+        {
+            "type": "function",
+            "name": "raise_ticket",
+            "description": "Make this tool call whenever agent fails to answer / resolve the query.If the channel is web then collect contact details of the user like email, phone else get the contact details from the given context. important: this tool is used to raise a ticket in the system, so make sure to collect all the required parameter details before making this tool call.",
+            "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                    "contactDetails",
+                    "channel",
+                    "priority",
+                    "issueSummary"
+                ],
+                "properties": {
+                    "contactDetails": {
+                        "type": "object",
+                        "description": "if channel is web then collect contact details of the user like email, phone else get the contact details from the given context",
+                        "additionalProperties": false,
+                        "required": [],
+                        "properties": {
+                            "email": {
+                                "type": "string",
+                                "description": "email of the user",
+                                "additionalProperties": false,
+                                "required": []
+                            },
+                            "phone": {
+                                "type": "string",
+                                "description": "phone number of the user",
+                                "additionalProperties": false,
+                                "required": []
+                            },
+                            "telegramId": {
+                                "type": "string",
+                                "description": "telegram id of the user",
+                                "additionalProperties": false,
+                                "required": []
+                            },
+                            "whatsappId": {
+                                "type": "string",
+                                "description": "whatsapp id of the user",
+                                "additionalProperties": false,
+                                "required": []
+                            },
+                            "instagramId": {
+                                "type": "string",
+                                "description": "instagram id of the user",
+                                "additionalProperties": false,
+                                "required": []
+                            }
+                        }
+                    },
+                    "channel": {
+                        "type": "string",
+                        "description": "Channel through which the issue was raised",
+                        "additionalProperties": false,
+                        "required": [],
+                        "enum": [
+                            "telegram",
+                            "whatsapp",
+                            "web",
+                            "phone",
+                            "instagram",
+                            "sms",
+                            "email"
+                        ]
+                    },
+                    "priority": {
+                        "type": "string",
+                        "description": "Priority of the issue",
+                        "additionalProperties": false,
+                        "required": [],
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ]
+                    },
+                    "issueSummary": {
+                        "type": "string",
+                        "description": "Summary of the issue faced by the user",
+                        "additionalProperties": false,
+                        "required": []
+                    }
+                }
+            },
+            "strict": true
+        }
+    ]
+}
