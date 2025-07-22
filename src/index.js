@@ -83,7 +83,6 @@ app.post('/v1/agent', openCors, async (req, res) => {
 
     try {
         const { userMessage, agentId, conversationId, geoLocation = {}, messageId, interruptionDecisions = [] } = req.body;
-
         // ✅ Fetch agent, conversation, and message in parallel
         let [agentDetails, conversation, message] = await Promise.all([
             AgentModel.findById(agentId).populate("actions business"),
@@ -103,10 +102,7 @@ app.post('/v1/agent', openCors, async (req, res) => {
 
         // ✅ Prepare tools
         const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
-        if (agentDetails.collections.length > 0) {
-            toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
-        }
-
+        if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
         // ✅ Create agent
         const agent = new Agent({
             name: agentDetails.personalInfo.name,

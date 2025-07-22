@@ -207,38 +207,10 @@ export const markHourBuckets = (arr, start, end) => {
 export const knowledgeToolBaker = (collections) => {
     if (!collections || collections.length < 1) return null;
 
-    const template = {
-        async: true,
-        name: "search_knowledge_base",
-        description: "Searches the knowledge base using a query and optional source filters.",
-        parameters: {
-            type: "object",
-            properties: {
-                query: {
-                    type: "string",
-                    description: "The text-based search query to retrieve relevant information from the existing vector database."
-                },
-                options: {
-                    type: "object",
-                    description: "Additional search parameters such as filtering by source cluster IDs.",
-                    properties: {
-                        source: {
-                            type: "array",
-                            description: "Array of knowledge base cluster IDs to narrow the search scope.",
-                            items: { type: "string" },
-                            default: []
-                        }
-                    },
-                    required: ["source"],
-                    additionalProperties: false
-                }
-            },
-            required: ["query", "options"],
-            additionalProperties: false
-        },
-        needsApproval: false,
-        functionString: `
-    if (!input.query || !input.options?.source || !Array.isArray(input.options?.source)) {
+    const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+    const wrapperBody = `
+        "use strict";
+          if (!input.query || !input.options?.source || !Array.isArray(input.options?.source)) {
         throw new Error('Both "query" (string) and "source" (array) are required parameters');
     }
     if (input.query.trim().length < 3) {
@@ -262,16 +234,45 @@ export const knowledgeToolBaker = (collections) => {
         throw new Error(data.message || 'Knowledge base fetch failed');
     }
     return \`Answer from the knowledge base for query: "\${input.query}"\\n\\n\${data.data}\`;
-`,
-        errorFunction: `
+    `;
+    const errorFn = `
+        "use strict";
     console.error('Knowledge fetch failed with input:', input);
-    return 'I couldn\\'t retrieve the requested information. Please check your query and source. If the issue persists, try again later.';
-`
-    };
-
-    // ✅ Correct path
-    template.parameters.properties.options.properties.source.default = collections;
-
+    return 'I couldn\\'t retrieve the requested information.Please check your query and source.If the issue persists, try again later.';
+    `
+    let template = {
+        name: "search_knowledge_base",
+        description: "Searches the knowledge base using a query and optional source filters.",
+        parameters: {
+            type: "object",
+            properties: {
+                query: {
+                    type: "string",
+                    description: "The text-based search query to retrieve relevant information from the existing vector database."
+                },
+                options: {
+                    type: "object",
+                    description: "Additional search parameters such as filtering by source cluster IDs.",
+                    properties: {
+                        source: {
+                            type: "array",
+                            description: "Array of knowledge base cluster IDs to narrow the search scope.",
+                            items: { type: "string" },
+                            default: collections
+                        }
+                    },
+                    required: ["source"],
+                    additionalProperties: false
+                }
+            },
+            required: ["query", "options"],
+            additionalProperties: false
+        },
+        execute: new AsyncFunction('input', wrapperBody),
+        strict: true,
+        errorFunction: errorFn,
+        needsApproval: false
+    }
     return template;
 };
 
