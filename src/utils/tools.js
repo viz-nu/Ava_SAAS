@@ -305,8 +305,6 @@ function buildJSONSchema(def) {
         schema.additionalProperties = Boolean(def.additionalProperties);
         // ✅ Add anyOf logic for conditional requirement
         if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
-        // Remove empty required if none
-        if (schema.required.length === 0) delete schema.required;
     }
     if (def.dataType === "array") schema.items = (def.properties && def.properties.items) ? buildJSONSchema(def.properties.items) : { type: "any" };
     return schema;
