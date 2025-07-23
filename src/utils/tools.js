@@ -304,8 +304,34 @@ function buildJSONSchema(def) {
             }
         }
         schema.additionalProperties = Boolean(def.additionalProperties);
+        if (def.anyOfRequired && Array.isArray(def.anyOfRequired) && def.anyOfRequired.length > 0) schema.anyOf = def.anyOfRequired.map(field => ({ required: [field] }));
+        if (schema.required.length === 0) delete schema.required;
     }
     // For array type
+    if (def.dataType === "array") schema.items = (def.properties && def.properties.items) ? buildJSONSchema(def.properties.items) : { type: "any" };
+    return schema;
+}
+function buildJSONSchema(def) {
+    const schema = { type: def.dataType, description: def.description, additionalProperties: false };
+    if (def.default !== undefined) schema.default = def.default;
+    if (def.enum && Array.isArray(def.enum)) schema.enum = def.enum;
+    if (def.pattern) schema.pattern = def.pattern;
+    if (def.dataFormat) schema.format = def.dataFormat;
+    if (def.dataType === "object") {
+        schema.properties = {};
+        schema.required = [];
+        if (def.properties) {
+            for (const [key, value] of Object.entries(def.properties)) {
+                schema.properties[key] = buildJSONSchema(value);
+                if (value.isRequired) schema.required.push(key);
+            }
+        }
+        schema.additionalProperties = Boolean(def.additionalProperties);
+        // ✅ Add anyOf logic for conditional requirement
+        if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
+        // Remove empty required if none
+        if (schema.required.length === 0) delete schema.required;
+    }
     if (def.dataType === "array") schema.items = (def.properties && def.properties.items) ? buildJSONSchema(def.properties.items) : { type: "any" };
     return schema;
 }
