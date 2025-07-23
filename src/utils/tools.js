@@ -275,18 +275,6 @@ export const knowledgeToolBaker = (collections) => {
     }
     return template;
 };
-
-// type Struct = {
-//     dataType: "object" | "string" | "number" | "boolean" | "integer" | "array" | "null",
-//     dataFormat?: any,
-//     isRequired: boolean,
-//     key: string,
-//     validation?: string,
-//     description: string,
-//     properties?: { [key: string]: Struct },
-//     additionalProperties: boolean
-// };
-
 function buildJSONSchema(def) {
     const schema = { type: def.dataType, description: def.description, additionalProperties: false };
     if (def.default !== undefined) schema.default = def.default;
