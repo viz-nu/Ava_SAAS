@@ -8,7 +8,43 @@ import { agentSchema } from '../../Schema/index.js';
 import { openai } from '../../utils/openai.js';
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    const { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic } = req.body
+    let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, analysisMetrics = {
+        "type": "object",
+        "properties": {
+            "isLead": {
+                "type": "boolean",
+                "description": "Whether the contact is already a lead (true) or just a visitor (false).",
+                "default": false
+            },
+            "qualification": {
+                "type": "string",
+                "description": "Qualification bucket for the contact.",
+                "enum": ["hot", "warm", "cold", "unqualified"]  // replace with your QualifyEnum values
+            },
+            "language": {
+                "type": "string",
+                "description": "ISO‑639‑1 language code (e.g. \"en\", \"fr\").",
+                "default": "en"
+            },
+            "role": {
+                "type": "string",
+                "description": "Role the user plays when interacting with the organisation (e.g. \"student\", \"parent\", \"prospect\", \"partner\")."
+            },
+            "score": {
+                "type": "number",
+                "description": "Internal lead‑scoring metric (0‑100).",
+                "minimum": 0,
+                "maximum": 100
+            },
+            "interestClusters": {
+                "type": "array",
+                "description": "Tags or topical clusters the user has shown interest in.",
+                "items": { "type": "string" }
+            }
+        },
+        "additionalProperties": false,
+        "required": ["interestClusters", "score", "role", "language", "qualification", "isLead"]
+    } } = req.body
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     for (const id of channels) {
@@ -23,7 +59,7 @@ export const createAgent = errorWrapper(async (req, res) => {
         const action = await Action.findOne({ _id: id, business: req.user.business });
         if (!action) return { statusCode: 404, message: "action not found", data: null }
     }
-    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: business._id, createdBy: req.user._id, isPublic });
+    const agent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: business._id, createdBy: req.user._id, isPublic, analysisMetrics, facets: Object.keys(analysisMetrics?.properties) });
     return { statusCode: 201, message: "New agent added", data: agent };
 });
 export const getAllAgents = errorWrapper(async (req, res) => {
