@@ -72,10 +72,8 @@ export async function initializeSocket(server) {
     const ChatNameSpace = io.of('/chat');
     ChatNameSpace.on('connection', (socket) => {
         socket.on('join', async (triggerObject) => {
-            const conversationID = triggerObject.data.conversationID;
-            const agentId = triggerObject.data.agentId;
+            const { conversationID, agentId } = triggerObject.data;
             console.log("User joined conversation:", conversationID);
-            console.log(triggerObject);
             if (conversationID) {
                 socket.join(conversationID);
                 await Conversation.updateOne({ _id: conversationID }, { $set: { socketId: socket.id, status: "active" } });
