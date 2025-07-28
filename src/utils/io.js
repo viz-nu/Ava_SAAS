@@ -119,7 +119,17 @@ export async function initializeSocket(server) {
 
         socket.on('disconnect', async (reason) => {
             console.log("User disconnected:", socket.id, "reason:", reason);
-            await Conversation.updateOne({ "sockets.socketId": socket.id }, { $set: { "disconnectReason": reason, status: "disconnected" } });
+            try {
+                const conversation = await Conversation.findOne({ "sockets.socketId": socket.id });
+                if (conversation) {
+                    conversation.sockets.disconnectReason = reason;
+                    conversation.status = "disconnected";
+                    await conversation.updateAnalytics();
+                    await conversation.save();
+                }
+            } catch (err) {
+                console.error("Error during socket disconnect handling:", err);
+            }
         });
     });
 
