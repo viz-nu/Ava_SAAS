@@ -8,6 +8,7 @@ export const AdminRouter = Router();
 
 AdminRouter.get('/dashboard', authMiddleware, isAdmin, Dashboard);
 AdminRouter.get('/new-dashboard', authMiddleware, isAdmin, newDashboard);
+AdminRouter.post('/conversation-analysis', authMiddleware, isAdmin, Analysis);
 AdminRouter.post('/query-analysis', authMiddleware, isAdmin, DetailedAnalysis);
 AdminRouter.put('/edit-business', authMiddleware, isAdmin, editBusiness);
 AdminRouter.post('/raise-ticket', authMiddleware, isAdmin, raiseTicket);
