@@ -76,7 +76,7 @@ export async function initializeSocket(server) {
             console.log("User joined conversation:", conversationID);
             if (conversationID) {
                 socket.join(conversationID);
-                await Conversation.updateOne({ _id: conversationID }, { $set: { socketId: socket.id, status: "active" } });
+                await Conversation.updateOne({ _id: conversationID }, { $set: { sockets: {socketId:socket.id,disconnectReason:""}, status: "active" } });
             }
             if (agentId) {
                 console.log("User joined agent room:", agentId);
