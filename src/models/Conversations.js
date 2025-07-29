@@ -58,7 +58,7 @@ ConversationSchema.methods.updateAnalytics = async function () {
         model: "gpt-4.1-mini",
         usage: usage
     };
-    this.analysisMetrics = result.finalOutput;
+    this.analysisMetrics = JSON.parse(result.finalOutput);
     await this.save();
 }
 export const Conversation = model('Conversation', ConversationSchema, "Conversations");
