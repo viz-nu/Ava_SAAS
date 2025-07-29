@@ -39,7 +39,7 @@ ConversationSchema.methods.updateAnalytics = async function () {
         }, { neutral: 0, like: 0, dislike: 0 })
     };
     const formatted = messages.map(m => `User: ${m.query}\nAgent: ${m.response}`).join("\n\n");
-    const agentDetails = await this.populate('agent').agent;
+    const agentDetails = await this.populate('agent');
     console.log(agentDetails);
     if (agentDetails.analysisMetrics) {
         const agent = new Agent({
