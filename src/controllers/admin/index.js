@@ -202,6 +202,35 @@ export const newDashboard = errorWrapper(async (req, res) => {
     await business.save();
     return { statusCode: 200, message: "Dashboard retrieved", data: business, misc: { business: business._id, createdAt: { $gte: lastUpdated } } }
 });
+export const Analysis = errorWrapper(async (req, res) => {
+    const business = await Business.findById(req.user.business);
+    if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    const {
+        status,                     // e.g., "active"
+        channel,                    // e.g., "whatsapp"
+        agent,                      // agent ID
+        from,                       // ISO string or date
+        to,                         // ISO string or date
+        geoLocation,                // filter by country/city
+        disconnectReason,           // e.g., "client_disconnect"
+        states = [],                // array of state strings
+    } = req.body;
+    const filter = { business: business._id };
+    if (status) filter.status = status;
+    if (channel) filter.channel = channel;
+    if (agent) filter.agent = agent;
+    if (geoLocation) filter.geoLocation = geoLocation;
+    if (disconnectReason) filter["sockets.disconnectReason"] = disconnectReason;
+    if (Array.isArray(states) && states.length > 0) filter.state = { $in: states };
+    if (from || to) {
+        filter.createdAt = {};
+        if (from) filter.createdAt.$gte = new Date(from);
+        if (to) filter.createdAt.$lte = new Date(to);
+    }
+    const analysis = await Conversation.find(filter).sort({ createdAt: -1 });
+    return { statusCode: 200, message: "Analysis", data: analysis };
+
+})
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;
     const selectedIntents = ["enquiry", "complaint"];
