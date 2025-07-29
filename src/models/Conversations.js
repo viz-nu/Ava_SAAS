@@ -53,23 +53,24 @@ ConversationSchema.methods.updateAnalytics = async function () {
         let result
         try {
             result = await run(agent, `formatted conversation :${formatted}`, { stream: false });
+            const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+            result.rawResponses.forEach((ele) => {
+                usage.input_tokens += ele.usage.inputTokens;
+                usage.output_tokens += ele.usage.outputTokens;
+                usage.total_tokens += ele.usage.totalTokens;
+            });
+            this.analysisTokens = {
+                model: "gpt-4.1-mini",
+                usage: usage
+            };
+            this.analysisMetrics = JSON.parse(result.finalOutput);
+            console.log("metrics generated")
         } catch (error) {
             console.error("Error while running agent");
-        }
-        console.log("metrics generated")
-        const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-        result.rawResponses.forEach((ele) => {
-            usage.input_tokens += ele.usage.inputTokens;
-            usage.output_tokens += ele.usage.outputTokens;
-            usage.total_tokens += ele.usage.totalTokens;
-        });
-        this.analysisTokens = {
-            model: "gpt-4.1-mini",
-            usage: usage
-        };
-        this.analysisMetrics = JSON.parse(result.finalOutput);
-    }
+            console.log(error);
 
+        }
+    }
     await this.save();
 }
 export const Conversation = model('Conversation', ConversationSchema, "Conversations");
