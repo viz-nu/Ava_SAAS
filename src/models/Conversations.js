@@ -39,26 +39,30 @@ ConversationSchema.methods.updateAnalytics = async function () {
         }, { neutral: 0, like: 0, dislike: 0 })
     };
     const formatted = messages.map(m => `User: ${m.query}\nAgent: ${m.response}`).join("\n\n");
-    const agentDetails = await this.populate('agent');
-    const agent = new Agent({
-        name: "Conversation Analyzer",
-        instructions: "Analyze the provided conversation history to assess the user's engagement level, interests, and qualification status. Extract key behavioral indicators, determine their role and intent, assign a lead score (0-100), and categorize their interest areas. Return your analysis in the exact JSON structure specified by the outputType schema.",
-        model: "gpt-4.1-mini",
-        temperature: 0.2,
-        outputType: agentDetails.analysisMetrics, // write a response schema
-    });
-    const result = await run(agent, `formatted conversation :${formatted}`, { stream: false });
-    const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-    result.rawResponses.forEach((ele) => {
-        usage.input_tokens += ele.usage.inputTokens;
-        usage.output_tokens += ele.usage.outputTokens;
-        usage.total_tokens += ele.usage.totalTokens;
-    });
-    this.analysisTokens = {
-        model: "gpt-4.1-mini",
-        usage: usage
-    };
-    this.analysisMetrics = JSON.parse(result.finalOutput);
+    const agentDetails = await this.populate('agent').agent;
+    console.log(agentDetails);
+    if (agentDetails.analysisMetrics) {
+        const agent = new Agent({
+            name: "Conversation Analyzer",
+            instructions: "Analyze the provided conversation history to assess the user's engagement level, interests, and qualification status. Extract key behavioral indicators, determine their role and intent, assign a lead score (0-100), and categorize their interest areas. Return your analysis in the exact JSON structure specified by the outputType schema.",
+            model: "gpt-4.1-mini",
+            temperature: 0.2,
+            outputType: agentDetails.analysisMetrics, // write a response schema
+        });
+        const result = await run(agent, `formatted conversation :${formatted}`, { stream: false });
+        const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
+        result.rawResponses.forEach((ele) => {
+            usage.input_tokens += ele.usage.inputTokens;
+            usage.output_tokens += ele.usage.outputTokens;
+            usage.total_tokens += ele.usage.totalTokens;
+        });
+        this.analysisTokens = {
+            model: "gpt-4.1-mini",
+            usage: usage
+        };
+        this.analysisMetrics = JSON.parse(result.finalOutput);
+    }
+
     await this.save();
 }
 export const Conversation = model('Conversation', ConversationSchema, "Conversations");
