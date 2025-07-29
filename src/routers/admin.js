@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authMiddleware, isAdmin } from "../middleware/auth.js";
-import { Dashboard, DetailedAnalysis, editBusiness, newDashboard, raiseTicket } from "../controllers/admin/index.js";
+import { Analysis, Dashboard, DetailedAnalysis, editBusiness, newDashboard, raiseTicket } from "../controllers/admin/index.js";
 
 export const AdminRouter = Router();
 //        {{localhost:5000}}/api/v1/auth/team-login
