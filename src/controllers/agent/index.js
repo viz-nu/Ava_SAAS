@@ -64,11 +64,7 @@ export const createAgent = errorWrapper(async (req, res) => {
 });
 export const getAllAgents = errorWrapper(async (req, res) => {
     let filter = {
-        $or: [
-            { business: req.user.business },
-            { isPublic: true }
-        ]
-    }
+ $or: [   { business: req.user.business },  { isPublic: true }   ] }
     if (req.params.id) filter._id = req.params.id
     const agents = await AgentModel.find(filter);
     return { statusCode: 200, message: "Agents retrieved", data: agents }
