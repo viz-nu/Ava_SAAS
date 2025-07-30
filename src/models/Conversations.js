@@ -42,13 +42,12 @@ ConversationSchema.methods.updateAnalytics = async function () {
     const agentDetails = await this.populate('agent');
     if (agentDetails.agent.analysisMetrics) {
         const outputType = JSON.parse(JSON.stringify(agentDetails.agent.analysisMetrics));
-        console.log("metrics : ", JSON.stringify(outputType))
         const agent = new Agent({
             name: "Conversation Analyzer",
             instructions: "Analyze the provided conversation history to assess the user's engagement level, interests, and qualification status. Extract key behavioral indicators, determine their role and intent, assign a lead score (0-100), and categorize their interest areas. Return your analysis in the exact JSON structure specified by the outputType schema.",
             model: "gpt-4.1-mini",
             temperature: 0.2,
-            outputType, // write a response schema
+            outputType: { type: "json_schema", schema: outputType },
         });
         let result
         try {
@@ -68,7 +67,6 @@ ConversationSchema.methods.updateAnalytics = async function () {
         } catch (error) {
             console.error("Error while running agent");
             console.log(error);
-
         }
     }
     await this.save();
