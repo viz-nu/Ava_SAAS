@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { createClient } from 'redis';
-
+import 'dotenv/config'
 export const connectDB = async (retryCount = 0) => {
     try {
         await mongoose.connect(process.env.MONGO_URI);

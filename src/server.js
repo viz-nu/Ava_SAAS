@@ -12,6 +12,7 @@ import { initializeSocket } from './utils/io.js';
 import { indexRouter } from "./routers/index.js";
 import { webhookRouter } from "./webhooks/index.js";
 import sanitize from 'mongo-sanitize';
+import 'dotenv/config'
 // weighted imports
 import { emailConformation } from "./controllers/auth/register.js";
 import { getContextMain } from "./utils/openai.js";

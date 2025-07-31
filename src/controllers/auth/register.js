@@ -1,4 +1,5 @@
 import axios from "axios";
+import 'dotenv/config'
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { Business } from "../../models/Business.js";
 import { User } from "../../models/User.js";

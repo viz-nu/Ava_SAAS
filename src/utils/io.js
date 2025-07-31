@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Conversation } from "../models/Conversations.js";
-
+import 'dotenv/config'
 let io;
 
 export async function initializeSocket(server) {

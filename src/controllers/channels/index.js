@@ -1,6 +1,7 @@
 import { Telegraf } from "telegraf";
 import { Business } from "../../models/Business.js";
 import { Channel } from "../../models/Channels.js";
+import 'dotenv/config'
 const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID } = process.env;
 import axios from 'axios';
 import FormData from 'form-data';
