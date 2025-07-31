@@ -18,7 +18,7 @@ export const authMiddleware = async (req, res, next) => {
                 secure: true,
                 httpOnly: true,
                 sameSite: "None",      // Allows cross-origin requests
-                domain: ".avakado.ai",   
+                domain: ".avakado.ai",
                 maxAge: 30 * 24 * 60 * 60 * 1000
             })
             req.AccessToken = accessToken;
@@ -44,6 +44,24 @@ export const isSuperAdmin = (req, res, next) => {
     if (req.user.role === "superAdmin") return next();
     return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });
 }
+export const authForGraphQL = async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) throw new Error('Access Token Missing');
+        const token = authHeader.split(" ")[1];
+        if (!token || token.trim() === "" || token === 'null' || token === 'undefined') throw new Error('Access Token Missing');
+        const { success, message, decoded, accessToken, refreshToken } = await verifyTokens(token, req.cookies?.AVA_RT);
+        if (!success) throw new Error(`Token Verification Failed: ${message}`);
+        const user = await User.findById(decoded.id).select("-password");
+        if (!user) throw new Error('Invalid Tokens');
+        // Set refresh token in cookie if provided
+        if (accessToken && refreshToken) res.cookie("AVA_RT", refreshToken, { secure: true, httpOnly: true, sameSite: "None", domain: ".avakado.ai", maxAge: 30 * 24 * 60 * 60 * 1000 });
+        return { req, res, user, isAuthenticated: true, accessToken };
+    } catch (error) {
+        throw new Error('Internal Server Error');
+    }
+};
+
 // export const isStudent = (req, res, next) => {
 //     if (req.user.userType === "student") return next();
 //     return res.status(401).json({ success: false, message: 'Unauthorized entry', data: null });

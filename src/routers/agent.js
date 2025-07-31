@@ -5,6 +5,6 @@ import { createAgent, deleteAgent, getAllAgents, promptGenerator, updateAgent } 
 export const AgentsRouter = Router()
 AgentsRouter.post('/promptGeneration', authMiddleware, isAdmin, promptGenerator);
 AgentsRouter.post('/', authMiddleware, isAdmin, createAgent);
-AgentsRouter.get('/:id?', authMiddleware, isAdmin, getAllAgents);
+AgentsRouter.get('{/:id}', authMiddleware, isAdmin, getAllAgents);
 AgentsRouter.put('/:id', authMiddleware, isAdmin, updateAgent);
 AgentsRouter.delete('/:id', authMiddleware, isAdmin, deleteAgent);

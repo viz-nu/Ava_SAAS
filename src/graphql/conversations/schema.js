@@ -1,0 +1,88 @@
+export const conversationTypeDefs =
+  `#graphql
+scalar DateTime
+scalar JSON
+
+enum ConversationStatusEnum {
+  initiated
+  active
+  interrupted
+  inactive
+  disconnected
+}
+enum ChannelStatusEnum {
+  email
+  whatsapp
+  telegram
+  web
+  phone
+  sms
+  instagram
+}
+
+type Reactions {
+  neutral: Int
+  like: Int
+  dislike: Int
+}
+
+type Metadata {
+  totalMessages: Int
+  reactions: Reactions
+}
+
+type Conversation {
+  _id: ID!
+  channel: ChannelStatusEnum
+  agent: ID
+  status: ConversationStatusEnum
+  geoLocation: JSON
+  analysisMetrics: JSON
+  metadata: Metadata
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+
+input MetadataInput {
+  totalMessages: Int
+  reactions: ReactionsInput
+}
+
+input ReactionsInput {
+  neutral: Int
+  like: Int
+  dislike: Int
+}
+
+input ConversationInput {
+  channel: String
+  telegramChatId: String
+  whatsappChatId: String
+  agent: ID
+  status: ConversationStatusEnum
+  geoLocation: JSON
+  analysisMetrics: JSON
+  metadata: MetadataInput
+}
+
+type Query {
+  conversations(
+  limit:Int
+  status: ConversationStatusEnum 
+  id: ID  
+  agentId: ID
+  channel: ChannelStatusEnum
+  from:DateTime
+  to:DateTime
+  geoLocation:JSON
+  disconnectReason:String
+  ): [Conversation]
+}
+
+# type Mutation {
+#   addConversation(conversation: ConversationInput!): Conversation
+#   updateConversation(id: ID!, conversation: ConversationInput!): Conversation
+#   deleteConversation(id: ID!): Boolean
+# }
+
+`;

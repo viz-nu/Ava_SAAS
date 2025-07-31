@@ -4,6 +4,6 @@ import { createActions, deleteAction, getActions, updateAction } from "../contro
 
 export const actionsRouter = Router()
 actionsRouter.post('/', authMiddleware, isAdmin, createActions);
-actionsRouter.get('/:id?', authMiddleware, isAdmin, getActions);
+actionsRouter.get('{/:id}', authMiddleware, isAdmin, getActions);
 actionsRouter.put('/:id', authMiddleware, isAdmin, updateAction);
 actionsRouter.delete('/:id', authMiddleware, isAdmin, deleteAction);

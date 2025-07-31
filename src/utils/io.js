@@ -126,6 +126,7 @@ export async function initializeSocket(server) {
                     conversation.status = "disconnected";
                     await conversation.updateAnalytics();
                     await conversation.save();
+                    console.log("conversation Updated:");
                 }
             } catch (err) {
                 console.error("Error during socket disconnect handling:", err);
