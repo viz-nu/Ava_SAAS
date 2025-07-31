@@ -20,15 +20,16 @@ export const registerApollo = async (app, httpServer) => {
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     // Error formatting (optional)
     formatError: (error) => {
-      console.error('GraphQL Error:', error);
-      // Don't expose internal errors in production
+      // Log full error details for debugging
+      console.error('GraphQL Error Details:', { message: error.message, code: error.extensions?.code, path: error.path, locations: error.locations, stack: error.stack, timestamp: new Date().toISOString() });
+      // Handle specific error types
+      if (error.message.includes('Context creation failed')) return new Error('Authentication service unavailable');
       if (process.env.NODE_ENV === 'production') {
-        if (error.message.includes('Authentication') || error.message.includes('permission')) {
-          return error;
-        }
+        // Only expose safe errors in production
+        const safeErrors = ['Authentication failed', 'Invalid token', 'Token expired', 'Unauthorized', 'Forbidden'];
+        if (safeErrors.some(safe => error.message.includes(safe))) return error;
         return new Error('Internal server error');
       }
-
       return error;
     },
   });
@@ -37,10 +38,20 @@ export const registerApollo = async (app, httpServer) => {
 
   app.use(
     '/graphql/conversations',
+    cors(corsOptions),
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
-        return authForGraphQL(req, res)
+        try {
+          const authResult = await authForGraphQL(req, res);
+          console.log('Auth successful:', authResult); // Debug log
+          return authResult;
+        } catch (error) {
+          console.error('Auth error details:', { message: error.message, stack: error.stack, headers: req.headers, body: req.body });
+          // Re-throw with more specific error
+          if (error.message === 'Internal Server Error') throw new Error('Authentication failed: Unable to verify credentials');
+          throw error;
+        }
       },
     })
-  );
-};
+  )
+}
