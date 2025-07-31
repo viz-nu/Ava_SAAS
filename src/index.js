@@ -1,5 +1,5 @@
 
-
+import 'dotenv/config'
 import { createApp } from './server.js';
 const PORT = process.env.PORT;
 const { app, server } = await createApp();
