@@ -184,6 +184,29 @@ export const newDashboard = errorWrapper(async (req, res) => {
         let st = calculateCost("gpt-4o-mini", ele.TotalSummarizationInputTokens, ele.TotalSummarizationOutputTokens)
         existingKnowledgeCosts.OverAllKnowledgeCost += (kt.totalCost + st.totalCost)
     }
+    const AnalysisTokensRes = await Conversation.aggregate([
+        { $match: { collection: { $in: newConversations.map(ele => ele._id) } } },
+        {
+            $group: {
+                _id: "$analysisTokens.model",
+                TotalAnalysisInputTokens: { $sum: "$analysisTokens.usage.total_tokens" },
+                TotalAnalysisOutputTokens: { $sum: "$analysisTokens.usage.output_tokens" },
+                TotalAnalysisTotalTokens: { $sum: "$analysisTokens.usage.input_tokens" }
+            }
+        }
+    ])
+    let existingAnalysisCosts = business.analytics.creditsUsage.analysisCosts
+    for (const ele of AnalysisTokensRes) {
+        if (ele._id == null) continue;
+        // Add token counts
+        existingAnalysisCosts.totalAnalysisTokensUsed += Number(ele.TotalAnalysisTotalTokens);
+        // Get computed costs
+        const { inputCost, outputCost, totalCost } = calculateCost(ele._id, ele.TotalAnalysisInputTokens, ele.TotalAnalysisOutputTokens) || {};
+        // Accumulate cost fields properly
+        existingAnalysisCosts.costOfInputAnalysisTokens += inputCost;
+        existingAnalysisCosts.costOfOutputAnalysisTokens += outputCost;
+        existingAnalysisCosts.OverAllAnalysisCost += totalCost;
+    }
     let existingChatCosts = business.analytics.creditsUsage.chatCosts;
     for (const ele of chatTokens) {
         if (ele._id == null) continue;
@@ -202,33 +225,6 @@ export const newDashboard = errorWrapper(async (req, res) => {
     await business.save();
     return { statusCode: 200, message: "Dashboard retrieved", data: business, misc: { business: business._id, createdAt: { $gte: lastUpdated } } }
 });
-export const Analysis = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business);
-    if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const {
-        status,                     // e.g., "active"
-        channel,                    // e.g., "whatsapp"
-        agent,                      // agent ID
-        from,                       // ISO string or date
-        to,                         // ISO string or date
-        geoLocation,                // filter by country/city
-        disconnectReason,           // e.g., "client_disconnect"
-    } = req.body;
-    const filter = { business: business._id };
-    if (status) filter.status = status;
-    if (channel) filter.channel = channel;
-    if (agent) filter.agent = agent;
-    if (geoLocation) filter.geoLocation = geoLocation;
-    if (disconnectReason) filter["sockets.disconnectReason"] = disconnectReason;
-    if (from || to) {
-        filter.createdAt = {};
-        if (from) filter.createdAt.$gte = new Date(from);
-        if (to) filter.createdAt.$lte = new Date(to);
-    }
-    const analysis = await Conversation.find(filter).sort({ createdAt: -1 });
-    return { statusCode: 200, message: "Analysis", data: analysis };
-
-})
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;
     const selectedIntents = ["enquiry", "complaint"];
