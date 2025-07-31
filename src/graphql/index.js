@@ -43,7 +43,6 @@ export const registerApollo = async (app, httpServer) => {
       context: async ({ req, res }) => {
         try {
           const authResult = await authForGraphQL(req, res);
-          console.log('Auth successful:', authResult); // Debug log
           return authResult;
         } catch (error) {
           console.error('Auth error details:', { message: error.message, stack: error.stack, headers: req.headers, body: req.body });
