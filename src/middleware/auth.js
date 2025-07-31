@@ -46,6 +46,11 @@ export const isSuperAdmin = (req, res, next) => {
 }
 export const authForGraphQL = async (req, res) => {
     try {
+        const isIntrospectionQuery = req.body?.query?.includes('IntrospectionQuery') || req.body?.query?.includes('__schema');
+        if (isIntrospectionQuery) {
+            console.log('Allowing introspection query without auth');
+            return { user: null, isAuthenticated: false, isIntrospection: true };
+        }
         const authHeader = req.headers.authorization;
         if (!authHeader) throw new Error('Access Token Missing');
         const token = authHeader.split(" ")[1];
