@@ -12,7 +12,7 @@ import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { authForGraphQL } from '../middleware/auth.js';
 import { corsOptions } from '../server.js';
-
+import 'dotenv/config'
 export const registerApollo = async (app, httpServer) => {
   const apolloServer = new ApolloServer({
     typeDefs,

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Conversation } from "../models/Conversations.js";
-import { z } from 'zod';
+import 'dotenv/config'
 export const populateStructure = (child, dataMap, parentPath = "") => {
     const result = []
     if (child.dataType == "object") child.childSchema.forEach(ele => result.push(...populateStructure(ele, dataMap, parentPath + "/" + child.key)))

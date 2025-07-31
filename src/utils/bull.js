@@ -3,6 +3,7 @@ import Queue from "bull";
 import { digest } from './setup.js';
 import { io } from './io.js';
 import { Collection } from '../models/Collection.js';
+import 'dotenv/config'
 export const urlProcessingQueue = new Queue('url-processing', {
     redis: {
         host: process.env.REDIS_HOST || 'localhost',

@@ -4,6 +4,7 @@ import { fetchToken, storeNewToken } from './redisTokens.js';
 import FormData from 'form-data';
 import { readFileSync, unlinkSync } from "fs";
 import pathw from 'path';
+import 'dotenv/config'
 export const refreshToken = async () => {
     try {
         const formData = new URLSearchParams();
