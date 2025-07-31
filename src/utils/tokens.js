@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 const { ACCESS_SECRET, REFRESH_SECRET } = process.env
-console.log({ACCESS_SECRET, REFRESH_SECRET });
+console.log({ACCESS_SECRET, REFRESH_SECRET,port:process.env.port,dburi:process.env.MONGO_URI });
 export const generateTokens = async (userId) => {
     const newAccessToken = jwt.sign({ id: userId }, process.env.ACCESS_SECRET, { expiresIn: '1h' });
     const newRefreshToken = jwt.sign({ id: userId }, process.env.REFRESH_SECRET, { expiresIn: '30d' });
