@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
 const { ACCESS_SECRET, REFRESH_SECRET } = process.env
 export const generateTokens = async (userId) => {
+    console.log({userId,ACCESS_SECRET});
     const newAccessToken = jwt.sign({ id: userId }, ACCESS_SECRET, { expiresIn: '1h' });
     const newRefreshToken = jwt.sign({ id: userId }, REFRESH_SECRET, { expiresIn: '30d' });
+    
     return { newAccessToken, newRefreshToken };
 };
 export const verifyTokens = async (accessToken, refreshToken) => {
