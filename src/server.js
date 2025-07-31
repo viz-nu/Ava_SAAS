@@ -27,9 +27,26 @@ import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
 
-
-
-
+const whitelist = ["https://www.avakado.ai", "http://localhost:5174"];
+export const corsOptions = {
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl requests)
+        if (!origin || whitelist.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    credentials: true,
+    optionsSuccessStatus: 204,
+    preflightContinue: false
+};
+export const openCors = cors({
+    origin: true, // Reflect request origin
+    credentials: true,
+});
 export const createApp = async () => {
     try {
 
@@ -39,26 +56,6 @@ export const createApp = async () => {
         const server = http.createServer(app);
         // Middleware
         app.set('trust proxy', 1);
-        const whitelist = ["https://www.avakado.ai", "http://localhost:5174"];
-        const corsOptions = {
-            origin: function (origin, callback) {
-                // Allow requests with no origin (like mobile apps, curl requests)
-                if (!origin || whitelist.indexOf(origin) !== -1) {
-                    callback(null, true);
-                } else {
-                    callback(new Error('Not allowed by CORS'));
-                }
-            },
-            methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-            allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
-            credentials: true,
-            optionsSuccessStatus: 204,
-            preflightContinue: false
-        };
-        const openCors = cors({
-            origin: true, // Reflect request origin
-            credentials: true,
-        });
         app.options('/{*splat}', openCors)
         app.use(helmet({
             contentSecurityPolicy: false, // Temporarily disable CSP

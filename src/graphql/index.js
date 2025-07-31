@@ -1,7 +1,7 @@
 import { conversationTypeDefs } from './conversations/schema.js';
 import { conversationResolvers } from './conversations/resolvers.js';
 import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
-
+import cors from 'cors';
 const typeDefs = mergeTypeDefs([conversationTypeDefs]);
 const resolvers = mergeResolvers([conversationResolvers]);
 
@@ -11,6 +11,7 @@ import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { authForGraphQL } from '../middleware/auth.js';
+import { corsOptions } from '../server.js';
 
 export const registerApollo = async (app, httpServer) => {
   const apolloServer = new ApolloServer({
@@ -38,7 +39,6 @@ export const registerApollo = async (app, httpServer) => {
 
   app.use(
     '/graphql/conversations',
-    cors(corsOptions),
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {
