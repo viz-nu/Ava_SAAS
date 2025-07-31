@@ -1,11 +1,9 @@
 
 
 import { createApp } from './server.js';
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 const { app, server } = await createApp();
 server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
-const { ACCESS_SECRET, REFRESH_SECRET } = process.env
-console.log({ ACCESS_SECRET, REFRESH_SECRET, port: process.env.PORT, dburi: process.env.MONGO_URI });
 process.on('SIGINT', async () => {
   console.log('\n🛑 Gracefully shutting down...');
   try {
