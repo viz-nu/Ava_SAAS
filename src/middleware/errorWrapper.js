@@ -21,7 +21,7 @@ export const errorWrapper = (fn) => {
         // 300s: Redirection Responses
         if (statusCode >= 300 && statusCode < 400) {
           await session.commitTransaction();
-          return res.redirect(url);
+          return res.redirect(statusCode,url);
         }
         // 400s & 500s: Error Responses
         if (statusCode >= 400) {

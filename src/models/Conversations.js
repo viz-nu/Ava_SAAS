@@ -4,7 +4,7 @@ import { Agent, run } from '@openai/agents';
 const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive", "disconnected"];
 const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
-    channel: String,
+    channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
     telegramChatId: String,
     whatsappChatId: String,
     contact: Schema.Types.Mixed,

@@ -57,6 +57,5 @@ export const emailConformation = errorWrapper(async (req, res) => {
     return { statusCode: 303, message: "Email confirmed successfully", url: `${process.env.CLIENT_URL}login` }
 })
 export const OrgInfo = errorWrapper(async (req, res) => {
-    const { name } = req.params
-    return { statusCode: 200, message: "Organization info", data: await getBusinessInfo(name) }
+    return { statusCode: 200, message: "Organization info", data: await getBusinessInfo(req.params.name) }
 })

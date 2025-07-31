@@ -213,7 +213,6 @@ export const Analysis = errorWrapper(async (req, res) => {
         to,                         // ISO string or date
         geoLocation,                // filter by country/city
         disconnectReason,           // e.g., "client_disconnect"
-        states = [],                // array of state strings
     } = req.body;
     const filter = { business: business._id };
     if (status) filter.status = status;
@@ -221,7 +220,6 @@ export const Analysis = errorWrapper(async (req, res) => {
     if (agent) filter.agent = agent;
     if (geoLocation) filter.geoLocation = geoLocation;
     if (disconnectReason) filter["sockets.disconnectReason"] = disconnectReason;
-    if (Array.isArray(states) && states.length > 0) filter.state = { $in: states };
     if (from || to) {
         filter.createdAt = {};
         if (from) filter.createdAt.$gte = new Date(from);
