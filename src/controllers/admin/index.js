@@ -219,7 +219,7 @@ export const newDashboard = errorWrapper(async (req, res) => {
         existingChatCosts.costOfOutputChatTokens += outputCost;
         existingChatCosts.OverAllChatCost += totalCost;
     }
-    for (const conv of newConversations) business.addEngagementAnalytics(conv.agent, new Date(conv.createdAt), new Date(conv.updatedAt), conv.channel)
+    for (const conv of newConversations) business.addEngagementAnalytics(conv.agent, new Date(conv.createdAt), new Date(conv.updatedAt), conv._id)
     business.pruneOldConversationDates();
     business.analytics.lastUpdated = now;
     await business.save();
