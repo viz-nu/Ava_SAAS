@@ -2,7 +2,8 @@ import { model, Schema } from 'mongoose';
 
 const AgentEngagementSchema = new Schema({
     agent: { type: Schema.Types.ObjectId, ref: "Agent" },
-    channel: { type: Schema.Types.ObjectId, ref: "Channel" },
+    channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
+    channelFullDetails: { type: Schema.Types.ObjectId, ref: "Channel" },
     totalConversations: { type: Number, default: 0 },
     // totalDurationInSeconds: { type: Number, default: 0 },
     averageSessionDurationInSeconds: { type: Number, default: 0 },
@@ -85,7 +86,7 @@ BusinessSchema.methods.pruneOldConversationDates = function () {
         agentStat.dailyConversationCountsStartDate = earliestDate;
     }
 };
-BusinessSchema.methods.addEngagementAnalytics = function (agentId, createdAt, updatedAt, channelId) {
+BusinessSchema.methods.addEngagementAnalytics = function (agentId, createdAt, updatedAt, channelStr, channelId) {
     const dateStr = createdAt.toISOString().split("T")[0]; // 'YYYY-MM-DD'
     const duration = (updatedAt - createdAt) / 1000;
     const breakdown = this.analytics.engagementOverview.agentWiseBreakdown;
@@ -93,7 +94,8 @@ BusinessSchema.methods.addEngagementAnalytics = function (agentId, createdAt, up
     if (!agentStat) {
         breakdown.push({
             agent: agentId,
-            channel: channelId,
+            channel: channelStr || "web",
+            channelFullDetails: channelId || null,
             totalConversations: 0,
             averageSessionDurationInSeconds: 0,
             engagementTimeSlots: new Array(24).fill(0),
