@@ -5,6 +5,7 @@ const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive"
 const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
+    channelFullDetails: { type: Schema.Types.ObjectId, ref: "Channel" },
     telegramChatId: String,
     whatsappChatId: String,
     contact: Schema.Types.Mixed,
