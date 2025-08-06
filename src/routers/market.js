@@ -7,7 +7,7 @@ export const marketRouter = Router()
 
 // Template CRUD operations with scope-based authorization
 marketRouter.post('/', authMiddleware, requireScope('template:create'), createTemplate);
-marketRouter.get('{/:id}', requireScope('template:read'), fetchTemplates);
+marketRouter.get('{/:id}', fetchTemplates);
 marketRouter.put('/:id', authMiddleware, requireScope('template:update'), requireResourceOwnership(Template, 'id'), updateTemplate);
 marketRouter.patch('/:id', authMiddleware, requireScope('template:update'), requireResourceOwnership(Template, 'id'), partialUpdateTemplate);
 marketRouter.delete('/:id', authMiddleware, requireScope('template:delete'), requireResourceOwnership(Template, 'id'), deleteTemplate);
