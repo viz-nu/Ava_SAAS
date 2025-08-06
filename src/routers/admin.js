@@ -1,13 +1,28 @@
 import { Router } from "express";
-import { authMiddleware, isAdmin } from "../middleware/auth.js";
+import { authMiddleware, requireScope, requireAnyScope } from "../middleware/auth.js";
 import { Dashboard, DetailedAnalysis, editBusiness, newDashboard, raiseTicket } from "../controllers/admin/index.js";
+import {
+    getAllAvailableScopes,
+    getScopesByCategoryController,
+    getDefaultScopesForRoleController,
+    validateScopesController,
+    getUserScopeAudit,
+    updateUserScopes,
+    getScopeHierarchyController,
+    bulkUpdateUserScopes
+} from "../controllers/admin/scopeManagement.js";
 
 export const AdminRouter = Router();
-//        {{localhost:5000}}/api/v1/auth/team-login
-// router.post("/team-login", TeamLogin)
 
-AdminRouter.get('/dashboard', authMiddleware, isAdmin, Dashboard);
-AdminRouter.get('/new-dashboard', authMiddleware, isAdmin, newDashboard);
-AdminRouter.post('/query-analysis', authMiddleware, isAdmin, DetailedAnalysis);
-AdminRouter.put('/edit-business', authMiddleware, isAdmin, editBusiness);
-AdminRouter.post('/raise-ticket', authMiddleware, isAdmin, raiseTicket);
+// Dashboard routes - require analytics and business read scopes
+AdminRouter.get('/dashboard', authMiddleware, requireScope('analytics:read'), Dashboard);
+AdminRouter.get('/new-dashboard', authMiddleware, requireScope('analytics:read'), newDashboard);
+
+// Analysis routes - require analytics scopes
+AdminRouter.post('/query-analysis', authMiddleware, requireAnyScope(['analytics:read', 'analytics:custom_reports']), DetailedAnalysis);
+
+// Business management routes - require business update scope
+AdminRouter.put('/edit-business', authMiddleware, requireScope('business:update'), editBusiness);
+
+// Ticket management routes - require ticket create scope
+AdminRouter.post('/raise-ticket', authMiddleware, requireScope('ticket:create'), raiseTicket);

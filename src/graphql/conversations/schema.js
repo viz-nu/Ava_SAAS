@@ -30,47 +30,12 @@ type Metadata {
   totalMessages: Int
   reactions: Reactions
 }
-type QuickQuestion {
-  label: String
-  value: String
-}
 
 type ModelConfig {
   type: String
   default: String
 }
 
-type PersonalInfo {
-  name: String
-  systemPrompt: String
-  quickQuestions: [QuickQuestion]
-  welcomeMessage: String
-  model: String
-  temperature: Float
-}
-type Agent {
-  appearance: Appearance
-  personalInfo: PersonalInfo
-  collections: [JSON]
-  channels: [JSON]
-  actions: [JSON]
-  business: JSON
-  analysisMetrics: JSON
-  facets: [String]
-  createdBy: JSON
-  isPublic: Boolean
-  isFeatured: Boolean
-}
-type Appearance {
-  clientMessageBox: ColorBox
-  avaMessageBox: ColorBox
-  textInputBox: ColorBox
-  quickQuestionsWelcomeScreenBox: ColorBox
-}
-type ColorBox {
-  backgroundColor: String
-  textColor: String
-}
 type Conversation {
   _id: ID!
   channel: ChannelStatusEnum
@@ -94,17 +59,6 @@ input ReactionsInput {
   dislike: Int
 }
 
-input ConversationInput {
-  channel: String
-  telegramChatId: String
-  whatsappChatId: String
-  agent: ID
-  status: ConversationStatusEnum
-  geoLocation: JSON
-  analysisMetrics: JSON
-  metadata: MetadataInput
-}
-
 type Query {
   conversations(
   limit:Int
@@ -116,7 +70,7 @@ type Query {
   to:DateTime
   geoLocation:JSON
   disconnectReason:String
-  ): [Conversation]
+  ): [Conversation] @requireScope(scope: "conversation:read") @requireBusinessAccess
 }
 
 # type Mutation {
