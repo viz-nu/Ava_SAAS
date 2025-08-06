@@ -1,22 +1,63 @@
 import { conversationTypeDefs } from './conversations/schema.js';
 import { conversationResolvers } from './conversations/resolvers.js';
+import { agentTypeDefs } from './agents/schema.js';
+import { agentResolvers } from './agents/resolvers.js';
+import { collectionTypeDefs } from './collections/schema.js';
+import { collectionResolvers } from './collections/resolvers.js';
+import { businessTypeDefs } from './business/schema.js';
+import { businessResolvers } from './business/resolvers.js';
+import { analyticsTypeDefs } from './analytics/schema.js';
+import { analyticsResolvers } from './analytics/resolvers.js';
+import { userTypeDefs } from './users/schema.js';
+import { userResolvers } from './users/resolvers.js';
+import { authTypeDefs } from './auth/schema.js';
+import { authResolvers } from './auth/resolvers.js';
+import { sharedTypeDefs } from './shared/types.js';
+import { scopeAuthDirectiveTypeDefs, applyScopeAuthDirectives } from './directives/scopeAuth.js';
 import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
+import { makeExecutableSchema } from '@graphql-tools/schema';
 import cors from 'cors';
-const typeDefs = mergeTypeDefs([conversationTypeDefs]);
-const resolvers = mergeResolvers([conversationResolvers]);
 
+// Merge all type definitions
+const typeDefs = mergeTypeDefs([
+  scopeAuthDirectiveTypeDefs,
+  sharedTypeDefs,
+  conversationTypeDefs,
+  // agentTypeDefs,
+  // collectionTypeDefs,
+  // businessTypeDefs,
+  // analyticsTypeDefs,
+  userTypeDefs,
+  // authTypeDefs
+]);
 
+// Merge all resolvers
+const resolvers = mergeResolvers([
+  conversationResolvers,
+  // agentResolvers,
+  // collectionResolvers,
+  // businessResolvers,
+  // analyticsResolvers,
+  userResolvers,
+  // authResolvers
+]);
 
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { authForGraphQL } from '../middleware/auth.js';
-import { corsOptions } from '../server.js';
 import 'dotenv/config'
+
 export const registerApollo = async (app, httpServer) => {
-  const apolloServer = new ApolloServer({
+  // Create executable schema
+  const schema = makeExecutableSchema({
     typeDefs,
     resolvers,
+  });
+  // Apply scope-based authorization directives
+  const schemaWithDirectives = applyScopeAuthDirectives(schema);
+  const apolloServer = new ApolloServer({
+    schema: schemaWithDirectives,
     introspection: true,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
     // Error formatting (optional)
@@ -36,9 +77,8 @@ export const registerApollo = async (app, httpServer) => {
   });
 
   await apolloServer.start();
-
   app.use(
-    '/graphql/conversations',
+    '/graphql',
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {

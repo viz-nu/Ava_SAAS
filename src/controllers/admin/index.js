@@ -9,7 +9,7 @@ import { calculateCost } from "../../utils/openai.js";
 import { Collection } from "../../models/Collection.js";
 import { AgentModel } from "../../models/Agent.js";
 export const Dashboard = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate("members documents").select("collections name logoURL facts sector tagline address description contact");
+    const business = await Business.findById(req.user.business).select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const collectionsInBusiness = await Collection.find({ business: req.user.business }, "_id")
     const agentsInBusiness = await AgentModel.find({ business: req.user.business }, "_id")
@@ -142,7 +142,7 @@ export const Dashboard = errorWrapper(async (req, res) => {
     };
 });
 export const newDashboard = errorWrapper(async (req, res) => {
-    const business = await Business.findById(req.user.business).populate("members documents").select("name logoURL facts sector tagline address description contact analytics");
+    const business = await Business.findById(req.user.business).select("name logoURL facts sector tagline address description contact analytics");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
     const now = new Date();

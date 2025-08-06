@@ -32,7 +32,7 @@ const BusinessSchema = new Schema({
     },
     createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
     docData: Schema.Types.Mixed,
-    members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
+    // members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
     analytics: {
         lastUpdated: Date,
@@ -129,5 +129,5 @@ BusinessSchema.methods.addTokenUsage = function (type, data) {
 }
 
 
-
+ 
 export const Business = model('Businesses', BusinessSchema, "Businesses");

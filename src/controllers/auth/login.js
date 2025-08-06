@@ -16,7 +16,7 @@ export const Login = errorWrapper(async (req, res) => {
         domain: ".avakado.ai",
         expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365)
     })
-    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role } }
+    return { statusCode: 200, message: `Login Successful`, data: { AccessToken: newAccessToken, role: user.role, scopes: user.scopes } }
 })
 
 export const superAdminLogin = errorWrapper(async (req, res) => {
