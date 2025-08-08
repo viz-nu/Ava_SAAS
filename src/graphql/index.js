@@ -91,7 +91,7 @@ export const registerApollo = async (app, httpServer) => {
       return error;
     },
   });
-  app.use(cors(corsOptions))
+  app.use(openCors)
   await apolloServer.start();
   app.use(
     '/graphql',
