@@ -30,13 +30,12 @@ import { Ticket } from "./models/Tickets.js";
 const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174"];
 export const corsOptions = {
     origin: (origin, callback) => {
-        callback(null, true); // Allow all origins for now
         // Allow requests with no origin (like mobile apps, curl requests)
-        // if (!origin || whitelist.indexOf(origin) !== -1) {
-        //     callback(null, true);
-        // } else {
-        //     callback(new Error('Not allowed by CORS'));
-        // }
+        if (!origin || whitelist.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -48,8 +47,8 @@ export const corsOptions = {
         "Pragma"           // ✅ allow pragma header
     ],
     credentials: true,
-    optionsSuccessStatus: 204,
-    // preflightContinue: false
+    optionsSuccessStatus: 200,
+    preflightContinue: false
 };
 export const openCors = cors();
 export const createApp = async () => {
@@ -62,16 +61,16 @@ export const createApp = async () => {
         // Middleware
         app.set('trust proxy', 1);
         app.use(cors(corsOptions))
-        // app.use(helmet({
-        //     contentSecurityPolicy: false, // Temporarily disable CSP
-        //     frameguard: { action: 'sameorigin' },
-        //     noSniff: true,
-        //     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-        //     permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-        //     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Add this line
-        //     crossOriginOpenerPolicy: false, // Add this line
-        //     crossOriginEmbedderPolicy: false // Add this line
-        // }));
+        app.use(helmet({
+            contentSecurityPolicy: false, // Temporarily disable CSP
+            frameguard: { action: 'sameorigin' },
+            noSniff: true,
+            referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+            permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+            crossOriginResourcePolicy: { policy: 'cross-origin' }, // Add this line
+            crossOriginOpenerPolicy: false, // Add this line
+            crossOriginEmbedderPolicy: false // Add this line
+        }));
         app.use(cookieParser());
         app.use(morgan(':date[web] :method :url :status - :response-time ms'));
         app.use(bodyParser.urlencoded({ extended: true }));
@@ -404,6 +403,27 @@ export const createApp = async () => {
         app.use("/api/v1", cors(corsOptions), indexRouter);
         app.use("/webhook", webhookRouter);
         // Apollo setup
+
+        // Add manual CORS handling for GraphQL endpoint BEFORE Apollo setup
+        app.options('/graphql', (req, res) => {
+            res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+            res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Cache-Control,Pragma');
+            res.header('Access-Control-Allow-Credentials', 'true');
+            res.header('Access-Control-Max-Age', '86400'); // 24 hours
+            res.status(200).end();
+        });
+
+        // Add CORS headers middleware for GraphQL specifically
+        app.use('/graphql', (req, res, next) => {
+            res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+            res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Cache-Control,Pragma');
+            res.header('Access-Control-Allow-Credentials', 'true');
+            next();
+        });
+
+
         await registerApollo(app, server);
         // Sockets
         await initializeSocket(server)

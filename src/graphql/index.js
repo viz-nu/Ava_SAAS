@@ -66,6 +66,19 @@ export const registerApollo = async (app, httpServer) => {
     schema: schemaWithDirectives,
     introspection: true,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    cors: {
+      origin: true, // Allow all origins
+      credentials: true,
+      methods: ['GET', 'POST', 'OPTIONS'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'Accept',
+        'Cache-Control',
+        'Pragma'
+      ],
+    },
     // Error formatting (optional)
     formatError: (error) => {
       // Log full error details for debugging
@@ -93,7 +106,7 @@ export const registerApollo = async (app, httpServer) => {
   });
   await apolloServer.start();
   app.use(
-    '/graphql',cors(corsOptions),
+    '/graphql',
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {
