@@ -26,6 +26,8 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { authForGraphQL } from '../middleware/auth.js';
 import 'dotenv/config'
 import { GraphQLError } from 'graphql';
+import { corsOptions } from '../server.js';
+import cors from 'cors'
 // Merge all type definitions
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
@@ -92,7 +94,7 @@ export const registerApollo = async (app, httpServer) => {
 
   await apolloServer.start();
   app.use(
-    '/graphql',
+    '/graphql',cors(corsOptions),
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {
