@@ -26,7 +26,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { authForGraphQL } from '../middleware/auth.js';
 import 'dotenv/config'
 import { GraphQLError } from 'graphql';
-import { corsOptions } from '../server.js';
+import { corsOptions, openCors } from '../server.js';
 import cors from 'cors'
 // Merge all type definitions
 const typeDefs = mergeTypeDefs([
