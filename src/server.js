@@ -38,7 +38,14 @@ export const corsOptions = {
         }
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+      allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Cache-Control",   // ✅ allow cache control header
+    "Pragma"           // ✅ allow pragma header
+  ],
     credentials: true,
     optionsSuccessStatus: 204,
     preflightContinue: false
