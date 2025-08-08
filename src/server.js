@@ -27,7 +27,7 @@ import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
-const whitelist = ["https://www.avakado.ai","https://avakado.ai", "http://localhost:5174"];
+const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174"];
 export const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, curl requests)
@@ -60,7 +60,7 @@ export const createApp = async () => {
         const server = http.createServer(app);
         // Middleware
         app.set('trust proxy', 1);
-        app.options('/{*splat}', cors(corsOptions))
+        app.use(cors(corsOptions))
         app.use(helmet({
             contentSecurityPolicy: false, // Temporarily disable CSP
             frameguard: { action: 'sameorigin' },
