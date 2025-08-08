@@ -62,16 +62,16 @@ export const createApp = async () => {
         // Middleware
         app.set('trust proxy', 1);
         app.use(cors(corsOptions))
-        app.use(helmet({
-            contentSecurityPolicy: false, // Temporarily disable CSP
-            frameguard: { action: 'sameorigin' },
-            noSniff: true,
-            referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-            permittedCrossDomainPolicies: { permittedPolicies: 'none' },
-            crossOriginResourcePolicy: { policy: 'cross-origin' }, // Add this line
-            crossOriginOpenerPolicy: false, // Add this line
-            crossOriginEmbedderPolicy: false // Add this line
-        }));
+        // app.use(helmet({
+        //     contentSecurityPolicy: false, // Temporarily disable CSP
+        //     frameguard: { action: 'sameorigin' },
+        //     noSniff: true,
+        //     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+        //     permittedCrossDomainPolicies: { permittedPolicies: 'none' },
+        //     crossOriginResourcePolicy: { policy: 'cross-origin' }, // Add this line
+        //     crossOriginOpenerPolicy: false, // Add this line
+        //     crossOriginEmbedderPolicy: false // Add this line
+        // }));
         app.use(cookieParser());
         app.use(morgan(':date[web] :method :url :status - :response-time ms'));
         app.use(bodyParser.urlencoded({ extended: true }));
