@@ -56,6 +56,7 @@
     "stopword": "^3.1.4",
     "telegraf": "^4.16.3",
     "tiktoken": "^1.0.20",
+    "twilio": "^5.8.0",
     "uuid": "^11.1.0",
     "xml2js": "^0.6.2",
     "xss-req-sanitizer": "^1.0.4",
