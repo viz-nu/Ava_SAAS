@@ -30,21 +30,12 @@ import { Ticket } from "./models/Tickets.js";
 const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174"];
 export const corsOptions = {
     origin: (origin, callback) => {
-        console.log('=== CORS ORIGIN CHECK ===');
-        console.log('Incoming Origin:', origin);
-        console.log('No Origin Present:', !origin);
-
-        // Allow all origins for debugging
-        console.log('CORS Decision: ALLOWED');
-        console.log('=== END CORS ORIGIN CHECK ===\n');
-        callback(null, true);
-
         // Your original logic (commented out for debugging):
-        // if (!origin || whitelist.indexOf(origin) !== -1) {
-        //     callback(null, true);
-        // } else {
-        //     callback(new Error('Not allowed by CORS'));
-        // }
+        if (!origin || whitelist.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: [
