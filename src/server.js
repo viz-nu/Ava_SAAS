@@ -27,7 +27,7 @@ import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
-const whitelist = ["https://www.avakado.ai", "http://localhost:5174"];
+const whitelist = ["https://www.avakado.ai","https://avakado.ai", "http://localhost:5174"];
 export const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps, curl requests)
@@ -38,22 +38,19 @@ export const corsOptions = {
         }
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-      allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "X-Requested-With",
-    "Accept",
-    "Cache-Control",   // ✅ allow cache control header
-    "Pragma"           // ✅ allow pragma header
-  ],
+    allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Cache-Control",   // ✅ allow cache control header
+        "Pragma"           // ✅ allow pragma header
+    ],
     credentials: true,
     optionsSuccessStatus: 204,
     preflightContinue: false
 };
-export const openCors = cors({
-    origin: true, // Reflect request origin
-    credentials: true,
-});
+export const openCors = cors();
 export const createApp = async () => {
     try {
 
