@@ -56,7 +56,7 @@ export const createApp = async () => {
         const server = http.createServer(app);
         // Middleware
         app.set('trust proxy', 1);
-        app.options('/{*splat}', openCors)
+        app.options('/{*splat}', corsOptions)
         app.use(helmet({
             contentSecurityPolicy: false, // Temporarily disable CSP
             frameguard: { action: 'sameorigin' },

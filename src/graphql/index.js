@@ -91,10 +91,10 @@ export const registerApollo = async (app, httpServer) => {
       return error;
     },
   });
-
+  app.use(cors(corsOptions))
   await apolloServer.start();
   app.use(
-    '/graphql',cors(corsOptions),
+    '/graphql',
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {
