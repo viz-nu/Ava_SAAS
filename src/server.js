@@ -67,17 +67,6 @@ export const createApp = async () => {
         const server = http.createServer(app);
         // Middleware
         app.set('trust proxy', 1);
-        app.use((req, res, next) => {
-            if (req.url.includes('/graphql')) {
-                console.log('=== ALL REQUESTS TO GRAPHQL ===');
-                console.log('Method:', req.method);
-                console.log('URL:', req.url);
-                console.log('Origin:', req.headers.origin);
-                console.log('Time:', new Date().toISOString());
-                console.log('=== END ALL REQUESTS LOG ===\n');
-            }
-            next();
-        });
         app.use(cors(corsOptions))
         app.use(helmet({
             contentSecurityPolicy: false, // Temporarily disable CSP
@@ -416,8 +405,6 @@ export const createApp = async () => {
                 res.status(400).json({ error: err.message });
             }
         })
-
-
         app.use("/api/v1", cors(corsOptions), indexRouter);
         app.use("/webhook", webhookRouter);
         // Apollo setup

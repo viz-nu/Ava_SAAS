@@ -97,21 +97,6 @@ export const registerApollo = async (app, httpServer) => {
     cors(corsOptions),
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
-
-        console.log('=== APOLLO CONTEXT DEBUG ===');
-        console.log('Context - Method:', req.method);
-        console.log('Context - Origin:', req.headers.origin);
-        console.log('Context - Authorization:', req.headers.authorization ? 'Present' : 'Missing');
-
-        // Log response headers that Apollo/Express has set
-        console.log('Context - Response Headers:');
-        const responseHeaders = res.getHeaders();
-        Object.keys(responseHeaders).forEach(key => {
-          console.log(`  ${key}: ${responseHeaders[key]}`);
-        });
-
-
-
         try {
           const authResult = await authForGraphQL(req, res);
           return authResult;
