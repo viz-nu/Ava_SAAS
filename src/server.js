@@ -62,8 +62,6 @@ export const corsOptions = {
 export const openCors = cors();
 export const createApp = async () => {
     try {
-
-
         await initialize();
         const app = express();
         const server = http.createServer(app);
@@ -423,37 +421,6 @@ export const createApp = async () => {
         app.use("/api/v1", cors(corsOptions), indexRouter);
         app.use("/webhook", webhookRouter);
         // Apollo setup
-
-        // Explicit OPTIONS handler for GraphQL with debug logging
-        app.options('/graphql', (req, res) => {
-            console.log('=== OPTIONS PREFLIGHT REQUEST ===');
-            console.log('Origin:', req.headers.origin);
-            console.log('Access-Control-Request-Method:', req.headers['access-control-request-method']);
-            console.log('Access-Control-Request-Headers:', req.headers['access-control-request-headers']);
-            console.log('All Headers:');
-            Object.keys(req.headers).forEach(key => {
-                console.log(`  ${key}: ${req.headers[key]}`);
-            });
-
-            // Set CORS headers manually
-            res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-            res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Cache-Control,Pragma');
-            res.header('Access-Control-Allow-Credentials', 'true');
-            res.header('Access-Control-Max-Age', '86400');
-
-            console.log('OPTIONS Response Headers Set:');
-            const responseHeaders = res.getHeaders();
-            Object.keys(responseHeaders).forEach(key => {
-                console.log(`  ${key}: ${responseHeaders[key]}`);
-            });
-            console.log('=== END OPTIONS PREFLIGHT ===\n');
-
-            res.status(200).end();
-        });
-
-
-
         await registerApollo(app, server);
         // Sockets
         await initializeSocket(server)
@@ -463,7 +430,6 @@ export const createApp = async () => {
 
         return { app, server };
     } catch (error) {
-
         console.error("failed to start server", error);
     }
 };
