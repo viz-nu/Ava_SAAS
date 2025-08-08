@@ -30,12 +30,21 @@ import { Ticket } from "./models/Tickets.js";
 const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174"];
 export const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl requests)
-        if (!origin || whitelist.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
+        console.log('=== CORS ORIGIN CHECK ===');
+        console.log('Incoming Origin:', origin);
+        console.log('No Origin Present:', !origin);
+
+        // Allow all origins for debugging
+        console.log('CORS Decision: ALLOWED');
+        console.log('=== END CORS ORIGIN CHECK ===\n');
+        callback(null, true);
+
+        // Your original logic (commented out for debugging):
+        // if (!origin || whitelist.indexOf(origin) !== -1) {
+        //     callback(null, true);
+        // } else {
+        //     callback(new Error('Not allowed by CORS'));
+        // }
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -60,6 +69,17 @@ export const createApp = async () => {
         const server = http.createServer(app);
         // Middleware
         app.set('trust proxy', 1);
+        app.use((req, res, next) => {
+            if (req.url.includes('/graphql')) {
+                console.log('=== ALL REQUESTS TO GRAPHQL ===');
+                console.log('Method:', req.method);
+                console.log('URL:', req.url);
+                console.log('Origin:', req.headers.origin);
+                console.log('Time:', new Date().toISOString());
+                console.log('=== END ALL REQUESTS LOG ===\n');
+            }
+            next();
+        });
         app.use(cors(corsOptions))
         app.use(helmet({
             contentSecurityPolicy: false, // Temporarily disable CSP
@@ -404,24 +424,34 @@ export const createApp = async () => {
         app.use("/webhook", webhookRouter);
         // Apollo setup
 
-        // Add manual CORS handling for GraphQL endpoint BEFORE Apollo setup
+        // Explicit OPTIONS handler for GraphQL with debug logging
         app.options('/graphql', (req, res) => {
+            console.log('=== OPTIONS PREFLIGHT REQUEST ===');
+            console.log('Origin:', req.headers.origin);
+            console.log('Access-Control-Request-Method:', req.headers['access-control-request-method']);
+            console.log('Access-Control-Request-Headers:', req.headers['access-control-request-headers']);
+            console.log('All Headers:');
+            Object.keys(req.headers).forEach(key => {
+                console.log(`  ${key}: ${req.headers[key]}`);
+            });
+
+            // Set CORS headers manually
             res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
             res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
             res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Cache-Control,Pragma');
             res.header('Access-Control-Allow-Credentials', 'true');
-            res.header('Access-Control-Max-Age', '86400'); // 24 hours
+            res.header('Access-Control-Max-Age', '86400');
+
+            console.log('OPTIONS Response Headers Set:');
+            const responseHeaders = res.getHeaders();
+            Object.keys(responseHeaders).forEach(key => {
+                console.log(`  ${key}: ${responseHeaders[key]}`);
+            });
+            console.log('=== END OPTIONS PREFLIGHT ===\n');
+
             res.status(200).end();
         });
 
-        // Add CORS headers middleware for GraphQL specifically
-        app.use('/graphql', (req, res, next) => {
-            res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-            res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With,Accept,Cache-Control,Pragma');
-            res.header('Access-Control-Allow-Credentials', 'true');
-            next();
-        });
 
 
         await registerApollo(app, server);

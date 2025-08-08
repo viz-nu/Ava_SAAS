@@ -66,19 +66,6 @@ export const registerApollo = async (app, httpServer) => {
     schema: schemaWithDirectives,
     introspection: true,
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
-    cors: {
-      origin: true, // Allow all origins
-      credentials: true,
-      methods: ['GET', 'POST', 'OPTIONS'],
-      allowedHeaders: [
-        'Content-Type',
-        'Authorization',
-        'X-Requested-With',
-        'Accept',
-        'Cache-Control',
-        'Pragma'
-      ],
-    },
     // Error formatting (optional)
     formatError: (error) => {
       // Log full error details for debugging
@@ -109,6 +96,21 @@ export const registerApollo = async (app, httpServer) => {
     '/graphql',
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
+
+        console.log('=== APOLLO CONTEXT DEBUG ===');
+        console.log('Context - Method:', req.method);
+        console.log('Context - Origin:', req.headers.origin);
+        console.log('Context - Authorization:', req.headers.authorization ? 'Present' : 'Missing');
+
+        // Log response headers that Apollo/Express has set
+        console.log('Context - Response Headers:');
+        const responseHeaders = res.getHeaders();
+        Object.keys(responseHeaders).forEach(key => {
+          console.log(`  ${key}: ${responseHeaders[key]}`);
+        });
+
+
+
         try {
           const authResult = await authForGraphQL(req, res);
           return authResult;
