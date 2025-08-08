@@ -93,7 +93,7 @@ export const registerApollo = async (app, httpServer) => {
   });
   await apolloServer.start();
   app.use(
-    '/graphql',
+    '/graphql',cors(corsOptions),
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {

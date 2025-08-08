@@ -29,13 +29,14 @@ import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
 const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174"];
 export const corsOptions = {
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
+        callback(null, true); // Allow all origins for now
         // Allow requests with no origin (like mobile apps, curl requests)
-        if (!origin || whitelist.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
+        // if (!origin || whitelist.indexOf(origin) !== -1) {
+        //     callback(null, true);
+        // } else {
+        //     callback(new Error('Not allowed by CORS'));
+        // }
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
     allowedHeaders: [
@@ -48,7 +49,7 @@ export const corsOptions = {
     ],
     credentials: true,
     optionsSuccessStatus: 204,
-    preflightContinue: false
+    // preflightContinue: false
 };
 export const openCors = cors();
 export const createApp = async () => {
