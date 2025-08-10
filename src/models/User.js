@@ -117,7 +117,13 @@ const ScopesEnum = {
     'subscription:upgrade': 'User can upgrade subscription',
     'subscription:downgrade': 'User can downgrade subscription',
     'subscription:cancel': 'User can cancel subscription',
-    'subscription:billing': 'User can manage billing information'
+    'subscription:billing': 'User can manage billing information',
+
+    // Notification Management
+    'notification:read': 'User can read notifications',
+    'notification:update': 'User can update notification status',
+    'notification:delete': 'User can delete notifications',
+
 };
 
 // Role-based scope mappings
@@ -209,7 +215,10 @@ const RoleScopes = {
         'auth:refresh',
         'user:read',
         'user:update',
-        'user:delete'
+        'user:delete',
+        'notification:read',
+        'notification:update',
+        'notification:delete'
     ],
     'admin': [
         'admin:users',
@@ -280,7 +289,10 @@ const RoleScopes = {
         'auth:logout',
         'auth:refresh',
         'user:read',
-        'user:update'
+        'user:update',
+        'notification:read',
+        'notification:update',
+        'notification:delete'
     ],
     'manager': [
         'business:read',
@@ -312,7 +324,8 @@ const RoleScopes = {
         'auth:logout',
         'auth:refresh',
         'user:read',
-        'user:update'
+        'user:update',
+        'notification:read'
     ]
 };
 

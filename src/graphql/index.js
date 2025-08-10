@@ -1,17 +1,7 @@
 import { conversationTypeDefs } from './conversations/schema.js';
 import { conversationResolvers } from './conversations/resolvers.js';
-import { agentTypeDefs } from './agents/schema.js';
-import { agentResolvers } from './agents/resolvers.js';
-import { collectionTypeDefs } from './collections/schema.js';
-import { collectionResolvers } from './collections/resolvers.js';
-import { businessTypeDefs } from './business/schema.js';
-import { businessResolvers } from './business/resolvers.js';
-import { analyticsTypeDefs } from './analytics/schema.js';
-import { analyticsResolvers } from './analytics/resolvers.js';
 import { userTypeDefs } from './users/schema.js';
 import { userResolvers } from './users/resolvers.js';
-import { authTypeDefs } from './auth/schema.js';
-import { authResolvers } from './auth/resolvers.js';
 import { sharedTypeDefs } from './shared/types.js';
 import { twilioResolvers } from './twilio/resolver.js';
 import { scopeAuthDirectiveTypeDefs, applyScopeAuthDirectives } from './directives/scopeAuth.js';
@@ -30,7 +20,9 @@ import { corsOptions, openCors } from '../server.js';
 import cors from 'cors'
 import { ticketResolvers } from './tickets/resolver.js';
 import { ticketTypeDefs } from './tickets/schema.js';
-// Merge all type definitions
+import { notificationTypeDefs } from './notifications/schema.js';
+import { notificationResolvers } from './notifications/resolver.js';
+import {  ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
@@ -38,59 +30,34 @@ const typeDefs = mergeTypeDefs([
   twilioTypeDefs,
   channelTypeDefs,
   ticketTypeDefs,
-  // agentTypeDefs,
-  // collectionTypeDefs,
-  // businessTypeDefs,
-  // analyticsTypeDefs,
-  userTypeDefs,
-  // authTypeDefs
+  notificationTypeDefs,
+  userTypeDefs
 ]);
-// Merge all resolvers
 const resolvers = mergeResolvers([
   conversationResolvers,
   twilioResolvers,
   channelResolvers,
   ticketResolvers,
-  // agentResolvers,
-  // collectionResolvers,
-  // businessResolvers,
-  // analyticsResolvers,
-  userResolvers,
-  // authResolvers
+  notificationResolvers,
+  userResolvers
 ]);
 export const registerApollo = async (app, httpServer) => {
-  // Create executable schema
   const schema = makeExecutableSchema({
     typeDefs,
     resolvers,
   });
-  // Apply scope-based authorization directives
   const schemaWithDirectives = applyScopeAuthDirectives(schema);
   const apolloServer = new ApolloServer({
     schema: schemaWithDirectives,
     introspection: true,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
-    // Error formatting (optional)
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }),ApolloServerPluginLandingPageProductionDefault({ embed: true }) ],
     formatError: (error) => {
-      // Log full error details for debugging
       console.error('GraphQL Error Details:', { message: error.message, code: error.extensions?.code, path: error.path, locations: error.locations, stack: error.stack, timestamp: new Date().toISOString() });
-      // Handle specific error types
-
-      // Replace generic error if context creation fails
-      if (error.message.includes('Context creation failed')) {
-        return new GraphQLError('Authentication service unavailable', {
-          extensions: { code: 'AUTH_SERVICE_UNAVAILABLE' },
-        });
-      }
-
+      if (error.message.includes('Context creation failed')) return new GraphQLError('Authentication service unavailable', { extensions: { code: 'AUTH_SERVICE_UNAVAILABLE' } });
       if (process.env.NODE_ENV === 'production') {
         const safeErrors = ['Authentication failed', 'Invalid token', 'Token expired', 'Unauthorized', 'Forbidden'];
         if (safeErrors.some(safe => error.message.includes(safe))) return error;
-
-        // Return a sanitized error
-        return new GraphQLError('Internal server error', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR' },
-        });
+        return new GraphQLError('Internal server error', { extensions: { code: 'INTERNAL_SERVER_ERROR' }, });
       }
       return error;
     },
@@ -107,7 +74,6 @@ export const registerApollo = async (app, httpServer) => {
           return authResult;
         } catch (error) {
           console.error('Auth error details:', { message: error.message, stack: error.stack, headers: req.headers, body: req.body });
-          // Re-throw with more specific error
           if (error.message === 'Internal Server Error') throw new Error('Authentication failed: Unable to verify credentials');
           throw error;
         }
