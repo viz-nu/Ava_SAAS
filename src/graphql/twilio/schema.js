@@ -97,22 +97,22 @@ type Balance{
   currency:String
 }
 type Query {
-  listAvailableNumbers(channelId: ID!country: String, type: [type], areaCode: Int,limit:Int): [PhoneNumber]
-  listOwnedPhoneNumbers(channelId: ID!, limit:Int): [PhoneNumber]
+  listAvailableNumbers(channelId: ID! country: String type: [type] areaCode: Int limit:Int): [PhoneNumber]
+  listOwnedPhoneNumbers(channelId: ID!  limit:Int): [PhoneNumber]
   fetchBalance(channelId: ID!): Balance
-  getSmsStatus(channelId: ID!,sid: String!):SMSResponse
-  # listCallRecordings(channelId: ID!, limit: Int): [Recording]
+  getSmsStatus(channelId: ID! sid: String!):SMSResponse
+  # listCallRecordings(channelId: ID!  limit: Int): [Recording]
   listConnectApps(channelId: ID!): [ConnectApp]
-  # listNotifications(channelId: ID!, limit: Int): [Notification]
-  getMessages(channelId: ID!,limit:Int, to:String, from:String, dateSent:DateTime, dateSentBefore:DateTime, dateSentAfter:DateTime, pageSize:Int):[SMSResponse]
+  # listNotifications(channelId: ID!  limit: Int): [Notification]
+  getMessages(channelId: ID! limit:Int  to:String  from:String  dateSent:DateTime  dateSentBefore:DateTime  dateSentAfter:DateTime  pageSize:Int):[SMSResponse]
 }
 
 type Mutation {
-  buyPhoneNumber(channelId: ID!, phoneNumber: String!, friendlyName: String!): PhoneNumber
-  releasePhoneNumber(channelId: ID!, sid: String!): PhoneNumber
-  makeOutboundCall(channelId: ID!, to: String!, from: String!, twimlUrl: String!): Call
-  sendSms(channelId: ID!, to: String!, from: String!, body: String!): SMSResponse
-  deAuthorizeApp(channelId: ID!, connectAppSid: String!): Boolean
+  buyPhoneNumber(channelId: ID!  phoneNumber: String!  friendlyName: String!): PhoneNumber
+  releasePhoneNumber(channelId: ID!  sid: String!): PhoneNumber
+  makeOutboundCall(channelId: ID!  to: String!  from: String!  twimlUrl: String!): Call
+  sendSms(channelId: ID!  to: String!  from: String!  body: String!): SMSResponse
+  deAuthorizeApp(channelId: ID!  connectAppSid: String!): Boolean
 }
 
 `;
