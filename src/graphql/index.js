@@ -28,6 +28,8 @@ import 'dotenv/config'
 import { GraphQLError } from 'graphql';
 import { corsOptions, openCors } from '../server.js';
 import cors from 'cors'
+import { ticketResolvers } from './tickets/resolver.js';
+import { ticketTypeDefs } from './tickets/schema.js';
 // Merge all type definitions
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
@@ -35,6 +37,7 @@ const typeDefs = mergeTypeDefs([
   conversationTypeDefs,
   twilioTypeDefs,
   channelTypeDefs,
+  ticketTypeDefs,
   // agentTypeDefs,
   // collectionTypeDefs,
   // businessTypeDefs,
@@ -47,6 +50,7 @@ const resolvers = mergeResolvers([
   conversationResolvers,
   twilioResolvers,
   channelResolvers,
+  ticketResolvers,
   // agentResolvers,
   // collectionResolvers,
   // businessResolvers,
@@ -98,6 +102,7 @@ export const registerApollo = async (app, httpServer) => {
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {
+          if (req.method === 'POST' && req.body?.operationName === 'IntrospectionQuery') return {}
           const authResult = await authForGraphQL(req, res);
           return authResult;
         } catch (error) {
