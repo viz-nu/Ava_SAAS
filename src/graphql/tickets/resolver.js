@@ -1,11 +1,6 @@
 import graphqlFields from "graphql-fields";
 import { Ticket } from "../../models/Tickets.js";
 import { flattenFields } from "../../utils/graphqlTools.js";
-
-// type Mutation {
-//     updateTicket(id: ID! input: response!): Ticket @requireScope(scope: "ticket:update") @requireBusinessAccess
-// deleteTicket(id: ID!): Boolean @requireScope(scope: "ticket:delete") @requireBusinessAccess
-// }
 export const ticketResolvers = {
     Query: {
         async fetchTickets(_, { notifierEmail, channel, priority, status, id }, context, info) {
@@ -17,12 +12,11 @@ export const ticketResolvers = {
             if (status) filter.status = status;
             if (channel) filter.channel = id;
             if (priority) filter.priority = priority;
-            return await Ticket.find(filter).select(projection);
-        },
+            return await Ticket.find(filter).select(projection).sort({ createdAt: -1 });
+        }
     },
     Mutation: {
        async updateTicket(_, { input, id }, context, info){ return {}},
-       async deleteTicket(_, { id }, context, info){ return {}}
-    },
-
+       async deleteTicket(_, { id }, context, info){ return true}
+    }
 };

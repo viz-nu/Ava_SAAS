@@ -41,4 +41,8 @@ TicketSchema.methods.markResolved = function () {
     this.response.resolvedAt = new Date();
     return this.save();
 };
+// on ticket creation, create a notification
+TicketSchema.post('save', async function (doc) {
+    if (this.isNew) await Notification.create({ business: doc.business, head: `${doc.priority} Priority Ticket Created on ${doc.channel}`, body: doc.issueSummary, type: "ticket", attachments: { ticketId: doc._id } });
+});
 export const Ticket = model('Ticket', TicketSchema, 'Ticket');
