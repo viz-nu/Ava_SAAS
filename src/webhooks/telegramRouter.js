@@ -14,7 +14,7 @@ const sendApprovalRequest = async (bot, chatId, interruptions) => {
         await bot.telegram.sendMessage(chatId, message, { reply_markup: { inline_keyboard: inlineKeyboard } });
     }
 }
-async function processUserMessage(chatId, userMessage, bot, agentDetails) {
+async function processUserMessage(chatId, userMessage, bot, agentDetails, message) {
     const { userMessageType, userMessageData } = userMessage
     const conversation = await Conversation.findOne({ telegramChatId: chatId });
     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
@@ -70,7 +70,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails) {
             await bot.telegram.sendMessage(chatId, "❌ Tool rejected. Continuing without this action...");
         }
     }
-    const result = await run(agent, state, { stream: false, maxTurns: 3, context: `` });
+    const result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.from.first_name ? "User Name: " + message.from.first_name : ""}\nDate: ${new Date().toDateString()} \n Channel:telegram \n telegramId:${message.from.id} ` });
     if (result.interruptions?.length > 0) {
         const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
         conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { pendingInterruptions: { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
@@ -151,10 +151,10 @@ telegramRouter.post('/:botId', async (req, res) => {
                     case "callback_query":
                         await bot.telegram.answerCbQuery(callback_query.id); // Required
                         if (callback_query.data.startsWith('approve_')) {
-                            await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: callback_query.data, approved: true } }, bot, agentDetails);
+                            await processUserMessage(chatId, { userMessageType: "tool_approval", userMessageData: { buttonId: callback_query.data, approved: true } }, bot, agentDetails);
                             return;
                         } else if (callback_query.data.startsWith('reject_')) {
-                            await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: callback_query.data, approved: false } }, bot, agentDetails);
+                            await processUserMessage(chatId, { userMessageType: "tool_approval", userMessageData: { buttonId: callback_query.data, approved: false } }, bot, agentDetails);
                             return;
                         }
                         userMessage = callback_query.data;
@@ -166,7 +166,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                         console.log({ triggerType });
                         return;
                 }
-                await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessage } }, bot, agentDetails);
+                await processUserMessage(chatId, { userMessageType: "text", userMessageData: { text: userMessage } }, bot, agentDetails, message);
                 return;
             } catch (error) {
                 console.error("Processing error:", error);

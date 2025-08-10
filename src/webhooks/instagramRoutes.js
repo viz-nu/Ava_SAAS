@@ -75,7 +75,7 @@ const InstagramBotResponseSchema = z.object({
     }).optional()
 });
 export const InstagramRouter = Router()
-async function processUserMessage(message, userMessage, bot, agentDetails) {
+async function processUserMessage(message, userMessage, bot, agentDetails, senderId) {
     const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
     const extraPrompt = `
 RESPONSE FORMAT INSTRUCTIONS:
@@ -202,7 +202,7 @@ Your response will be parsed and sent directly to Instagram's API, so format mus
     let result = await run(agent, state, {
         stream: false,
         maxTurns: 3,
-        // context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}`
+        context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()} \n Channel:instagram \n instagramId:${senderId} `
     });
     // if (result.interruptions?.length > 0) {
     //     const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
@@ -282,7 +282,7 @@ InstagramRouter.post("/main", async (req, res) => {
                             case "text":
                                 const { messageId, text } = message;
                                 const bot = await InstagramMessagingAPI.create({ accessToken: channelDetails.secrets.accessToken, tokenExpiryTime: channelDetails.secrets.refreshAt, instagramId: accountId });
-                                await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessageText } }, bot, agentDetails);
+                                await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessageText } }, bot, agentDetails, senderId);
                                 break;
 
                             default:
