@@ -91,28 +91,19 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
     state = await RunState.fromString(agent, conversation.state);
     const interruption = conversation.pendingInterruptions.find(i => i.id === interruptionId);
     if (!interruption) {
-      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "❌ Interruption not found. Please try again the same request." });
+      await bot.sendMessage("whatsapp", message.phoneNumberId, "text", { text: "❌ Interruption not found. Please try again the same request." });
       return;
     }
     if (userMessageData.approved) {
       state.approve(interruption);
-      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "✅ Tool approved. Processing..." });
+      await bot.sendMessage("whatsapp", message.phoneNumberId, "text", { text: "✅ Tool approved. Processing..." });
     } else {
       state.reject(interruption);
-      await bot.sendMessage("whatsapp", phoneNumber, "text", { text: "❌ Tool rejected. Continuing without this action..." });
+      await bot.sendMessage("whatsapp", message.phoneNumberId, "text", { text: "❌ Tool rejected. Continuing without this action..." });
     }
-    conversation = await Conversation.findByIdAndUpdate(
-      conversation._id,
-      {
-        $pull: { pendingInterruptions: { id: interruptionId } }, // remove matching interruption
-        $set: { state: state.toString() } // update the state
-      }, { new: true });
+    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $pull: { pendingInterruptions: { id: interruptionId } }, $set: { state: state.toString() } }, { new: true });
   }
-  let result = await run(agent, state, {
-    stream: false,
-    maxTurns: 3,
-    context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}`
-  });
+  let result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}  \n Channel:whatsapp \n whatsappId:${message.contact.waId} ` });
   if (result.interruptions?.length > 0) {
     const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
     conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { pendingInterruptions: { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
@@ -120,7 +111,6 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
     await sendApprovalRequest(bot, message.from, result.interruptions);
     return; // Exit early, wait for user approval
   }
-
   // Process final result
   const usage = { input_tokens: 0, output_tokens: 0, total_tokens: 0 };
   result.rawResponses.forEach((ele) => {
