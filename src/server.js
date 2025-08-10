@@ -27,7 +27,7 @@ import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
-const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174"];
+const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174","http://localhost:3000"];
 export const corsOptions = {
     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error('Not allowed by CORS')),
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
