@@ -7,7 +7,15 @@ let io;
 
 export async function initializeSocket(server) {
     // Setup Redis
-    const pubClient = createClient({ url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, });
+    const pubClient = createClient({
+        socket: {
+            host: process.env.REDIS_HOST,
+            port: parseInt(process.env.REDIS_PORT),
+        },
+        username: process.env.REDIS_USERNAME,
+        password: process.env.REDIS_PASSWORD,
+        database: parseInt(process.env.REDIS_DATABASE),
+    });
     const subClient = pubClient.duplicate();
     await Promise.all([pubClient.connect(), subClient.connect()]);
 
@@ -76,7 +84,7 @@ export async function initializeSocket(server) {
             console.log("User joined conversation:", conversationID);
             if (conversationID) {
                 socket.join(conversationID);
-                await Conversation.updateOne({ _id: conversationID }, { $set: { sockets: {socketId:socket.id,disconnectReason:""}, status: "active" } });
+                await Conversation.updateOne({ _id: conversationID }, { $set: { sockets: { socketId: socket.id, disconnectReason: "" }, status: "active" } });
             }
             if (agentId) {
                 console.log("User joined agent room:", agentId);

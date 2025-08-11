@@ -17,22 +17,24 @@ export const connectDB = async (retryCount = 0) => {
 };
 export let redisClient;
 
-export const connectRedis = async (retryCount = 0) => {
+export const connectRedis = async () => {
     if (redisClient) return redisClient
     try {
-        redisClient = createClient({ url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, });
-        await redisClient.connect();
-        redisClient.on('error', (err) => {
-            if (retryCount < 5) {  // Set a maximum number of retries
-                console.error('Error connecting to redisClient. Retrying...', err);
-                setTimeout(() => connectRedis(retryCount + 1), 5000); // Retry after 5 seconds
-            } else {
-                console.error('Failed to connect to redisClient after multiple attempts:', err);
-                process.exit(1);  // Exit the process after max retries
-            }
+        redisClient = createClient({
+            socket: {
+                host: process.env.REDIS_HOST,
+                port: parseInt(process.env.REDIS_PORT),
+            },
+            username: process.env.REDIS_USERNAME,
+            password: process.env.REDIS_PASSWORD,
+            database: parseInt(process.env.REDIS_DATABASE)
         });
-        
-        console.log('Connected to Redis');
+        // Error handling
+        redisClient.on('error', (err) => console.error('Redis Client Error:', err));
+        redisClient.on('connect', () => console.log('Connected to Redis'));
+        redisClient.on('ready', () => console.log('Redis client ready'));
+        redisClient.on('end', () => console.log('Redis connection ended'));
+        await redisClient.connect();
         return redisClient;
     } catch (err) {
         console.error('Error connecting to Redis:', err);

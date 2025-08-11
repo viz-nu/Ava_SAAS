@@ -1,14 +1,16 @@
 import axios from "axios";
-import Queue from "bull";
 import { digest } from './setup.js';
 import { io } from './io.js';
 import { Collection } from '../models/Collection.js';
 import 'dotenv/config'
+import Queue from "bull";
 export const urlProcessingQueue = new Queue('url-processing', {
     redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: Number(process.env.REDIS_PORT) || 6379,
-        password: process.env.REDIS_PASSWORD || undefined
+        host: process.env.REDIS_HOST,
+        port: Number(process.env.REDIS_PORT),
+        username: process.env.REDIS_USERNAME , // Redis 6+ ACL username
+        password: process.env.REDIS_PASSWORD,
+        db: Number(process.env.REDIS_DATABASE) || 0
     },
     settings: {
         maxStalledCount: 3 // Increase retries before failing
