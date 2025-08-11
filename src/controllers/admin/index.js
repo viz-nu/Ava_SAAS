@@ -65,8 +65,8 @@ export const Dashboard = errorWrapper(async (req, res) => {
             const locations = [];
             for (const ele of agentsInBusiness) {
                 const facets = await Conversation.aggregate([
-                    { $match: { business: req.user.business, agent: ele._id, "geoLocation.city": { $exists: true, $ne: "" }, "geoLocation.country_name": { $exists: true, $ne: "" } } },
-                    { $group: { _id: { city: "$geoLocation.city", country: "$geoLocation.country_name" }, count: { $sum: 1 } } },
+                    { $match: { business: req.user.business, agent: ele._id, "metadata.userLocation.city": { $exists: true, $ne: "" }, "metadata.userLocation.country_name": { $exists: true, $ne: "" } } },
+                    { $group: { _id: { city: "$metadata.userLocation.city", country: "$metadata.userLocation.country_name" }, count: { $sum: 1 } } },
                     { $sort: { count: -1 } }
                 ]);
                 locations.push({ agent: { _id: ele._id, name: ele.personalInfo.name }, data: facets });

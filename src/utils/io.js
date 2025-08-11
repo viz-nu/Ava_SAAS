@@ -84,7 +84,7 @@ export async function initializeSocket(server) {
             console.log("User joined conversation:", conversationID);
             if (conversationID) {
                 socket.join(conversationID);
-                await Conversation.updateOne({ _id: conversationID }, { $set: { sockets: { socketId: socket.id, disconnectReason: "" }, status: "active" } });
+                await Conversation.updateOne({ _id: conversationID }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" },"metadata.status": "active" } });
             }
             if (agentId) {
                 console.log("User joined agent room:", agentId);
@@ -128,10 +128,10 @@ export async function initializeSocket(server) {
         socket.on('disconnect', async (reason) => {
             console.log("User disconnected:", socket.id, "reason:", reason);
             try {
-                const conversation = await Conversation.findOne({ "sockets.socketId": socket.id });
+                const conversation = await Conversation.findOne({ "metadata.sockets.socketId": socket.id });
                 if (conversation) {
-                    conversation.sockets.disconnectReason = reason;
-                    conversation.status = "disconnected";
+                    conversation.metadata.sockets.disconnectReason = reason;
+                    conversation.metadata.status = "disconnected";
                     await conversation.updateAnalytics();
                     await conversation.save();
                     console.log("conversation Updated:");

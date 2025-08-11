@@ -10,23 +10,26 @@ const ConversationSchema = new Schema({
     whatsappChatId: String,
     contact: Schema.Types.Mixed,
     agent: { type: Schema.Types.ObjectId, ref: 'Agent' },
-    status: { type: String, enum: ConversationStatusEnum, default: "initiated" },
-    sockets: {
-        socketId: String,
-        disconnectReason: String,
-    },
     /** Conversation state & runtime extras */
     session: Schema.Types.Mixed,
     state: String,
-    pendingInterruptions: [{ type: Schema.Types.Mixed }],
     /** ---------------- Analytics buckets ---------------- */
-    geoLocation: Schema.Types.Mixed,
-    analysisMetrics: Schema.Types.Mixed,
+    extractedData: Schema.Types.Mixed,
     analysisTokens: {
         model: String,
         usage: { type: Schema.Types.Mixed }
     },
-    metadata: { totalMessages: Number, reactions: { neutral: Number, like: Number, dislike: Number } }
+    metadata: {
+        status: { type: String, enum: ConversationStatusEnum, default: "initiated" },
+        pendingInterruptions: [{ type: Schema.Types.Mixed }],
+        totalMessages: Number,
+        reactions: { neutral: Number, like: Number, dislike: Number },
+        sockets: {
+            socketId: String,
+            disconnectReason: String,
+        },
+        userLocation: Schema.Types.Mixed,
+    }
 }, {
     timestamps: true
 });
@@ -63,7 +66,7 @@ ConversationSchema.methods.updateAnalytics = async function () {
                 model: "gpt-4.1-mini",
                 usage: usage
             };
-            this.analysisMetrics = JSON.parse(result.finalOutput);
+            this.extractedData = JSON.parse(result.finalOutput);
             console.log("metrics generated")
         } catch (error) {
             console.error("Error while running agent");

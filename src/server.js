@@ -27,7 +27,7 @@ import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
-const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174","http://localhost:3000","https://studio.apollographql.com","https://chatapi.campusroot.com"];
+const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174", "http://localhost:3000", "https://studio.apollographql.com", "https://chatapi.campusroot.com"];
 export const corsOptions = {
     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error('Not allowed by CORS')),
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
@@ -103,7 +103,7 @@ export const createApp = async () => {
                 // ✅ Create agent
                 const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson, });
                 // ✅ Initialize conversation if not exists
-                if (!conversation) conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, geoLocation: geoLocation.data, channel: "web" });
+                if (!conversation) conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, metadata: { userLocation: geoLocation.data }, channel: "web" });
                 // ✅ Create message if not exists
                 if (!message) message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
                 // ✅ State preparation logic
@@ -119,7 +119,7 @@ export const createApp = async () => {
                     // Apply interruption decisions (approve/reject)
                     if (state) {
                         for (const decision of interruptionDecisions) {
-                            const interruption = conversation.pendingInterruptions.find(ele => ele.rawItem.id == decision.id);
+                            const interruption = conversation.metadata.pendingInterruptions.find(ele => ele.rawItem.id == decision.id);
                             if (interruption) {
                                 decision.action === 'approve' ? state.approve(interruption) : state.reject(interruption);
                             }
@@ -127,7 +127,7 @@ export const createApp = async () => {
                     }
 
                     // Clear old interruptions and state in DB
-                    await Conversation.findByIdAndUpdate(conversationId, { $set: { pendingInterruptions: [], state: "" } });
+                    await Conversation.findByIdAndUpdate(conversationId, { $set: { "metadata.pendingInterruptions": [], state: "" } });
                 }
 
                 if (!state) {
@@ -220,7 +220,7 @@ export const createApp = async () => {
 
                         await Conversation.findByIdAndUpdate(conversation._id, {
                             $set: {
-                                pendingInterruptions: interruptionData,
+                                "metadata.pendingInterruptions": interruptionData,
                                 state: JSON.stringify(newState)
                             }
                         });

@@ -20,6 +20,7 @@
     "@openai/agents": "^0.0.3",
     "@socket.io/redis-adapter": "^8.3.0",
     "@zohocrm/nodejs-sdk-2.0": "^6.1.0",
+    "@zohocrm/nodejs-sdk-8.0": "^2.0.0",
     "ai": "^4.3.14",
     "axios": "^1.8.1",
     "bcryptjs": "^3.0.0",
