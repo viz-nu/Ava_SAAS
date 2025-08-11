@@ -3,16 +3,16 @@ import { Business } from "../../models/Business.js";
 import { Conversation } from "../../models/Conversations.js";
 import { flattenFields } from "../../utils/graphqlTools.js"
 export const fetchConversations = async (_, filters, context, info) => {
-    const { limit = 10, status, _id, agentId, channel, from, to, geoLocation, disconnectReason } = filters
+    const { limit = 10, status, _id, agentId, channel, from, to, userLocation, disconnectReason } = filters
     const business = await Business.findById(context.user.business);
     if (!business) return []
     const filter = { business: business._id };
     if (_id) filter._id = _id;
-    if (status) filter.status = status;
+    if (status) filter["metadata.status"] = status;
     if (channel) filter.channel = channel;
     if (agentId) filter.agent = agentId;
-    if (geoLocation) filter.geoLocation = geoLocation;
-    if (disconnectReason) filter["sockets.disconnectReason"] = disconnectReason;
+    if (userLocation) filter["metadata.userLocation"] = userLocation;
+    if (disconnectReason) filter["metadata.sockets.disconnectReason"] = disconnectReason;
     if (from || to) {
         filter.createdAt = {};
         if (from) filter.createdAt.$gte = new Date(from);

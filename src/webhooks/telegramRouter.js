@@ -57,7 +57,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
     else if (userMessageType == "tool_approval") {
         const interruptionId = userMessageData.buttonId.replace(userMessageData.approved ? 'approve_' : 'reject_', '');
         state = await RunState.fromString(agent, conversation.state);
-        const interruption = conversation.pendingInterruptions.find(i => i.id === interruptionId);
+        const interruption = conversation.metadata.pendingInterruptions.find(i => i.id === interruptionId);
         if (!interruption) {
             await bot.telegram.sendMessage(chatId, "❌ Interruption not found. Please try again the same request.");
             return;
@@ -73,7 +73,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
     const result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.from.first_name ? "User Name: " + message.from.first_name : ""}\nDate: ${new Date().toDateString()} \n Channel:telegram \n telegramId:${message.from.id} ` });
     if (result.interruptions?.length > 0) {
         const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
-        conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { pendingInterruptions: { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
+        conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { "metadata.pendingInterruptions": { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
         // Send approval request to user
         await sendApprovalRequest(bot, chatId, result.interruptions);
         return; // Exit early, wait for user approval

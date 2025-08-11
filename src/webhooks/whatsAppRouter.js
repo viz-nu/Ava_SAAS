@@ -89,7 +89,7 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
   else if (userMessageType == "tool_approval") {
     const interruptionId = userMessageData.buttonId.replace(userMessageData.approved ? 'approve_' : 'reject_', '');
     state = await RunState.fromString(agent, conversation.state);
-    const interruption = conversation.pendingInterruptions.find(i => i.id === interruptionId);
+    const interruption = conversation.metadata.pendingInterruptions.find(i => i.id === interruptionId);
     if (!interruption) {
       await bot.sendMessage("whatsapp", message.phoneNumberId, "text", { text: "❌ Interruption not found. Please try again the same request." });
       return;
@@ -101,12 +101,12 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
       state.reject(interruption);
       await bot.sendMessage("whatsapp", message.phoneNumberId, "text", { text: "❌ Tool rejected. Continuing without this action..." });
     }
-    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $pull: { pendingInterruptions: { id: interruptionId } }, $set: { state: state.toString() } }, { new: true });
+    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $pull: { "metadata.pendingInterruptions": { id: interruptionId } }, $set: { state: state.toString() } }, { new: true });
   }
   let result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.contact.name ? "User Name: " + message.contact.name : ""}\nDate: ${new Date().toDateString()}  \n Channel:whatsapp \n whatsappId:${message.contact.waId} ` });
   if (result.interruptions?.length > 0) {
     const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
-    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { pendingInterruptions: { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
+    conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { "metadata.pendingInterruptions": { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
     // Send approval request to user
     await sendApprovalRequest(bot, message.from, result.interruptions);
     return; // Exit early, wait for user approval

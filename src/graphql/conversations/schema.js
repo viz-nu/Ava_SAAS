@@ -29,6 +29,13 @@ type Reactions {
 type Metadata {
   totalMessages: Int
   reactions: Reactions
+  userLocation: JSON
+  sockets:Sockets
+  status: ConversationStatusEnum
+}
+type Sockets{
+socketId: String,
+disconnectReason: String
 }
 
 type ModelConfig {
@@ -40,9 +47,7 @@ type Conversation {
   _id: ID!
   channel: ChannelStatusEnum
   agent: Agent
-  status: ConversationStatusEnum
-  geoLocation: JSON
-  analysisMetrics: JSON
+  extractedData: JSON
   metadata: Metadata
   createdAt: DateTime
   updatedAt: DateTime
@@ -68,7 +73,7 @@ type Query {
   channel: ChannelStatusEnum
   from:DateTime
   to:DateTime
-  geoLocation:JSON
+  userLocation:JSON
   disconnectReason:String
   ): [Conversation] @requireScope(scope: "conversation:read") @requireBusinessAccess
 }
