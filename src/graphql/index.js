@@ -23,6 +23,8 @@ import { ticketTypeDefs } from './tickets/schema.js';
 import { notificationTypeDefs } from './notifications/schema.js';
 import { notificationResolvers } from './notifications/resolver.js';
 import {  ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
+import { zohoTypeDefs } from './zoho/schema.js';
+import { zohoResolvers } from './zoho/resolver.js';
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
@@ -31,7 +33,8 @@ const typeDefs = mergeTypeDefs([
   channelTypeDefs,
   ticketTypeDefs,
   notificationTypeDefs,
-  userTypeDefs
+  userTypeDefs,
+  zohoTypeDefs
 ]);
 const resolvers = mergeResolvers([
   conversationResolvers,
@@ -39,7 +42,8 @@ const resolvers = mergeResolvers([
   channelResolvers,
   ticketResolvers,
   notificationResolvers,
-  userResolvers
+  userResolvers,
+  zohoResolvers
 ]);
 export const registerApollo = async (app, httpServer) => {
   const schema = makeExecutableSchema({
