@@ -1,121 +1,111 @@
 import { Collection } from '../../models/Collection.js';
-import { Business } from '../../models/Business.js';
+import { Data } from '../../models/Data.js';
+import { AgentModel } from '../../models/Agent.js';
+import { urlProcessingQueue } from "../../utils/bull.js";
 import { User } from '../../models/User.js';
-
+import graphqlFields from 'graphql-fields';
+import { flattenFields } from '../../utils/graphqlTools.js';
+import { io } from "../../utils/io.js";
+import { processURLS } from "../../utils/websiteHelpers.js";
+import { processYT } from "../../utils/ytHelper.js";
+import { processFile } from "../../utils/fileHelper.js";
 export const collectionResolvers = {
     Query: {
-        collections: async (_, { limit = 10, type, isPublic, business }, context) => {
+        collections: async (_, { id, limit = 10, isPublic }, context, info) => {
             const filter = {};
-
-            // Filter by business (user's business or specified business)
-            if (business) {
-                filter.business = business;
-            } else if (context.user.business) {
-                filter.business = context.user.business;
-            }
-
-            if (type) filter.type = type;
+            filter.business = context.user.business;
+            if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
-
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const projection = flattenFields(requestedFields);
             return await Collection.find(filter)
                 .populate('business')
                 .populate('createdBy')
-                .populate('permissions.user')
-                .limit(limit)
-                .sort({ createdAt: -1 });
-        },
-
-        collection: async (_, { id }, context) => {
-            return await Collection.findById(id)
-                .populate('business')
-                .populate('createdBy')
-                .populate('permissions.user');
-        },
-
-        publicCollections: async (_, { limit = 10, type }) => {
-            const filter = { isPublic: true };
-            if (type) filter.type = type;
-
-            return await Collection.find(filter)
-                .populate('business')
+                .select(projection)
                 .limit(limit)
                 .sort({ createdAt: -1 });
         }
     },
 
     Mutation: {
-        createCollection: async (_, { collection }, context) => {
-            const newCollection = new Collection({
-                ...collection,
-                business: collection.business || context.user.business,
-                createdBy: context.user._id
-            });
-
-            return await newCollection.save();
+        createCollection: async (_, { collection }, context, info) => {
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const projection = flattenFields(requestedFields);
+            const { name, description, contents, isPublic, isFeatured } = collection;
+            const newCollection = await Collection.create({ name, description, contents, business: context.user.business, createdBy: context.user._id })
+                .populate('business')
+                .populate('createdBy')
+                .select(projection);
+            const receivers = await User.find({ business: context.user.business, scopes: "collection:read" }).select('_id');
+            (async function processCollection(newCollection, receivers) {
+                try {
+                    for (const content of newCollection.contents) {
+                        const { source, metaData, _id } = content;
+                        let result
+                        receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } }));
+                        switch (source) {
+                            case "website":
+                                console.log("website process started");
+                                if (metaData?.urls) result = await processURLS(newCollection._id, metaData.urls, receivers, _id);
+                                break;
+                            case "youtube":
+                                console.log("youtube process started");
+                                if (metaData?.urls) result = await processYT(newCollection._id, metaData.urls, receivers, _id);
+                                break;
+                            case "file":
+                                console.log("file process started");
+                                if (metaData?.urls) result = await processFile(newCollection._id, metaData.urls[0].url, receivers, _id);
+                                break;
+                            default:
+                                console.warn(`Unknown source type: ${source}`);
+                                break;
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to sync collection:", error);
+                }
+            })(newCollection, receivers);
+            return newCollection;
         },
-
-        updateCollection: async (_, { id, collection }, context) => {
-            return await Collection.findByIdAndUpdate(
-                id,
-                { ...collection, updatedAt: new Date() },
-                { new: true }
-            ).populate('business').populate('createdBy').populate('permissions.user');
+        updateCollection: async (_, { id, action, name, description, removeContents, addContents }, context, info) => {
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const projection = flattenFields(requestedFields);
+            const collection = await Collection.findOne({ _id: id, business: context.user.business });
+            if (!collection) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
+            switch (action) {
+                case "rename":
+                    if (name) collection.name = name;
+                    break;
+                case "redescribe":
+                    if (description) collection.description = description;
+                    break;
+                case "addContents":
+                    collection.contents.push(...addContents)
+                    break;
+                case "removeContents":
+                    let redundantContents = collection.contents.filter(ele => removeContents.includes(ele._id.toString()))
+                    await Promise.all(
+                        redundantContents.map(async (content) => {
+                            const urls = content.metaData.urls.map(urlObj => urlObj.url);
+                            return Data.deleteMany({ collection: collection._id, "metadata.url": { $in: urls } });
+                        })
+                    );
+                    collection.contents = collection.contents.filter(ele => !removeContents.includes(ele._id.toString()))
+                    break;
+                default:
+                    throw new GraphQLError("Invalid action", { extensions: { code: "INVALID_ACTION" } });
+            }
+            return await collection.save().populate('business').populate('createdBy').select(projection);
         },
-
         deleteCollection: async (_, { id }, context) => {
-            const result = await Collection.findByIdAndDelete(id);
-            return !!result;
-        },
-
-        uploadToCollection: async (_, { collectionId, files }, context) => {
-            // This would integrate with your file upload service
-            const collection = await Collection.findById(collectionId);
-            if (!collection) {
-                throw new Error('Collection not found');
-            }
-
-            // Add files to collection content
-            collection.content = [...(collection.content || []), ...files];
-            collection.updatedAt = new Date();
-
-            return await collection.save();
-        },
-
-        updateCollectionPermissions: async (_, { collectionId, permissions }, context) => {
-            const collection = await Collection.findById(collectionId);
-            if (!collection) {
-                throw new Error('Collection not found');
-            }
-
-            collection.permissions = permissions;
-            collection.updatedAt = new Date();
-
-            return await collection.save();
+            const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
+            await Promise.all([
+                Collection.findByIdAndDelete(id),
+                AgentModel.updateMany({ collections: id, business: context.user.business }, { $pull: { collections: id } }),
+                Data.deleteMany({ collection: id }),
+                ...jobs.filter(job => job.data.collectionId === id).map(job => job.remove())
+            ])
+            return true;
         }
     },
-
-    Collection: {
-        business: async (parent) => {
-            if (parent.business) {
-                return await Business.findById(parent.business);
-            }
-            return null;
-        },
-
-        createdBy: async (parent) => {
-            if (parent.createdBy) {
-                return await User.findById(parent.createdBy).select('-password');
-            }
-            return null;
-        }
-    },
-
-    Permission: {
-        user: async (parent) => {
-            if (parent.user) {
-                return await User.findById(parent.user).select('-password');
-            }
-            return null;
-        }
-    }
 }; 

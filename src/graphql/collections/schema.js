@@ -1,61 +1,54 @@
 export const collectionTypeDefs = `#graphql
+  enum contentSourceEnum {
+    website
+    youtube
+    file
+  }
+    enum contentStatusEnum {
+    active
+    loading
+    failed
+  }
+type Content {
+    source: contentSourceEnum
+    metaData: JSON
+    status: contentStatusEnum
+    error: String
+}
   type Collection {
     _id: ID!
     name: String
     description: String
-    type: String
-    content: [JSON]
+    topics: [String]
+    contents: [Content]
     business: Business
     createdBy: User
     isPublic: Boolean
-    permissions: [Permission]
+    isFeatured: Boolean
     createdAt: DateTime
     updatedAt: DateTime
   }
-
-  type Permission {
-    user: User
-    role: String
-    canRead: Boolean
-    canWrite: Boolean
-    canDelete: Boolean
-  }
-
   input CollectionInput {
     name: String!
     description: String
-    type: String
-    content: [JSON]
+    contents: [ContentInput]
     business: ID
     isPublic: Boolean
-    permissions: [PermissionInput]
+    isFeatured: Boolean
   }
-
-  input PermissionInput {
-    user: ID
-    role: String
-    canRead: Boolean
-    canWrite: Boolean
-    canDelete: Boolean
+  input ContentInput {
+    source: contentSourceEnum
+    metaData: JSON
   }
-
+  enum updateCollectionActionEnum {
+    rename
+    redescribe
+    addContents
+    removeContents
+  }
   type Query {
     # Get all collections for the user's business
-    collections(
-      limit: Int
-      type: String
-      isPublic: Boolean
-      business: ID
-    ): [Collection] @requireScope(scope: "collection:read") @requireBusinessAccess
-
-    # Get a specific collection by ID
-    collection(id: ID!): Collection @requireScope(scope: "collection:read") @requireResourceOwnership(model: "Collection", idField: "id")
-
-    # Get public collections (no auth required)
-    publicCollections(
-      limit: Int
-      type: String
-    ): [Collection]
+    collections(id:ID limit: Int isPublic: Boolean): [Collection] @requireScope(scope: "collection:read") @requireBusinessAccess
   }
 
   type Mutation {
@@ -63,15 +56,9 @@ export const collectionTypeDefs = `#graphql
     createCollection(collection: CollectionInput!): Collection @requireScope(scope: "collection:create") @requireBusinessAccess
 
     # Update an existing collection
-    updateCollection(id: ID!, collection: CollectionInput!): Collection @requireScope(scope: "collection:update") @requireResourceOwnership(model: "Collection", idField: "id")
+    updateCollection(id: ID! action: updateCollectionActionEnum! name: String description: String removeContents: [ID] addContents: [ContentInput]): Collection @requireScope(scope: "collection:update") @requireBusinessAccess
 
     # Delete a collection
-    deleteCollection(id: ID!): Boolean @requireScope(scope: "collection:delete") @requireResourceOwnership(model: "Collection", idField: "id")
-
-    # Upload files to collection
-    uploadToCollection(collectionId: ID!, files: [JSON]!): Collection @requireScope(scope: "collection:upload_files") @requireResourceOwnership(model: "Collection", idField: "collectionId")
-
-    # Manage collection permissions
-    updateCollectionPermissions(collectionId: ID!, permissions: [PermissionInput]!): Collection @requireScope(scope: "collection:manage_permissions") @requireResourceOwnership(model: "Collection", idField: "collectionId")
+    deleteCollection(id: ID!): Boolean @requireScope(scope: "collection:delete") @requireBusinessAccess
   }
 `; 
