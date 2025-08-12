@@ -1,12 +1,10 @@
 import graphqlFields from 'graphql-fields';
 import { AgentModel } from '../../models/Agent.js';
-import { Business } from '../../models/Business.js';
-import { Channel } from '../../models/Channel.js';
 import { Collection } from '../../models/Collection.js';
 import { Action } from '../../models/Action.js';
-import { User } from '../../models/User.js';
 import { flattenFields } from '../../utils/graphqlTools.js';
 import { openai } from '../../utils/openai.js';
+import { Channel } from '../../models/Channels.js';
 export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, isPublic, isFeatured, id }, context, info) => {
