@@ -3,7 +3,6 @@ const ActionSchema = new Schema({
     name: String,
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     async: { type: Boolean, default: true },
-    name: String,
     description: String,
     needsApproval: Boolean, // Knowledge fetching doesn't need approval
     parameters: Schema.Types.Mixed,

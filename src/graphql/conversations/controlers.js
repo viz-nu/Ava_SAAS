@@ -2,8 +2,7 @@ import graphqlFields from "graphql-fields";
 import { Business } from "../../models/Business.js";
 import { Conversation } from "../../models/Conversations.js";
 import { flattenFields } from "../../utils/graphqlTools.js"
-export const fetchConversations = async (_, filters, context, info) => {
-    const { limit = 10, status, _id, agentId, channel, from, to, userLocation, disconnectReason } = filters
+export const fetchConversations = async (_, { limit = 10, status, _id, agentId, channel, from, to, userLocation, disconnectReason }, context, info) => {
     const business = await Business.findById(context.user.business);
     if (!business) return []
     const filter = { business: business._id };
