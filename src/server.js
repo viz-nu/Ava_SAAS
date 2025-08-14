@@ -99,7 +99,6 @@ export const createApp = async () => {
                 const write = chunk => { if (!res.writableEnded) res.write(JSON.stringify(chunk)); };
                 // ✅ Prepare tools
                 const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
-                // console.log("toolsJson", JSON.stringify(toolsJson, null, 2));
                 if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
                 // ✅ Create agent
                 const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson, });
