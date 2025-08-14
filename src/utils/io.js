@@ -79,8 +79,8 @@ export async function initializeSocket(server) {
     // Create a namespace for chat 
     const ChatNameSpace = io.of('/chat');
     ChatNameSpace.on('connection', async (socket) => {
-        console.log("User joined conversation:", conversationID);
         const { conversationID, agentId } = socket.handshake.query;
+        console.log("User joined conversation:", conversationID);
         if (conversationID) {
             socket.join(conversationID);
             await Conversation.updateOne({ _id: conversationID }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
