@@ -27,18 +27,16 @@ export async function initializeSocket(server) {
             credentials: true,
         },
     });
+    // Use Redis adapter
+    io.adapter(createAdapter(pubClient, subClient));
     // Create a separate namespace for admin-related events
     const adminNamespace = io.of('/admin');
     adminNamespace.on('connection', (socket) => {
-
         console.log('Admin connected:', socket.id);
-
-
         socket.on('join-admin', (adminId) => {
             console.log('Admin joined room:', adminId);
             socket.join(adminId);
         });
-
         socket.on('trigger', async (triggerObject) => {
             try {
                 const { action, data } = triggerObject;
@@ -123,7 +121,6 @@ export async function initializeSocket(server) {
                 console.error("Error in trigger event:", error);
             }
         });
-
         socket.on('disconnect', async (reason) => {
             console.log("User disconnected:", socket.id, "reason:", reason);
             try {
@@ -141,24 +138,19 @@ export async function initializeSocket(server) {
         });
     });
 
-    // // Use Redis adapter
-    // io.adapter(createAdapter(pubClient, subClient));
-
-    // // Socket events
-    // io.on('connection', (socket) => {
-
-    //     const userId = socket.handshake.query.userId;
-    //     console.log("user connected joining", userId);
-    //     userId ? socket.join(userId) : null;
-
-    //     socket.on('join', (triggerObject) => {
-    //         const userId = triggerObject.data._id;
-    //         console.log("User joined:", triggerObject.data.name);
-    //         console.log(triggerObject);
-    //         if (userId) socket.join(userId);
-    //     });
-    //     socket.on('disconnect', () => { console.log("User disconnected:", socket.id) });
-    // });
+    const RegularUserNameSpace = io.of("/user");
+    RegularUserNameSpace.on('connection', (socket) => {
+        const userId = socket.handshake.query.userId;
+        console.log("user connected joining", userId);
+        userId ? socket.join(userId) : null;
+        socket.on('join', (triggerObject) => {
+            const userId = triggerObject.data._id;
+            console.log("User joined:", triggerObject.data.name);
+            console.log(triggerObject);
+            if (userId) socket.join(userId);
+        });
+        socket.on('disconnect', () => { console.log("User disconnected:", socket.id) });
+    });
 }
 export { io };
 
