@@ -76,21 +76,19 @@ export async function initializeSocket(server) {
         });
     });
 
-    // Create a namespace for chat
+    // Create a namespace for chat 
     const ChatNameSpace = io.of('/chat');
-    ChatNameSpace.on('connection', (socket) => {
-        socket.on('join', async (triggerObject) => {
-            const { conversationID, agentId } = triggerObject.data;
-            console.log("User joined conversation:", conversationID);
-            if (conversationID) {
-                socket.join(conversationID);
-                await Conversation.updateOne({ _id: conversationID }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" },"metadata.status": "active" } });
-            }
-            if (agentId) {
-                console.log("User joined agent room:", agentId);
-                socket.join(agentId);
-            }
-        });
+    ChatNameSpace.on('connection', async (socket) => {
+        console.log("User joined conversation:", conversationID);
+        const { conversationID, agentId } = socket.handshake.query;
+        if (conversationID) {
+            socket.join(conversationID);
+            await Conversation.updateOne({ _id: conversationID }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
+        }
+        if (agentId) {
+            console.log("User joined agent room:", agentId);
+            socket.join(agentId);
+        }
         socket.on('trigger', async (triggerObject) => {
             try {
                 const { action, data } = triggerObject;
