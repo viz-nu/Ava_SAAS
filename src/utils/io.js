@@ -141,24 +141,24 @@ export async function initializeSocket(server) {
         });
     });
 
-    // Use Redis adapter
-    io.adapter(createAdapter(pubClient, subClient));
+    // // Use Redis adapter
+    // io.adapter(createAdapter(pubClient, subClient));
 
-    // Socket events
-    io.on('connection', (socket) => {
+    // // Socket events
+    // io.on('connection', (socket) => {
 
-        const userId = socket.handshake.query.userId;
-        console.log("user connected joining", userId);
-        userId ? socket.join(userId) : null;
+    //     const userId = socket.handshake.query.userId;
+    //     console.log("user connected joining", userId);
+    //     userId ? socket.join(userId) : null;
 
-        socket.on('join', (triggerObject) => {
-            const userId = triggerObject.data._id;
-            console.log("User joined:", triggerObject.data.name);
-            console.log(triggerObject);
-            if (userId) socket.join(userId);
-        });
-        socket.on('disconnect', () => { console.log("User disconnected:", socket.id) });
-    });
+    //     socket.on('join', (triggerObject) => {
+    //         const userId = triggerObject.data._id;
+    //         console.log("User joined:", triggerObject.data.name);
+    //         console.log(triggerObject);
+    //         if (userId) socket.join(userId);
+    //     });
+    //     socket.on('disconnect', () => { console.log("User disconnected:", socket.id) });
+    // });
 }
 export { io };
 
