@@ -80,6 +80,7 @@ export async function initializeSocket(server) {
     const ChatNameSpace = io.of('/chat');
     ChatNameSpace.on('connection', async (socket) => {
         const { conversationId, agentId } = socket.handshake.query;
+        console.log(JSON.stringify(socket.handshake.query, null, 2))
         console.log("User joined conversation:", conversationId);
         if (conversationId) {
             socket.join(conversationId);
