@@ -79,13 +79,13 @@ export async function initializeSocket(server) {
     ChatNameSpace.on('connection', async (socket) => {
         const { conversationId, agentId } = socket.handshake.query;
         console.log(JSON.stringify(socket.handshake.query, null, 2))
-        console.log("User joined conversation:", conversationId);
+        console.log("Chat joined conversation:", conversationId);
         if (conversationId) {
             socket.join(conversationId);
             await Conversation.updateOne({ _id: conversationId }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
         }
         if (agentId) {
-            console.log("User joined agent room:", agentId);
+            console.log("Chat joined agent room:", agentId);
             socket.join(agentId);
         }
         socket.on('trigger', async (triggerObject) => {
@@ -141,7 +141,7 @@ export async function initializeSocket(server) {
     const RegularUserNameSpace = io.of("/user");
     RegularUserNameSpace.on('connection', (socket) => {
         const userId = socket.handshake.query.userId;
-        console.log("user connected joining", userId);
+        console.log("User connected joining", userId);
         userId ? socket.join(userId) : null;
         socket.on('join', (triggerObject) => {
             const userId = triggerObject.data._id;
