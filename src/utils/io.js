@@ -79,11 +79,11 @@ export async function initializeSocket(server) {
     // Create a namespace for chat 
     const ChatNameSpace = io.of('/chat');
     ChatNameSpace.on('connection', async (socket) => {
-        const { conversationID, agentId } = socket.handshake.query;
-        console.log("User joined conversation:", conversationID);
-        if (conversationID) {
-            socket.join(conversationID);
-            await Conversation.updateOne({ _id: conversationID }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
+        const { conversationId, agentId } = socket.handshake.query;
+        console.log("User joined conversation:", conversationId);
+        if (conversationId) {
+            socket.join(conversationId);
+            await Conversation.updateOne({ _id: conversationId }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
         }
         if (agentId) {
             console.log("User joined agent room:", agentId);
