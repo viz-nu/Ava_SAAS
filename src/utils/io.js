@@ -32,11 +32,11 @@ export async function initializeSocket(server) {
     // Create a separate namespace for admin-related events
     const adminNamespace = io.of('/admin');
     adminNamespace.on('connection', (socket) => {
-        console.log('Admin connected:', socket.id);
-        socket.on('join-admin', (adminId) => {
-            console.log('Admin joined room:', adminId);
-            socket.join(adminId);
-        });
+        const { adminId, organizationId } = socket.handshake.query;
+        console.log('Admin joined room:', adminId);
+        socket.join(adminId);
+        console.log('Admin joined organisation room:', organizationId);
+        socket.join(organizationId);
         socket.on('trigger', async (triggerObject) => {
             try {
                 const { action, data } = triggerObject;
@@ -44,7 +44,6 @@ export async function initializeSocket(server) {
                 switch (action) {
                     case 'getActiveUsersByAgent':
                         const { agentId } = data;
-                        // get rooms for the agentId
                         socket.emit('activeUsers', { count: (await ChatNameSpace.in(agentId).fetchSockets()).length });
                         break;
                     // case 'message':
@@ -77,17 +76,14 @@ export async function initializeSocket(server) {
     // Create a namespace for chat 
     const ChatNameSpace = io.of('/chat');
     ChatNameSpace.on('connection', async (socket) => {
-        const { conversationId, agentId } = socket.handshake.query;
-        console.log(JSON.stringify(socket.handshake.query, null, 2))
-        console.log("Chat joined conversation:", conversationId);
-        if (conversationId) {
-            socket.join(conversationId);
-            await Conversation.updateOne({ _id: conversationId }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
-        }
-        if (agentId) {
-            console.log("Chat joined agent room:", agentId);
-            socket.join(agentId);
-        }
+        const { conversationId, agentId, organizationId } = socket.handshake.query;
+        socket.join(conversationId);
+        await Conversation.updateOne({ _id: conversationId }, { $set: { "metadata.sockets": { socketId: socket.id, disconnectReason: "" }, "metadata.status": "active" } });
+        console.log("Chat joined conversation room:", conversationId);
+        socket.join(agentId);
+        console.log("Chat joined agent room:", agentId);
+        adminNamespace.to(organizationId).emit('activeUsers', { count: (await ChatNameSpace.in(agentId).fetchSockets()).length });
+        console.log("Notified to Organization room:", organizationId);
         socket.on('trigger', async (triggerObject) => {
             try {
                 const { action, data } = triggerObject;
