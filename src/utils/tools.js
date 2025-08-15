@@ -321,15 +321,14 @@ export const buildJSONSchema = (def) => {
             break;
         case "object":
             schema.properties = {};
-            let required = [];
+            schema.required = [];
             schema.additionalProperties = false;
             if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
             if (def.properties) {
                 for (const [key, value] of Object.entries(def.properties)) {
                     schema.properties[key] = buildJSONSchema(value);
-                    if (value.isRequired) required.push(key);
+                    if (value.isRequired) schema.required.push(key);
                 }
-                if (required.length > 0) schema.required = required;
             }
             if (def.minProperties) schema.minProperties = def.minProperties
             if (def.maxProperties) schema.maxProperties = def.maxProperties
