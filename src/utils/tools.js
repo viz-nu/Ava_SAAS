@@ -276,24 +276,77 @@ export const knowledgeToolBaker = (collections) => {
     return template;
 };
 export const buildJSONSchema = (def) => {
-    const schema = { type: def.dataType, description: def.description, additionalProperties: false };
+    const schema = { description: def.description, type: def.dataType };
+    if (def.title) schema.title = def.title
+    if (def.examples) schema.examples = def.examples
     if (def.default !== undefined) schema.default = def.default;
-    if (def.enum && Array.isArray(def.enum)) schema.enum = def.enum;
-    if (def.pattern) schema.pattern = def.pattern;
-    if (def.dataFormat) schema.format = def.dataFormat;
-    if (def.dataType === "object") {
-        schema.properties = {};
-        schema.required = [];
-        if (def.properties) {
-            for (const [key, value] of Object.entries(def.properties)) {
-                schema.properties[key] = buildJSONSchema(value);
-                if (value.isRequired) schema.required.push(key);
-            }
-        }
-        schema.additionalProperties = false;
-        // ✅ Add anyOf logic for conditional requirement
-        if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
+    // Handle composition keywords
+    if (def.allOf) schema.allOf = def.allOf.map(buildJSONSchema);
+    if (def.anyOf) schema.anyOf = def.anyOf.map(buildJSONSchema);
+    if (def.oneOf) schema.oneOf = def.oneOf.map(buildJSONSchema);
+    if (def.not) schema.not = buildJSONSchema(def.not);
+    // Handle conditional schemas
+    if (def.if) schema.if = buildJSONSchema(def.if);
+    if (def.then) schema.then = buildJSONSchema(def.then);
+    if (def.else) schema.else = buildJSONSchema(def.else);
+    if (def.const !== undefined) {
+        schema.const = def.const;
+        return schema; // const doesn't need type
     }
-    if (def.dataType === "array") schema.items = (def.items) ? buildJSONSchema(def.items) : { type: "string" };
+    if (Array.isArray(def.dataType)) {
+        schema.type = def.dataType;
+        return schema;
+    }
+    switch (def.dataType) {
+        case "string":
+            if (def.pattern) schema.pattern = def.pattern
+            if (["date-time", "time", "date", "duration", "email", "hostname", "ipv4", "ipv6", "uuid"].includes(def.format)) schema.format = def.format
+            if (def.minLength) schema.minLength = def.minLength
+            if (def.maxLength) schema.maxLength = def.maxLength
+            if (def.enum) schema.enum = def.enum
+            break;
+        case "number":
+        case "integer":
+            if (def.multipleOf) schema.multipleOf = def.multipleOf
+            if (def.maximum) schema.maximum = def.maximum
+            if (def.exclusiveMaximum) schema.exclusiveMaximum = def.exclusiveMaximum
+            if (def.minimum) schema.minimum = def.minimum
+            if (def.exclusiveMinimum) schema.exclusiveMinimum = def.exclusiveMinimum
+            break;
+        case "array":
+            schema.items = (def.items) ? buildJSONSchema(def.items) : { type: "string" }
+            if (def.minItems) schema.minItems = def.minItems
+            if (def.maxItems) schema.maxItems = def.maxItems
+            if (def.uniqueItems) schema.uniqueItems = def.uniqueItems
+            break;
+        case "object":
+            schema.properties = {};
+            let required = [];
+            schema.additionalProperties = false;
+            if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
+            if (def.properties) {
+                for (const [key, value] of Object.entries(def.properties)) {
+                    schema.properties[key] = buildJSONSchema(value);
+                    if (value.isRequired) required.push(key);
+                }
+                if (required.length > 0) schema.required = required;
+            }
+            if (def.minProperties) schema.minProperties = def.minProperties
+            if (def.maxProperties) schema.maxProperties = def.maxProperties
+            // Handle pattern properties
+            if (def.patternProperties) {
+                schema.patternProperties = {};
+                for (const [pattern, propDef] of Object.entries(def.patternProperties)) {
+                    schema.patternProperties[pattern] = buildJSONSchema(propDef);
+                }
+            }
+            break;
+        case "boolean":
+            break;
+        case "null":
+            break;
+        default: console.warn(`Unknown dataType: ${def.dataType}`);
+            break;
+    }
     return schema;
 }
