@@ -294,6 +294,6 @@ export const buildJSONSchema = (def) => {
         // ✅ Add anyOf logic for conditional requirement
         if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
     }
-    if (def.dataType === "array") schema.items = (def.properties && def.properties.items) ? buildJSONSchema(def.properties.items) : { type: "any" };
+    if (def.dataType === "array") schema.items = (def.items) ? buildJSONSchema(def.items) : { type: "string" };
     return schema;
 }
