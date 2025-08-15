@@ -1,6 +1,7 @@
 import { model, Schema } from 'mongoose';
 import { Message } from './Messages.js';
 import { Agent, run } from '@openai/agents';
+import { buildJSONSchema } from '../utils/tools.js';
 const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive", "disconnected"];
 const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
@@ -44,9 +45,8 @@ ConversationSchema.methods.updateAnalytics = async function () {
     };
     const formatted = messages.map(m => `User: ${m.query}\nAgent: ${m.response}`).join("\n\n");
     const agentDetails = await this.populate('agent');
-    console.log(JSON.stringify(agentDetails.agent.analysisMetrics), null, 2);
     if (agentDetails.agent.analysisMetrics) {
-        const outputType = JSON.parse(JSON.stringify(agentDetails.agent.analysisMetrics));
+        const outputType = buildJSONSchema(agentDetails.agent.analysisMetrics);
         const agent = new Agent({
             name: "Conversation Analyzer",
             instructions: "Analyze the provided conversation history to assess the user's engagement level, interests, and qualification status. Extract key behavioral indicators, determine their role and intent, assign a lead score (0-100), and categorize their interest areas. Return your analysis in the exact JSON structure specified by the outputType schema.",

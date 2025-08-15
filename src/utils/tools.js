@@ -275,7 +275,7 @@ export const knowledgeToolBaker = (collections) => {
     }
     return template;
 };
-function buildJSONSchema(def) {
+export const buildJSONSchema = (def) => {
     const schema = { type: def.dataType, description: def.description, additionalProperties: false };
     if (def.default !== undefined) schema.default = def.default;
     if (def.enum && Array.isArray(def.enum)) schema.enum = def.enum;
