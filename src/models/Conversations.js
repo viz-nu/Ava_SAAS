@@ -51,7 +51,7 @@ ConversationSchema.methods.updateAnalytics = async function () {
             instructions: "Analyze the provided conversation history to assess the user's engagement level, interests, and qualification status. Extract key behavioral indicators, determine their role and intent, assign a lead score (0-100), and categorize their interest areas. Return your analysis in the exact JSON structure specified by the outputType schema.",
             model: "gpt-4.1-mini",
             temperature: 0.2,
-            outputType: { type: "json_schema", format: { name: "analysisMetrics", schema: outputType } },
+            outputType: { type: "json_schema", name: "analysisMetrics", schema: outputType },
         });
         let result
         try {
