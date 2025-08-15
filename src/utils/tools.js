@@ -327,8 +327,10 @@ export const buildJSONSchema = (def) => {
             if (def.properties) {
                 for (const [key, value] of Object.entries(def.properties)) {
                     const valuable = buildJSONSchema(value)
-                    if (valuable) schema.properties[key] = valuable;
-                    if (value.isRequired) schema.required.push(key);
+                    if (valuable) {
+                        schema.properties[key] = valuable
+                        schema.required.push(key)
+                    };
                 }
             }
             if (def.minProperties) schema.minProperties = def.minProperties
