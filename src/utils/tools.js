@@ -314,7 +314,7 @@ export const buildJSONSchema = (def) => {
             if (def.exclusiveMinimum) schema.exclusiveMinimum = def.exclusiveMinimum
             break;
         case "array":
-            schema.items = (def.items) ? buildJSONSchema(def.items) : { type: "string" }
+            schema.items = (def.items) ? buildJSONSchema(def.items) : { type: "null" }
             if (def.minItems) schema.minItems = def.minItems
             if (def.maxItems) schema.maxItems = def.maxItems
             if (def.uniqueItems) schema.uniqueItems = def.uniqueItems
@@ -338,6 +338,9 @@ export const buildJSONSchema = (def) => {
                 for (const [pattern, propDef] of Object.entries(def.patternProperties)) {
                     schema.patternProperties[pattern] = buildJSONSchema(propDef);
                 }
+            }
+            if (Object.keys(schema.properties).length == 0 && Object.keys(schema.patternProperties).length == 0) {
+                return { type: "null" }
             }
             break;
         case "boolean":
