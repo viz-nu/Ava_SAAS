@@ -47,6 +47,7 @@ ConversationSchema.methods.updateAnalytics = async function () {
     const agentDetails = await this.populate('agent');
     if (agentDetails.agent.analysisMetrics) {
         const outputType = buildJSONSchema(agentDetails.agent.analysisMetrics);
+        console.log(JSON.stringify(outputType, null, 2));
         const agent = new Agent({
             name: "Conversation Analyzer",
             instructions: "Analyze the provided conversation history to assess the user's engagement level, interests, and qualification status. Extract key behavioral indicators, determine their role and intent, assign a lead score (0-100), and categorize their interest areas. Return your analysis in the exact JSON structure specified by the outputType schema.",
