@@ -326,7 +326,8 @@ export const buildJSONSchema = (def) => {
             if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
             if (def.properties) {
                 for (const [key, value] of Object.entries(def.properties)) {
-                    schema.properties[key] = buildJSONSchema(value);
+                    const valuable = buildJSONSchema(value)
+                    if (valuable) schema.properties[key] = valuable;
                     if (value.isRequired) schema.required.push(key);
                 }
             }
@@ -339,7 +340,7 @@ export const buildJSONSchema = (def) => {
                     schema.patternProperties[pattern] = buildJSONSchema(propDef);
                 }
             }
-            if (Object.keys(schema.properties).length === 0 && (!schema.patternProperties || Object.keys(schema.patternProperties).length === 0)) return null ;
+            if (Object.keys(schema.properties).length === 0 && (!schema.patternProperties || Object.keys(schema.patternProperties).length === 0)) return false;
         case "boolean":
             break;
         case "null":
