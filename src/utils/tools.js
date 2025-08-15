@@ -290,7 +290,7 @@ export const buildJSONSchema = (def) => {
                 if (value.isRequired) schema.required.push(key);
             }
         }
-        schema.additionalProperties = Boolean(def.additionalProperties);
+        schema.additionalProperties = false;
         // ✅ Add anyOf logic for conditional requirement
         if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
     }
