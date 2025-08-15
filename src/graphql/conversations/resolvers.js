@@ -25,9 +25,14 @@ export const conversationResolvers = {
   },
   Mutation: {
     updateConversationAnalysis: async (_, { conversationIds }, context, info) => {
-      const conversations = await Conversation.find({ _id: { $in: conversationIds } });
+      const conversations = await Conversation.find({
+        _id: {
+          $in: conversationIds
+        }
+      });
       await Promise.all(conversations.map(async (conversation) => await conversation.updateAnalytics()));
       return conversations;
     },
   }
 };
+

@@ -27,43 +27,7 @@ export const agentResolvers = {
         createAgent: async (_, { agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const projection = flattenFields(requestedFields);
-            let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, isFeatured, analysisMetrics = {
-                "type": "object",
-                "properties": {
-                    "isLead": {
-                        "type": "boolean",
-                        "description": "Whether the contact is already a lead (true) or just a visitor (false).",
-                        "default": false
-                    },
-                    "qualification": {
-                        "type": "string",
-                        "description": "Qualification bucket for the contact.",
-                        "enum": ["hot", "warm", "cold", "unqualified"]  // replace with your QualifyEnum values
-                    },
-                    "language": {
-                        "type": "string",
-                        "description": "ISO‑639‑1 language code (e.g. \"en\", \"fr\").",
-                        "default": "en"
-                    },
-                    "role": {
-                        "type": "string",
-                        "description": "Role the user plays when interacting with the organisation (e.g. \"student\", \"parent\", \"prospect\", \"partner\")."
-                    },
-                    "score": {
-                        "type": "number",
-                        "description": "Internal lead‑scoring metric (0‑100).",
-                        "minimum": 0,
-                        "maximum": 100
-                    },
-                    "interestClusters": {
-                        "type": "array",
-                        "description": "Tags or topical clusters the user has shown interest in.",
-                        "items": { "type": "string" }
-                    }
-                },
-                "additionalProperties": false,
-                "required": ["interestClusters", "score", "role", "language", "qualification", "isLead"]
-            } } = agent;
+            let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, isFeatured, analysisMetrics } = agent;
             const [foundChannels, foundCollections, foundActions] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
@@ -85,43 +49,7 @@ export const agentResolvers = {
         updateAgent: async (_, { id, agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const projection = flattenFields(requestedFields);
-            let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, isFeatured, analysisMetrics = {
-                "type": "object",
-                "properties": {
-                    "isLead": {
-                        "type": "boolean",
-                        "description": "Whether the contact is already a lead (true) or just a visitor (false).",
-                        "default": false
-                    },
-                    "qualification": {
-                        "type": "string",
-                        "description": "Qualification bucket for the contact.",
-                        "enum": ["hot", "warm", "cold", "unqualified"]  // replace with your QualifyEnum values
-                    },
-                    "language": {
-                        "type": "string",
-                        "description": "ISO‑639‑1 language code (e.g. \"en\", \"fr\").",
-                        "default": "en"
-                    },
-                    "role": {
-                        "type": "string",
-                        "description": "Role the user plays when interacting with the organisation (e.g. \"student\", \"parent\", \"prospect\", \"partner\")."
-                    },
-                    "score": {
-                        "type": "number",
-                        "description": "Internal lead‑scoring metric (0‑100).",
-                        "minimum": 0,
-                        "maximum": 100
-                    },
-                    "interestClusters": {
-                        "type": "array",
-                        "description": "Tags or topical clusters the user has shown interest in.",
-                        "items": { "type": "string" }
-                    }
-                },
-                "additionalProperties": false,
-                "required": ["interestClusters", "score", "role", "language", "qualification", "isLead"]
-            } } = agent;
+            let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, isFeatured, analysisMetrics } = agent;
             const [foundChannels, foundCollections, foundActions] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
