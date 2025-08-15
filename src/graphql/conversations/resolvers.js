@@ -25,10 +25,8 @@ export const conversationResolvers = {
   },
   Mutation: {
     updateConversationAnalysis: async (_, { conversationIds }, context, info) => {
-      const requestedFields = graphqlFields(info, {}, { processArguments: false });
-      const projection = flattenFields(requestedFields);
-      const conversations = await Conversation.find({ _id: { $in: conversationIds } }).select(projection);
-      await Promise.all(conversations.map(conversation => conversation.updateAnalytics()));
+      const conversations = await Conversation.find({ _id: { $in: conversationIds } });
+      await Promise.all(conversations.map(async (conversation) => await conversation.updateAnalytics()));
       return conversations;
     },
   }
