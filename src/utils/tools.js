@@ -339,7 +339,7 @@ export const buildJSONSchema = (def) => {
                     schema.patternProperties[pattern] = buildJSONSchema(propDef);
                 }
             }
-            if (Object.keys(schema.properties).length === 0 && (!schema.patternProperties || Object.keys(schema.patternProperties).length === 0)) return { type: "null" };
+            if (Object.keys(schema.properties).length === 0 && (!schema.patternProperties || Object.keys(schema.patternProperties).length === 0)) return "null" ;
         case "boolean":
             break;
         case "null":
