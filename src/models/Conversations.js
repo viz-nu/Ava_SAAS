@@ -68,7 +68,7 @@ ConversationSchema.methods.updateAnalytics = async function () {
                 model: "gpt-4.1-mini",
                 usage: usage
             };
-            this.extractedData = JSON.parse(result.finalOutput);
+            this.extractedData = result.finalOutput;
             console.log("metrics generated")
         } catch (error) {
             console.error("Error while running agent");
