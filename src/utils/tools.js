@@ -314,7 +314,7 @@ export const buildJSONSchema = (def) => {
             if (def.exclusiveMinimum) schema.exclusiveMinimum = def.exclusiveMinimum
             break;
         case "array":
-            schema.items = (def.items) ? buildJSONSchema(def.items) : { type: "null" }
+            schema.items = (def.items) ? buildJSONSchema(def.items) : { type: null }
             if (def.minItems) schema.minItems = def.minItems
             if (def.maxItems) schema.maxItems = def.maxItems
             if (def.uniqueItems) schema.uniqueItems = def.uniqueItems
