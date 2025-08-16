@@ -132,7 +132,7 @@ export function createToolWrapper(toolDef) {
         errorFunction: errorFn,
         needsApproval: toolDef.needsApproval
     }
-
+    console.log(JSON.stringify(toolSchema.parameters, null, 2));
     return toolSchema;
 }
 export function extractMainAndFollowUps(llmResponse) {
@@ -281,9 +281,9 @@ export const buildJSONSchema = (def) => {
     if (def.examples) schema.examples = def.examples
     if (def.default !== undefined) schema.default = def.default;
     // Handle composition keywords
-    if (def.allOf) schema.allOf = def.allOf.map(buildJSONSchema);
-    if (def.anyOf) schema.anyOf = def.anyOf.map(buildJSONSchema);
-    if (def.oneOf) schema.oneOf = def.oneOf.map(buildJSONSchema);
+    if (def.allOf) schema.allOf = def.allOf.map(ele => buildJSONSchema(ele));
+    if (def.anyOf) schema.anyOf = def.anyOf.map(ele => buildJSONSchema(ele));
+    if (def.oneOf) schema.oneOf = def.oneOf.map(ele => buildJSONSchema(ele));
     if (def.not) schema.not = buildJSONSchema(def.not);
     // Handle conditional schemas
     if (def.if) schema.if = buildJSONSchema(def.if);
