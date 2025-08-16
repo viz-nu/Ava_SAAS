@@ -132,6 +132,7 @@ export function createToolWrapper(toolDef) {
         errorFunction: errorFn,
         needsApproval: toolDef.needsApproval
     }
+    console.log("finally", JSON.stringify(toolSchema.parameters, null, 2))
     return toolSchema;
 }
 export function extractMainAndFollowUps(llmResponse) {
