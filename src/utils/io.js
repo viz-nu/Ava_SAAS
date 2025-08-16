@@ -120,12 +120,9 @@ export async function initializeSocket(server) {
         socket.on('disconnect', async (reason) => {
             console.log("chat disconnected:", socket.id, "reason:", reason);
             try {
-                const conversation = await Conversation.findOne({ "metadata.sockets.socketId": socket.id });
+                const conversation = await Conversation.findOneAndUpdate({ "metadata.sockets.socketId": socket.id }, { $set: { "metadata.sockets.disconnectReason": reason, "metadata.status": "disconnected" } }, { new: true })
                 if (conversation) {
-                    conversation.metadata.sockets.disconnectReason = reason;
-                    conversation.metadata.status = "disconnected";
                     await conversation.updateAnalytics();
-                    await conversation.save();
                     console.log("conversation Updated:");
                 }
             } catch (err) {
