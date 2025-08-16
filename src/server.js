@@ -103,7 +103,7 @@ export const createApp = async () => {
                 // ✅ Create agent
                 const agent = new Agent({ name: agentDetails.personalInfo.name, instructions: agentDetails.personalInfo.systemPrompt, model: agentDetails.personalInfo.model, toolChoice: 'auto', temperature: agentDetails.personalInfo.temperature, tools: toolsJson, });
                 // ✅ Initialize conversation if not exists
-                if (!conversation) conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, metadata: { userLocation: geoLocation.data }, channel: "web" });
+                if (!conversation) conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentId, metadata: { userLocation: geoLocation.data, sockets: {}, status: "initiated" }, channel: "web" });
                 // ✅ Create message if not exists
                 if (!message) message = await Message.create({ business: agentDetails.business._id, query: userMessage, response: "", conversationId: conversation._id });
                 // ✅ State preparation logic
