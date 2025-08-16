@@ -118,7 +118,7 @@ export async function initializeSocket(server) {
             }
         });
         socket.on('disconnect', async (reason) => {
-            console.log("User disconnected:", socket.id, "reason:", reason);
+            console.log("chat disconnected:", socket.id, "reason:", reason);
             try {
                 const conversation = await Conversation.findOne({ "metadata.sockets.socketId": socket.id });
                 if (conversation) {
