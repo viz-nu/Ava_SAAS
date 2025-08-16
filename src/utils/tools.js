@@ -132,7 +132,6 @@ export function createToolWrapper(toolDef) {
         errorFunction: errorFn,
         needsApproval: toolDef.needsApproval
     }
-    console.log("finally", JSON.stringify(toolSchema.parameters, null, 2))
     return toolSchema;
 }
 export function extractMainAndFollowUps(llmResponse) {
@@ -282,12 +281,6 @@ export const buildJSONSchema = (def) => {
     if (def.default !== undefined) schema.default = def.default;
     // Handle composition keywords
     if (def.allOf) schema.allOf = def.allOf.map(buildJSONSchema);
-    if (def.anyOf) {
-        console.log("anyOf exists");
-        schema.anyOf = def.anyOf.map(buildJSONSchema);
-        console.log("before", JSON.stringify(def.anyOf, null, 2));
-        console.log("after", JSON.stringify(schema.anyOf, null, 2));
-    }
     if (def.oneOf) schema.oneOf = def.oneOf.map(buildJSONSchema);
     if (def.not) schema.not = buildJSONSchema(def.not);
     // Handle conditional schemas
@@ -328,7 +321,7 @@ export const buildJSONSchema = (def) => {
             schema.properties = {};
             schema.required = [];
             schema.additionalProperties = false;
-            if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf;
+            if (def.anyOf && Array.isArray(def.anyOf) && def.anyOf.length > 0) schema.anyOf = def.anyOf.map(buildJSONSchema);
             if (def.properties) {
                 for (const [key, value] of Object.entries(def.properties)) {
                     const valuable = buildJSONSchema(value)
