@@ -303,10 +303,11 @@ export const channelResolvers = {
                         }
                         break;
                     case "twilio":
-                        const { AccountSid, state } = newConfig
-                        channel.config.AccountSid = AccountSid
-                        channel.config.state = state
-                        channel.secrets = { accessToken: TWILIO_AUTH_TOKEN }
+                        const { AccountSid, state, phoneNumber, TWILIO_AUTH_TOKEN } = newConfig
+                        if (AccountSid) channel.config.AccountSid = AccountSid
+                        if (state) channel.config.state = state
+                        if (phoneNumber) channel.config.phoneNumber = phoneNumber
+                        if (TWILIO_AUTH_TOKEN) channel.secrets.accessToken = TWILIO_AUTH_TOKEN
                         await channel.save()
                         await channel.updateStatus("twilio configured")
                         break;

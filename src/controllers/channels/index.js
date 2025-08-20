@@ -318,9 +318,10 @@ export const updateChannel = errorWrapper(async (req, res) => {
                 }
                 break;
             case "twilio":
-                const { AccountSid, state } = newConfig
-                channel.config.AccountSid = AccountSid
-                channel.config.state = state
+                const { AccountSid, state, phoneNumber } = newConfig
+                if (AccountSid) channel.config.AccountSid = AccountSid
+                if (state) channel.config.state = state
+                if (phoneNumber) channel.config.phoneNumber = phoneNumber
                 await channel.save()
                 await channel.updateStatus("twilio configured")
                 break;

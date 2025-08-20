@@ -1,4 +1,5 @@
 import { Channel } from "../../models/Channels.js";
+import { Conversation } from "../../models/Conversations.js";
 import { TwilioService } from "../../utils/twilio.js";
 // Assuming user access tokens are passed via context
 const { DOMAIN } = process.env;
@@ -68,11 +69,29 @@ export const twilioResolvers = {
             const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
             return await service.makeOutboundCall({ to, from, twimlUrl });
         },
-        // makeAIOutboundCall: async (_, { channelId, to, from, twimlUrl }) => {
-        //     const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-        //     const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
-        //     return await service.makeOutboundCall({ to, from, twimlUrl });
-        // },
+        makeAIOutboundCall: async (_, { channelId, to, agentId }) => {
+            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+            const callDetails = await service.makeOutboundCall({ to, from: channel.config.phoneNumber, url: `wss://${DOMAIN.replace(/^https?:\/\//, '')}/agent-media-stream` || channel.config.domain, agentId, channelId });
+            //             sid: Unique identifier for the call(e.g., "CAxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            // status: Current call status - typically starts as "queued", then "ringing", "in-progress", "completed", etc.
+            //                 to: The destination phone number
+            //             from: The source phone number(your Twilio number)
+            //             date_created: When the call was initiated
+            //             duration: Call duration(null initially, populated after call ends)
+            //             price: Cost of the call(null initially, populated after call ends)
+            //             direction: "outbound-api" for calls made via API
+            await Conversation.create({
+                business: channel.business,
+                channel: channel.type,
+                channelFullDetails: channel._id,
+                voiceCallIdentifierNumberSID: callDetails.sid,
+                agent: agentId,
+                contact: { phone: to },
+                metadata: { status: "initiated", callDetails }
+            });
+            return callDetails;
+        },
         sendSms: async (_, { channelId, to, from, body }) => {
             const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
