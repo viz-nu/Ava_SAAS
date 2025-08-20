@@ -16,7 +16,7 @@
 import twilio from 'twilio';
 export class TwilioService {
     constructor(userAccountSid, userAuthToken) {
-            this.client = twilio(userAccountSid, userAuthToken);
+        this.client = twilio(userAccountSid, userAuthToken);
 
         this.accountSid = userAccountSid;
     }
@@ -80,17 +80,17 @@ export class TwilioService {
      * -----------------------------*/
 
     async makeOutboundCall({ to, from, twimlUrl }) {
-        return await this.client.calls.create({ to, from, url: twimlUrl });// e.g. https://handler.twilio.com/twiml/EHxxx
+        return await this.client.calls.create({ to, from, url });// e.g. https://handler.twilio.com/twiml/EHxxx
     }
-    async makeAIOutboundCall({ to, from, twimlUrl }) {
-        // const { to, _id } = session;
-        // const VoiceResponse = this.client.twiml.VoiceResponse;
-        // const response = new VoiceResponse();
-        // const connect = response.connect();
-        // const stream = connect.stream({ url: `wss://${DOMAIN.replace(/^https?:\/\//, '')}/media-stream` });
-        // stream.parameter({ name: 'sessionId', value: _id.toString() });
-        // const twiml = response.toString();
-        return await this.client.calls.create({ to, from, twiml });// e.g. https://handler.twilio.com/twiml/EHxxx
+    async makeAIOutboundCall({ to, from, url, agentId, channelId }) {
+        const VoiceResponse = new this.client.twiml.VoiceResponse();
+        const response = new VoiceResponse();
+        const connect = response.connect();
+        const stream = connect.stream({ url: url });
+        stream.parameter({ name: 'channelId', value: channelId.toString() });
+        stream.parameter({ name: 'agentId', value: agentId.toString() });
+        const twiml = response.toString();
+        await this.client.calls.create({ to, from, twiml, record: true, statusCallback: `https://${process.env.SERVER_URL}webhook/twilio/call/status`, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
     }
     async listCalls() {
         return await this.client.calls.list({ limit: 20 });

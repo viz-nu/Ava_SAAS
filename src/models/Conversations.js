@@ -7,6 +7,7 @@ const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
     channelFullDetails: { type: Schema.Types.ObjectId, ref: "Channel" },
+    voiceCallIdentifierNumberSID: String,
     telegramChatId: String,
     whatsappChatId: String,
     contact: Schema.Types.Mixed,
@@ -30,6 +31,7 @@ const ConversationSchema = new Schema({
             disconnectReason: String,
         },
         userLocation: Schema.Types.Mixed,
+        callDetails: Schema.Types.Mixed,
     }
 }, {
     timestamps: true
@@ -75,5 +77,9 @@ ConversationSchema.methods.updateAnalytics = async function () {
         }
     }
     await this.save();
+}
+ConversationSchema.methods.UpdateCallDetails = function (details) {
+    this.metadata.callDetails = { ...details }
+    return this.save();
 }
 export const Conversation = model('Conversation', ConversationSchema, "Conversations");

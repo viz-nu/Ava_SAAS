@@ -9,7 +9,7 @@ const ChannelBaseSchema = new Schema(
     {
         name: { type: String, required: true, trim: true },
         business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
-        type: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram','twilio'], required: true },
+        type: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram', 'twilio'], required: true },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         webhookUrl: String,
         systemPrompt: String,
@@ -190,6 +190,7 @@ const twilioPhoneConfig = new Schema(
         AccountSid: String,
         connectedAppSid: { type: String, default: ConnectedAppSidTwilio },
         state: String,
+        phoneNumber: String,
         domain: { type: String, default: DOMAIN },
     },
     baseOpts

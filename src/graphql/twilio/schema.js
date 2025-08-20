@@ -111,6 +111,7 @@ type Mutation {
   buyPhoneNumber(channelId: ID!  phoneNumber: String!  friendlyName: String!): PhoneNumber
   releasePhoneNumber(channelId: ID!  sid: String!): PhoneNumber
   makeOutboundCall(channelId: ID!  to: String!  from: String!  twimlUrl: String!): Call
+  makeAIOutboundCall(channelId: ID! to:String! agentId:ID! ): Call
   sendSms(channelId: ID!  to: String!  from: String!  body: String!): SMSResponse
   deAuthorizeApp(channelId: ID!  connectAppSid: String!): Boolean
 }
