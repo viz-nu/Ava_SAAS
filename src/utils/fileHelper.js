@@ -6,7 +6,7 @@ import { digest } from "./setup.js";
 import { URL } from "url";
 import officeParser from "officeparser";
 import { Collection } from "../models/Collection.js";
-import { io } from "./io.js";
+import { adminNamespace, io } from "./io.js";
 const mimeToExt = {
     // Documents & Text Files
     "application/pdf": "pdf",

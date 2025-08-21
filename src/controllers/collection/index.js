@@ -7,7 +7,7 @@ import { User } from "../../models/User.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
 import { urlProcessingQueue } from "../../utils/bull.js";
 import { processFile } from "../../utils/fileHelper.js";
-import { io } from "../../utils/io.js";
+import { adminNamespace, io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 // Create Collection

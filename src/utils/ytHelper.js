@@ -1,7 +1,7 @@
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
 import { digest } from "./setup.js";
 import { Collection } from "../models/Collection.js";
-import { io } from "./io.js";
+import { adminNamespace, io } from "./io.js";
 export const processYT = async (collectionId, urls, receiver, _id) => {
     let total = urls.length, completed = 0, topics = []
     try {
