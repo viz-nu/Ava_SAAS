@@ -40,13 +40,11 @@ export async function initializeSocket(server) {
         socket.on('trigger', async (triggerObject) => {
             try {
                 const { action, data } = triggerObject;
-                console.log("Trigger action:", action, "with data:", data);
                 switch (action) {
                     case 'getActiveUsersByAgent':
                         const { agentId } = data;
                         const numberOfActiveUsers = Number((await ChatNameSpace.in(agentId).fetchSockets()).length)
                         socket.emit("trigger", { action: "activeUsers", data: { count: numberOfActiveUsers } });
-                        console.log(`triggered ${numberOfActiveUsers}`);
                         break;
                     // case 'message':
                     //     const { message, userId } = data;
@@ -86,49 +84,12 @@ export async function initializeSocket(server) {
         console.log("Chat joined agent room:", agentId);
         const usersLength = (await ChatNameSpace.in(agentId).fetchSockets()).length
         adminNamespace.to(organizationId).emit('trigger', { action: "activeUsers", data: { count: usersLength, agentId: agentId } });
-        console.log("Joined users count for agent:", agentId, "is", usersLength);
-
-        console.log("Notified to Organization room:", organizationId);
-        socket.on('trigger', async (triggerObject) => {
-            try {
-                const { action, data } = triggerObject;
-                console.log("Trigger action:", action, "with data:", data);
-                switch (action) {
-                    case 'getActiveUsersByAgent':
-                        const { agentId } = data;
-                        // get rooms for the agentId
-                        const rooms = await ChatNameSpace.in(agentId).fetchSockets();
-
-                        break;
-                    // case 'message':
-                    //     const { message, userId } = data;
-                    //     console.log("Message received:", message);
-                    //     if (userId) {
-                    //         io.to(userId).emit('message', { message, from: socket.id });
-                    //     }
-                    //     break;
-                    // case 'notification':
-                    //     const { notification, recipientId } = data;
-                    //     console.log("Notification sent to:", recipientId);
-                    //     if (recipientId) {
-                    //         io.to(recipientId).emit('notification', notification);
-                    //     }
-                    //     break;
-                    default:
-                        console.warn("Unknown action:", action);
-                }
-            }
-            catch (error) {
-                console.error("Error in trigger event:", error);
-            }
-        });
         socket.on('disconnect', async (reason) => {
             console.log("chat disconnected:", socket.id, "reason:", reason);
             try {
                 const conversation = await Conversation.findOneAndUpdate({ "metadata.sockets.socketId": socket.id }, { $set: { "metadata.sockets.disconnectReason": reason, "metadata.status": "disconnected" } }, { new: true })
                 const usersLength = (await ChatNameSpace.in(agentId).fetchSockets()).length
                 adminNamespace.to(organizationId).emit('trigger', { action: "activeUsers", data: { count: usersLength, agentId: agentId } });
-                console.log("Joined users count for agent:", agentId, "is", usersLength);
                 if (conversation) {
                     await conversation.updateAnalytics();
                     console.log("conversation Updated:");
