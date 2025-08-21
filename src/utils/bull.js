@@ -1,6 +1,6 @@
 import axios from "axios";
 import { digest } from './setup.js';
-import { io } from './io.js';
+import { adminNamespace, io } from './io.js';
 import { Collection } from '../models/Collection.js';
 import 'dotenv/config'
 import Queue from "bull";

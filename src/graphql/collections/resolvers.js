@@ -5,7 +5,7 @@ import { urlProcessingQueue } from "../../utils/bull.js";
 import { User } from '../../models/User.js';
 import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
-import { io } from "../../utils/io.js";
+import { adminNamespace, io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 import { processFile } from "../../utils/fileHelper.js";
