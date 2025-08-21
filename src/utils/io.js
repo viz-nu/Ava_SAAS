@@ -3,7 +3,7 @@ import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Conversation } from "../models/Conversations.js";
 import 'dotenv/config'
-export let io, adminNamespace, ChatNameSpace, RegularUserNameSpace  ;
+export let io, adminNamespace, ChatNameSpace, RegularUserNameSpace;
 
 export async function initializeSocket(server) {
     // Setup Redis
@@ -84,7 +84,7 @@ export async function initializeSocket(server) {
         console.log("Chat joined conversation room:", conversationId);
         socket.join(agentId);
         console.log("Chat joined agent room:", agentId);
-        adminNamespace.to(organizationId).emit('activeUsers', { count: (await ChatNameSpace.in(agentId).fetchSockets()).length });
+        adminNamespace.to(organizationId).emit('activeUsers', { data: { count: (await ChatNameSpace.in(agentId).fetchSockets()).length } });
         console.log("Notified to Organization room:", organizationId);
         socket.on('trigger', async (triggerObject) => {
             try {
@@ -123,6 +123,7 @@ export async function initializeSocket(server) {
             console.log("chat disconnected:", socket.id, "reason:", reason);
             try {
                 const conversation = await Conversation.findOneAndUpdate({ "metadata.sockets.socketId": socket.id }, { $set: { "metadata.sockets.disconnectReason": reason, "metadata.status": "disconnected" } }, { new: true })
+                adminNamespace.to(conversation.business.toString).emit('activeUsers', { data: { count: (await ChatNameSpace.in(conversation.agent.toString()).fetchSockets()).length } });
                 if (conversation) {
                     await conversation.updateAnalytics();
                     console.log("conversation Updated:");
