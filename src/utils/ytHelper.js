@@ -2,7 +2,7 @@ import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube
 import { digest } from "./setup.js";
 import { Collection } from "../models/Collection.js";
 import { io } from "./io.js";
-export const processYT = async (collectionId, urls, receivers = [], _id) => {
+export const processYT = async (collectionId, urls, receiver, _id) => {
     let total = urls.length, completed = 0, topics = []
     try {
         for (const { url, data } of urls) {
@@ -24,7 +24,7 @@ export const processYT = async (collectionId, urls, receivers = [], _id) => {
             );
             completed += 1
             const progressData = { total, progress: completed, collectionId: collectionId }
-            receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData }));
+            io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
         }
         console.log("Finished processing YouTube videos")
         return { success: true }

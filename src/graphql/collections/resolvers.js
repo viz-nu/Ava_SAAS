@@ -36,25 +36,24 @@ export const collectionResolvers = {
                 .populate('business')
                 .populate('createdBy')
                 .select(projection);
-            const receivers = await User.find({ business: context.user.business, scopes: "collection:read" }).select('_id');
-            (async function processCollection(newCollection, receivers) {
+            (async function processCollection(newCollection, receiver = context.user.business) {
                 try {
                     for (const content of newCollection.contents) {
                         const { source, metaData, _id } = content;
                         let result
-                        receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } }));
+                        io.to(context.user.business.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } });
                         switch (source) {
                             case "website":
                                 console.log("website process started");
-                                if (metaData?.urls) result = await processURLS(newCollection._id, metaData.urls, receivers, _id);
+                                if (metaData?.urls) result = await processURLS(newCollection._id, metaData.urls, receiver, _id);
                                 break;
                             case "youtube":
                                 console.log("youtube process started");
-                                if (metaData?.urls) result = await processYT(newCollection._id, metaData.urls, receivers, _id);
+                                if (metaData?.urls) result = await processYT(newCollection._id, metaData.urls, receiver, _id);
                                 break;
                             case "file":
                                 console.log("file process started");
-                                if (metaData?.urls) result = await processFile(newCollection._id, metaData.urls[0].url, receivers, _id);
+                                if (metaData?.urls) result = await processFile(newCollection._id, metaData.urls[0].url, receiver, _id);
                                 break;
                             default:
                                 console.warn(`Unknown source type: ${source}`);
@@ -64,7 +63,7 @@ export const collectionResolvers = {
                 } catch (error) {
                     console.error("Failed to sync collection:", error);
                 }
-            })(newCollection, receivers);
+            })(newCollection, receiver);
             return newCollection;
         },
         updateCollection: async (_, { id, action, name, description, removeContents, addContents }, context, info) => {

@@ -3,6 +3,7 @@ import { AgentModel } from "../../models/Agent.js";
 import { Business } from "../../models/Business.js";
 import { Collection } from "../../models/Collection.js";
 import { Data } from "../../models/Data.js";
+import { User } from "../../models/User.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
 import { urlProcessingQueue } from "../../utils/bull.js";
 import { processFile } from "../../utils/fileHelper.js";
@@ -17,24 +18,24 @@ export const createCollection = errorWrapper(async (req, res) => {
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     const collection = new Collection({ name, description, contents, business: business._id, createdBy: req.user._id });
     await collection.save();
-    (async function processCollection(collection, business) {
+    (async function processCollection(collection, receiver = req.user.business) {
         try {
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
-                let result, receivers = business.members
-                receivers.forEach(receiver => io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } }));
+                let result;
+                io.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
                 switch (source) {
                     case "website":
                         console.log("website process started");
-                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receivers, _id);
+                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receiver, _id);
                         break;
                     case "youtube":
                         console.log("youtube process started");
-                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receivers, _id);
+                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receiver, _id);
                         break;
                     case "file":
                         console.log("file process started");
-                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url, receivers, _id);
+                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url, receiver, _id);
                         break;
                     default:
                         console.warn(`Unknown source type: ${source}`);
@@ -44,7 +45,7 @@ export const createCollection = errorWrapper(async (req, res) => {
         } catch (error) {
             console.error("Failed to sync collection:", error);
         }
-    })(collection, business);
+    })(collection, req.user.business);
     return { statusCode: 201, message: "Registration successful", data: collection }
 });
 
