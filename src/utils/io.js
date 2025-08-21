@@ -3,7 +3,7 @@ import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Conversation } from "../models/Conversations.js";
 import 'dotenv/config'
-let io;
+export let io, adminNamespace, ChatNameSpace, RegularUserNameSpace  ;
 
 export async function initializeSocket(server) {
     // Setup Redis
@@ -30,7 +30,7 @@ export async function initializeSocket(server) {
     // Use Redis adapter
     io.adapter(createAdapter(pubClient, subClient));
     // Create a separate namespace for admin-related events
-    const adminNamespace = io.of('/admin');
+    adminNamespace = io.of('/admin');
     adminNamespace.on('connection', (socket) => {
         const { adminId, organizationId } = socket.handshake.query;
         console.log('Admin joined room:', adminId);
@@ -76,7 +76,7 @@ export async function initializeSocket(server) {
     });
 
     // Create a namespace for chat 
-    const ChatNameSpace = io.of('/chat');
+    ChatNameSpace = io.of('/chat');
     ChatNameSpace.on('connection', async (socket) => {
         const { conversationId, agentId, organizationId } = socket.handshake.query;
         socket.join(conversationId);
@@ -133,7 +133,7 @@ export async function initializeSocket(server) {
         });
     });
 
-    const RegularUserNameSpace = io.of("/user");
+    RegularUserNameSpace = io.of("/user");
     RegularUserNameSpace.on('connection', (socket) => {
         const userId = socket.handshake.query.userId;
         console.log("User connected joining", userId);
@@ -147,7 +147,6 @@ export async function initializeSocket(server) {
         socket.on('disconnect', () => { console.log("User disconnected:", socket.id) });
     });
 }
-export { io };
 
 // {
 //     socketId: 'TZHDxLgrXERfhioeAAAB',

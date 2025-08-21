@@ -41,7 +41,7 @@ export const collectionResolvers = {
                     for (const content of newCollection.contents) {
                         const { source, metaData, _id } = content;
                         let result
-                        io.to(context.user.business.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } });
+                        adminNamespace.to(context.user.business.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } });
                         switch (source) {
                             case "website":
                                 console.log("website process started");
