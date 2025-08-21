@@ -23,7 +23,7 @@ export const createCollection = errorWrapper(async (req, res) => {
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
                 let result;
-                io.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
+                adminNamespace.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
                 switch (source) {
                     case "website":
                         console.log("website process started");

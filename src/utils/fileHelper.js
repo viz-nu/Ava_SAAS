@@ -139,7 +139,7 @@ export const processFile = async (collectionId, url, receiver, _id) => {
             }
         );
         fs.unlinkSync(tempFilePath);
-        io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1, collectionId: collectionId } })
+        adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1, collectionId: collectionId } })
         return { success: true, data: null }
     } catch (error) {
         console.error(error);

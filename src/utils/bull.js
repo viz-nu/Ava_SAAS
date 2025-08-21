@@ -69,11 +69,11 @@ urlProcessingQueue.on('completed', async (job, result) => {
     const [completedJobs, waitingJobs, activeJobs, failedJobs] = await Promise.all([Promise.resolve(allCompletedJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allWaitingJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allActiveJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allFailedJobs.filter(j => j.data.collectionId === collectionId).length)]);
     const totalJobs = completedJobs + waitingJobs + activeJobs + failedJobs;
     const progressData = { total: totalJobs, progress: completedJobs + failedJobs, collectionId };
-    io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
+    adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
     if (waitingJobs == 0 && activeJobs == 0) {
         console.log(`All jobs completed for Collection ID: ${collectionId}`);
         await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs <= failedJobs ? "failed" : "active" } })
-        io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: "active" } });
+        adminNamespace.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: "active" } });
     }
 });
 // Handle failed jobs
@@ -84,11 +84,11 @@ urlProcessingQueue.on('failed', async (job, error) => {
     const [completedJobs, waitingJobs, activeJobs, failedJobs] = await Promise.all([Promise.resolve(allCompletedJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allWaitingJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allActiveJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allFailedJobs.filter(j => j.data.collectionId === collectionId).length)]);
     const totalJobs = completedJobs + waitingJobs + activeJobs + failedJobs;
     const progressData = { total: totalJobs, progress: completedJobs + failedJobs, collectionId };
-    io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
+    adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
     if (waitingJobs == 0 && activeJobs == 0) {
         console.log(`All jobs completed for Collection ID: ${collectionId}`);
         await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs < failedJobs ? "failed" : "active", "contents.$.error": completedJobs <= failedJobs ? error : null } })
-        io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } })
+        adminNamespace.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } })
     }
 });
 urlProcessingQueue.on('stalled', async (job) => {
@@ -98,11 +98,11 @@ urlProcessingQueue.on('stalled', async (job) => {
     const [completedJobs, waitingJobs, activeJobs, failedJobs] = await Promise.all([Promise.resolve(allCompletedJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allWaitingJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allActiveJobs.filter(j => j.data.collectionId === collectionId).length), Promise.resolve(allFailedJobs.filter(j => j.data.collectionId === collectionId).length)]);
     const totalJobs = completedJobs + waitingJobs + activeJobs + failedJobs;
     const progressData = { total: totalJobs, progress: completedJobs + failedJobs, collectionId };
-    io.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
+    adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
     if (waitingJobs == 0 && activeJobs == 0) {
         console.log(`All jobs completed for Collection ID: ${collectionId}`);
         await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs < failedJobs ? "failed" : "active", "contents.$.error": "stalled" } })
-        io.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } })
+        adminNamespace.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } })
     }
 })
 // await urlProcessingQueue.obliterate({ force: true });
