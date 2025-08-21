@@ -170,8 +170,8 @@ export const FetchUsingDroxy = async (url) => {
     return { success: false, error: error.message }
   }
 }
-export const processURLS = async (collectionId, urls, receivers = [], _id) => {
-  const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receivers, _id })));
+export const processURLS = async (collectionId, urls, receiver, _id) => {
+  const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receiver, _id })));
   await Promise.all(jobs);
   return { success: true };
 };
