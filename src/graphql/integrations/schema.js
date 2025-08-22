@@ -1,4 +1,4 @@
-export const zohoTypeDefs = `#graphql
+export const IntegrationTypeDefs = `#graphql
 enum IntegrationTypeEnum {
     """Zoho CRM integration"""
     zoho
@@ -35,7 +35,7 @@ type MetaData {
     """Purpose of the integration (e.g., CRM, SMS)"""
     purpose: String
     """Type of the integration (e.g., zoho, twilio)"""
-    type: TypeEnum
+    type: IntegrationTypeEnum
 }
 
 """

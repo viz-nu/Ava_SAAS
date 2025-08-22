@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql";
-import { Integration } from "../../models/Integrations";
+import { Integration } from "../../models/Integrations.js";
 import { ZohoCRMIntegration } from "../../utils/Zoho.js";
 
 export const IntegrationResolvers = {
