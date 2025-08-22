@@ -1,13 +1,17 @@
 import { GraphQLError } from "graphql";
 import { Integration } from "../../models/Integrations.js";
 import { ZohoCRMIntegration } from "../../utils/Zoho.js";
+import graphqlFields from "graphql-fields";
+import { flattenFields } from "../../utils/graphqlTools.js";
 
 export const IntegrationResolvers = {
     Query: {
-        fetchIntegration: async (_, { id }, context, info) => {
+        fetchIntegration: async (_, { id, limit = 5 }, context, info) => {
             const filter = { business: context.business._id };
             if (id) filter._id = id;
-            const integration = await Integration.find(filter).populate('business');
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const projection = flattenFields(requestedFields);
+            const integration = await Integration.find(filter).populate('business createdBy').select(projection).limit(limit).sort({ createdAt: -1 });;
             return integration;
         }
     },
@@ -67,7 +71,7 @@ export const IntegrationResolvers = {
                 default:
                     break;
             }
-            return integration
+            return await integration.populate('business createdBy');
         }
     }
 }
