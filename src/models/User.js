@@ -124,6 +124,12 @@ const ScopesEnum = {
     'notification:update': 'User can update notification status',
     'notification:delete': 'User can delete notifications',
 
+    // Integration Management
+    'integration:read': 'User can read integration details',
+    'integration:create': 'User can create new integrations',
+    'integration:update': 'User can update integration configurations',
+    'integration:delete': 'User can delete integrations',
+
 };
 
 // Role-based scope mappings
@@ -218,7 +224,11 @@ const RoleScopes = {
         'user:delete',
         'notification:read',
         'notification:update',
-        'notification:delete'
+        'notification:delete',
+        'integration:read',
+        'integration:create',
+        'integration:update',
+        'integration:delete'
     ],
     'admin': [
         'admin:users',
@@ -292,7 +302,11 @@ const RoleScopes = {
         'user:update',
         'notification:read',
         'notification:update',
-        'notification:delete'
+        'notification:delete',
+        'integration:read',
+        'integration:create',
+        'integration:update',
+        'integration:delete'
     ],
     'manager': [
         'business:read',
