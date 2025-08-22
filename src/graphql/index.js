@@ -23,14 +23,16 @@ import { ticketTypeDefs } from './tickets/schema.js';
 import { notificationTypeDefs } from './notifications/schema.js';
 import { notificationResolvers } from './notifications/resolver.js';
 import {  ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
-import { zohoTypeDefs } from './zoho/schema.js';
-import { zohoResolvers } from './zoho/resolver.js';
+// import { zohoTypeDefs } from './zoho/schema.js';
+// import { zohoResolvers } from './zoho/resolver.js';
 import { actionResolvers } from './actions/resolvers.js';
 import { actionTypeDefs } from './actions/schema.js';
 import { agentResolvers } from './agents/resolvers.js';
 import { agentTypeDefs } from './agents/schema.js';
 import { collectionResolvers } from './collections/resolvers.js';
 import { collectionTypeDefs } from './collections/schema.js';
+import { IntegrationTypeDefs } from './integrations/schema.js';
+import { IntegrationResolvers } from './integrations/resolver.js';
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
@@ -40,7 +42,8 @@ const typeDefs = mergeTypeDefs([
   ticketTypeDefs,
   notificationTypeDefs,
   userTypeDefs,
-  zohoTypeDefs,
+  IntegrationTypeDefs,
+  // zohoTypeDefs,
   agentTypeDefs,
   actionTypeDefs,
   collectionTypeDefs
@@ -52,7 +55,8 @@ const resolvers = mergeResolvers([
   ticketResolvers,
   notificationResolvers,
   userResolvers,
-  zohoResolvers,
+  IntegrationResolvers,
+  // zohoResolvers,
   agentResolvers,
   actionResolvers,
   collectionResolvers
