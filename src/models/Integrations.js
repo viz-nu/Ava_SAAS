@@ -21,7 +21,7 @@ const IntegrationSchema = new Schema({
         apiDomainUrl: String,
         domain: String,
         scope: String,
-        expiresAt: { type: Date, required: true },
+        expiresAt: Date,
     },
     isActive: { type: Boolean, default: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
