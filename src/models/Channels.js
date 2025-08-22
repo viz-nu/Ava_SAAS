@@ -115,6 +115,7 @@ Channel.discriminator('web', new Schema({ config: WebConfig, secrets: WebSecrets
 const PhoneConfig = new Schema(
     {
         provider: { type: String, enum: ['twilio', 'plivo'] },
+        integration: { type: Schema.Types.ObjectId, ref: 'Integration' },
         phoneNumber: String,
         voiceWebhookUrl: String,
         fallbackUrl: String,
