@@ -59,7 +59,7 @@ type Integration {
 type Query {
     """Fetch integration details by ID or business context
     """
-    fetchIntegration(id: ID): [Integration]
+    fetchIntegration(id: ID): [Integration] @requireScope(scope: "integration:read") @requireBusinessAccess
 }
 
 type Mutation {
@@ -78,6 +78,6 @@ type Mutation {
         AccountSid: String
         """State of the integration"""
         state: String 
-    ): Integration
+    ): Integration @requireScope(scope: "integration:create") @requireBusinessAccess
 }
 `
