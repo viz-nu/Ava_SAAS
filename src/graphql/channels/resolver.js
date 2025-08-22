@@ -6,6 +6,8 @@ import { Telegraf } from 'telegraf';
 import axios from 'axios';
 import FormData from 'form-data';
 import { randomBytes } from "crypto"
+import { Integration } from '../../models/Integrations.js';
+import { GraphQLError } from 'graphql';
 const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID, TWILIO_AUTH_TOKEN } = process.env;
 export const channelResolvers = {
     Query: {
@@ -35,14 +37,14 @@ export const channelResolvers = {
                     const { success } = await verifyTransporter(mailConfig)
                     if (!success) {
                         await channel.updateStatus("failed")
-                        return { statusCode: 400, message: "transporter verification failed", data: null }
+                        return new GraphQLError("transporter verification failed", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     await channel.save()
                     await channel.updateStatus("success")
                     break;
                 case "telegram":
                     const { telegramToken } = config
-                    if (!telegramToken || telegramToken.trim === "") return { statusCode: 403, message: "telegramToken not found", data: null }
+                    if (!telegramToken || telegramToken.trim === "") return new GraphQLError("telegramToken not found", { extensions: { code: 'INVALID_INPUT' } });
                     const bot = new Telegraf(telegramToken);
                     try {
                         const botInfo = await bot.telegram.getMe(); // Fetch bot details 
@@ -50,7 +52,7 @@ export const channelResolvers = {
                         channel.webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
                     } catch (error) {
                         console.log(error);
-                        return { statusCode: 401, message: "invalid telegramToken", data: { telegramToken } };
+                        return new GraphQLError("Invalid Telegram token", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     await channel.save()
                     await channel.updateStatus("fetched bot details")
@@ -58,7 +60,7 @@ export const channelResolvers = {
                         await bot.telegram.setWebhook(channel.webhookUrl);
                     } catch (error) {
                         console.log(error);
-                        return { statusCode: 500, message: "Internal Server Error While Setting Up Telegram Webhook", data: null };
+                        return new GraphQLError("Setting webhook failed", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     channel.secrets = { botToken: telegramToken }
                     await channel.save()
@@ -67,7 +69,7 @@ export const channelResolvers = {
                 case "whatsapp":
                     const { whatsappCode, phone_number_id, waba_id, business_id } = config
                     const API_VERSION = 'v23.0';
-                    if (!whatsappCode || !phone_number_id || !waba_id || !business_id || whatsappCode.trim === "") return { statusCode: 403, message: "requirements not fulfilled", data: null }
+                    if (!whatsappCode || !phone_number_id || !waba_id || !business_id || whatsappCode.trim === "") return new GraphQLError("whatsappCode/phone_number_id/waba_id/business_id not found", { extensions: { code: 'INVALID_INPUT' } });
                     try {
                         const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
                         channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }
@@ -85,7 +87,7 @@ export const channelResolvers = {
                             console.error('Error', error.message);
                         }
                         console.error(error.config);
-                        return { statusCode: 401, message: "whatsapp code verification failed", data: error };
+                        return new GraphQLError("Error exchanging code for token", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     await channel.save()
                     await channel.updateStatus("fetched access token")
@@ -103,7 +105,7 @@ export const channelResolvers = {
                             console.error('Error', error.message);
                         }
                         console.error(error.config);
-                        return { statusCode: 401, message: "whatsapp webhook verification failed", data: error };
+                        return new GraphQLError("Error setting webhook", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     await channel.updateStatus("bot webhook set")
                     try {
@@ -120,7 +122,7 @@ export const channelResolvers = {
                             console.error('Error', error.message);
                         }
                         console.error(error.config);
-                        return { statusCode: 401, message: "registering ", data: error };
+                        return new GraphQLError("Error registering phone number", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     await channel.save()
                     await channel.updateStatus("bot messaging_product set")
@@ -128,17 +130,16 @@ export const channelResolvers = {
                 case "web":
                     break;
                 case "phone":
-                    break;
-                case "twilio":
-                    const { AccountSid, state } = config
-                    channel.config = config
-                    channel.secrets = { accessToken: TWILIO_AUTH_TOKEN, }
+                    const { integrationId, phoneNumber } = config;
+                    const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1 });
+                    if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
+                    channel.config = { integration: integration._id, provider: integration.metaData.type, phoneNumber }
                     await channel.save()
-                    await channel.updateStatus("twilio configured")
+                    await channel.updateStatus("phone channel configured")
                     break;
                 case "instagram":
                     const { instagramCode } = config;
-                    if (!instagramCode || instagramCode.trim === "") return { statusCode: 403, message: "instagramCode not found", data: null }
+                    if (!instagramCode || instagramCode.trim === "") return new GraphQLError("instagramCode not found", { extensions: { code: 'INVALID_INPUT' } });
                     try {
                         const form = new FormData();
                         form.append('client_id', IG_ClIENT_ID);
@@ -159,7 +160,7 @@ export const channelResolvers = {
                         else if (error.request) console.error("The request was made but no response was received", { request: error.request });
                         else console.error('Error', error.message);
                         console.error({ config: error.config });
-                        return { statusCode: 401, message: "Error exchanging code for token", data: error.response?.data || error.message };
+                        return new GraphQLError("Error exchanging code for token", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     try {
                         const url = 'https://graph.instagram.com/access_token';
@@ -178,7 +179,7 @@ export const channelResolvers = {
                         else if (error.request) console.error("The request was made but no response was received", { request: error.request });
                         else console.error('Error', error.message);
                         console.error({ config: error.config });
-                        return { statusCode: 401, message: "Error exchanging code for token", data: error.response?.data || error.message };
+                        return new GraphQLError("Error exchanging code for token", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     try {
                         const url = `https://graph.instagram.com/v23.0/${channel.config.user_id_graphAPI}`;
@@ -196,7 +197,7 @@ export const channelResolvers = {
                         else if (error.request) console.error("The request was made but no response was received", { request: error.request });
                         else console.error('Error', error.message);
                         console.error({ config: error.config });
-                        return { statusCode: 401, message: "Error exchanging code for token", data: error.response?.data || error.message };
+                        return new GraphQLError("Error fetching user details", { extensions: { code: 'INVALID_INPUT' } });
                     }
                     break;
                 case "sms":
@@ -302,15 +303,13 @@ export const channelResolvers = {
                             return { statusCode: 401, message: "WhatsApp re-configuration failed", data: err };
                         }
                         break;
-                    case "twilio":
-                        const { AccountSid, state, phoneNumber, TWILIO_AUTH_TOKEN } = newConfig
-                        if (AccountSid) channel.config.AccountSid = AccountSid
-                        if (state) channel.config.state = state
-                        if (phoneNumber) channel.config.phoneNumber = phoneNumber
-                        if (TWILIO_AUTH_TOKEN) channel.secrets.accessToken = TWILIO_AUTH_TOKEN
-                        await channel.save()
-                        await channel.updateStatus("twilio configured")
-                        break;
+                    //     const { AccountSid, state, phoneNumber, TWILIO_AUTH_TOKEN } = newConfig
+                    //     if (AccountSid) channel.config.AccountSid = AccountSid
+                    //     if (state) channel.config.state = state
+                    //     if (phoneNumber) channel.config.phoneNumber = phoneNumber
+                    //     if (TWILIO_AUTH_TOKEN) channel.secrets.accessToken = TWILIO_AUTH_TOKEN
+                    //     await channel.save()
+                    //     await channel.updateStatus("twilio configured")
                     /* other providers (web / phone / sms / email / instagram) can go here */
                     default:
                         break;
