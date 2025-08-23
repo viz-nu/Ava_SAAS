@@ -97,23 +97,23 @@ type Balance{
   currency:String
 }
 type Query {
-  listAvailableNumbers(channelId: ID! country: String type: [type] areaCode: Int limit:Int): [PhoneNumber]
-  listOwnedPhoneNumbers(channelId: ID!  limit:Int): [PhoneNumber]
-  fetchBalance(channelId: ID!): Balance
-  getSmsStatus(channelId: ID! sid: String!):SMSResponse
-  # listCallRecordings(channelId: ID!  limit: Int): [Recording]
-  listConnectApps(channelId: ID!): [ConnectApp]
-  # listNotifications(channelId: ID!  limit: Int): [Notification]
-  getMessages(channelId: ID! limit:Int  to:String  from:String  dateSent:DateTime  dateSentBefore:DateTime  dateSentAfter:DateTime  pageSize:Int):[SMSResponse]
+  listAvailableNumbers(integrationId: ID! country: String type: [type] areaCode: Int limit:Int): [PhoneNumber]
+  listOwnedPhoneNumbers(integrationId: ID!  limit:Int): [PhoneNumber]
+  fetchBalance(integrationId: ID!): Balance
+  getSmsStatus(integrationId: ID! sid: String!):SMSResponse
+  # listCallRecordings(integrationId: ID!  limit: Int): [Recording]
+  listConnectApps(integrationId: ID!): [ConnectApp]
+  # listNotifications(integrationId: ID!  limit: Int): [Notification]
+  getMessages(integrationId: ID! limit:Int  to:String  from:String  dateSent:DateTime  dateSentBefore:DateTime  dateSentAfter:DateTime  pageSize:Int):[SMSResponse]
 }
 
 type Mutation {
-  buyPhoneNumber(channelId: ID!  phoneNumber: String!  friendlyName: String!): PhoneNumber
-  releasePhoneNumber(channelId: ID!  sid: String!): PhoneNumber
-  makeOutboundCall(channelId: ID!  to: String!  from: String!  twimlUrl: String!): Call
-  makeAIOutboundCall(channelId: ID! to:String! agentId:ID! ): Call
-  sendSms(channelId: ID!  to: String!  from: String!  body: String!): SMSResponse
-  deAuthorizeApp(channelId: ID!  connectAppSid: String!): Boolean
+  buyPhoneNumber(integrationId: ID!  phoneNumber: String!  friendlyName: String!): PhoneNumber
+  releasePhoneNumber(integrationId: ID!  sid: String!): PhoneNumber
+  makeOutboundCall(integrationId: ID!  to: String!  from: String!  twimlUrl: String!): Call
+  makeAIOutboundCall(integrationId: ID! to:String! agentId:ID! ): Call
+  sendSms(integrationId: ID!  to: String!  from: String!  body: String!): SMSResponse
+  deAuthorizeApp(integrationId: ID!  connectAppSid: String!): Boolean
 }
 
 `;
