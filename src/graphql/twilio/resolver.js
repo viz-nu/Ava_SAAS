@@ -1,37 +1,36 @@
-import { Channel } from "../../models/Channels.js";
-import { Conversation } from "../../models/Conversations.js";
+import { Integration } from "../../models/Integrations.js";
 import { TwilioService } from "../../utils/twilio.js";
 // Assuming user access tokens are passed via context
-const { DOMAIN } = process.env;
+const { DOMAIN, TWILIO_AUTH_TOKEN } = process.env;
 export const twilioResolvers = {
     Query: {
-        listAvailableNumbers: async (_, { channelId, country = 'US', type = ['local'], areaCode = null, contains = null, limit = 3 }, context) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        listAvailableNumbers: async (_, { integrationId, country = 'US', type = ['local'], areaCode = null, contains = null, limit = 3 }, context) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             const result = await service.listAvailableNumbersWithPricing(country, type, areaCode, contains, limit);
             return result
         },
-        listOwnedPhoneNumbers: async (_, { channelId, limit }, context) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        listOwnedPhoneNumbers: async (_, { integrationId, limit }, context) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.listOwnedPhoneNumbers(limit);
         },
-        fetchBalance: async (_, { channelId }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        fetchBalance: async (_, { integrationId }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.fetchBalance();
         },
-        listConnectApps: async (_, { channelId }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        listConnectApps: async (_, { integrationId }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.listConnectApps();
         },
-        getSmsStatus: async (_, { channelId, sid }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        getSmsStatus: async (_, { integrationId, sid }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.SmsStatus(sid);
         },
-        getMessages: async (_, { channelId, limit = 5, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize }) => {
+        getMessages: async (_, { integrationId, limit = 5, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize }) => {
             //             /** Filter by recipient. For example: Set this `to` parameter to `+15558881111` to retrieve a list of Message resources with `to` properties of `+15558881111` */
             // to?: string;
             // /** Filter by sender. For example: Set this `from` parameter to `+15552229999` to retrieve a list of Message resources with `from` properties of `+15552229999` */
@@ -46,33 +45,33 @@ export const twilioResolvers = {
             // pageSize?: number;
             // /** Upper limit for the number of records to return. list() guarantees never to return more than limit. Default is no limit */
             // limit?: number;
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             const messages = await service.listMessages({ limit, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize });
             console.log(messages);
             return messages
         }
     },
     Mutation: {
-        buyPhoneNumber: async (_, { channelId, phoneNumber, friendlyName }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        buyPhoneNumber: async (_, { integrationId, phoneNumber, friendlyName }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.buyPhoneNumber(phoneNumber, friendlyName);
         },
-        releasePhoneNumber: async (_, { channelId, sid }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        releasePhoneNumber: async (_, { integrationId, sid }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.releasePhoneNumber(sid);
         },
-        makeOutboundCall: async (_, { channelId, to, from, twimlUrl }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        makeOutboundCall: async (_, { integrationId, to, from, twimlUrl }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from, twimlUrl });
         },
-        makeAIOutboundCall: async (_, { channelId, to, agentId }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
-            const callDetails = await service.makeOutboundCall({ to, from: channel.config.phoneNumber, url: `wss://${DOMAIN.replace(/^https?:\/\//, '')}/agent-media-stream` || channel.config.domain, agentId, channelId });
+        makeAIOutboundCall: async (_, { integrationId, to, agentId }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            const callDetails = await service.makeOutboundCall({ to, from: integration.config.phoneNumber, url: `wss://${DOMAIN.replace(/^https?:\/\//, '')}/agent-media-stream` || integration.config.domain, agentId, integrationId });
             //             sid: Unique identifier for the call(e.g., "CAxxxxxxxxxxxxxxxxxxxxxxxxxx")
             // status: Current call status - typically starts as "queued", then "ringing", "in-progress", "completed", etc.
             //                 to: The destination phone number
@@ -82,9 +81,9 @@ export const twilioResolvers = {
             //             price: Cost of the call(null initially, populated after call ends)
             //             direction: "outbound-api" for calls made via API
             await Conversation.create({
-                business: channel.business,
-                channel: channel.type,
-                channelFullDetails: channel._id,
+                business: integration.business,
+                integration: integration.type,
+                integrationFullDetails: integration._id,
                 voiceCallIdentifierNumberSID: callDetails.sid,
                 agent: agentId,
                 contact: { phone: to },
@@ -92,14 +91,14 @@ export const twilioResolvers = {
             });
             return callDetails;
         },
-        sendSms: async (_, { channelId, to, from, body }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        sendSms: async (_, { integrationId, to, from, body }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.sendSms({ to, from, body });  // ✅ fixed spreading
         },
-        deAuthorizeApp: async (_, { channelId, connectAppSid }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(channel.config.AccountSid, channel.secrets.accessToken);
+        deAuthorizeApp: async (_, { integrationId, connectAppSid }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             await service.deauthorizeConnectApp(connectAppSid);
             return true;
         },
