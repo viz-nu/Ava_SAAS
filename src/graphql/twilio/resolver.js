@@ -16,7 +16,6 @@ export const twilioResolvers = {
             return await service.listOwnedPhoneNumbers(limit);
         },
         fetchBalance: async (_, { integrationId }) => {
-            console.log('TWILIO_AUTH_TOKEN', TWILIO_AUTH_TOKEN, DOMAIN, integrationId);
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.fetchBalance();
