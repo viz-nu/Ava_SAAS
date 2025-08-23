@@ -79,5 +79,8 @@ type Mutation {
         """State of the integration"""
         state: String 
     ): Integration @requireScope(scope: "integration:create") @requireBusinessAccess
+    deAuthorizeIntegration(
+        """ID of the integration to deauthorize"""
+        integrationId: ID!) : Boolean @requireScope(scope: "integration:delete") @requireBusinessAccess
 }
 `

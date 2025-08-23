@@ -3,7 +3,8 @@ import { Integration } from "../../models/Integrations.js";
 import { ZohoCRMIntegration } from "../../utils/Zoho.js";
 import graphqlFields from "graphql-fields";
 import { flattenFields } from "../../utils/graphqlTools.js";
-
+import { TwilioService } from "../../utils/twilio.js";
+const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
         fetchIntegration: async (_, { id, limit = 5 }, context, info) => {
@@ -72,6 +73,21 @@ export const IntegrationResolvers = {
                     break;
             }
             return await integration.populate('business createdBy');
-        }
+        },
+        deAuthorizeIntegration: async (_, { id }, context, info) => {
+            const integration = await Integration.findOne({ _id: id, business: context.user.business });
+            if (!integration) return new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
+            switch (integration.metaData.type) {
+                case "twilio":
+                    const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+                    await service.deauthorizeConnectApp(connectAppSid);
+                    break;
+                default:
+                    break;
+            }
+            // await Integration.deleteOne({ _id: id });
+            return true;
+        },
+
     }
 }
