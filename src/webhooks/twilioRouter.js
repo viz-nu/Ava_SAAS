@@ -2,7 +2,7 @@ import { Router, urlencoded } from "express";
 import twilio from "twilio";
 export const twilioRouter = Router()
 const { SERVER_URL, TWILIO_AUTH_TOKEN } = process.env;
-twilioRouter.post('/sms/status', urlencoded({ extended: false }), async (req, res, next) => {
+const validationMiddleware = async (req, res, next) => {
     try {
         const twilioSignature = req.headers['x-twilio-signature'];
         url = `${SERVER_URL}webhook/twilio/sms/status`
@@ -18,20 +18,22 @@ twilioRouter.post('/sms/status', urlencoded({ extended: false }), async (req, re
         next();
     } catch (error) {
         console.error("webhook middleware validation failed", error);
+        res.status(500).json({ msg: "internal server error" });
     }
-}, async (req, res) => {
-    try {  
-        console.log("twilio sms status update", JSON.stringify(req.body, null, 2));
-        res.status(200)
+}
+twilioRouter.post('/sms/status', urlencoded({ extended: false }), validationMiddleware, async (req, res) => {
+    try {
+        // console.log("twilio sms status update", JSON.stringify(req.body, null, 2));
+        return res.status(200).send("Success");
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "internal server error" });
     }
 });
-twilioRouter.post('/call/status', urlencoded({ extended: false }), async (req, res) => {
+twilioRouter.post('/call/status', urlencoded({ extended: false }), validationMiddleware, async (req, res) => {
     try {
-        console.log("twilio call status update", JSON.stringify(req.body, null, 2));
-        res.status(200)
+        // console.log("twilio call status update", JSON.stringify(req.body, null, 2));
+        return res.status(200).send("Success");
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "internal server error" });
