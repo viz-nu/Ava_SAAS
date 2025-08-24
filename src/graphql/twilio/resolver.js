@@ -49,7 +49,7 @@ export const twilioResolvers = {
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.releasePhoneNumber(sid);
         },
-        makeTwilioOutboundCall: async (_, { integrationId, to, from, twiml, record, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback }) => {
+        makeTwilioOutboundCall: async (_, { integrationId, to, from, twiml, record, statusCallback=`${process.env.SERVER_URL}webhook/twilio/call/status`, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from, twiml, record, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback });
@@ -70,10 +70,10 @@ export const twilioResolvers = {
             });
             return callDetails;
         },
-        sendTwilioSms: async (_, { integrationId, to, from, body, mediaUrl }) => {
+        sendTwilioSms: async (_, { integrationId, to, from, body, mediaUrl,statusCallback=`${process.env.SERVER_URL}webhook/twilio/sms/status` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            return await service.sendSms({ to, from, body, mediaUrl, statusCallback: `${process.env.SERVER_URL}webhook/twilio/sms/status` });
+            return await service.sendSms({ to, from, body, mediaUrl, statusCallback });
         },
         deAuthorizeTwilioApp: async (_, { integrationId, connectAppSid }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();

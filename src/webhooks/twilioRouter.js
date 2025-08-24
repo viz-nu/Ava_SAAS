@@ -52,17 +52,6 @@ twilioRouter.post('/sms/status', urlencoded({ extended: false }), async (req, re
 });
 twilioRouter.post('/call/status', urlencoded({ extended: false }), async (req, res) => {
     try {
-        const {
-            CallSid,
-            CallStatus,
-            From,
-            To,
-            Direction,
-            Duration,
-            CallDuration,
-            RecordingUrl,
-            Timestamp
-        } = request.body;
         console.log("twilio webhook body: ", JSON.stringify(req.body, null, 2));
         // find in converation by CallSid as  voiceCallIdentifierNumberSID and update metadata.callDetails
         console.warn(`CALL SID: ${CallSid}, Status: ${CallStatus}`);
