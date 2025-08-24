@@ -1,18 +1,3 @@
-// const twilio = require('twilio');
-
-// // Use YOUR auth token, but the USER's account SID
-// const client = twilio(userAccountSid, yourAuthToken);
-
-// // Example: Send SMS on behalf of user
-// await client.messages.create({
-//   body: 'Hello from your app!',
-//   from: '+1234567890', // Number bought through user's account
-//   to: '+0987654321'
-// });
-
-// // Example: Get user's call logs (with read permission)
-// const calls = await client.calls.list({ limit: 20 });
-
 import twilio from 'twilio';
 export class TwilioService {
     constructor(userAccountSid, userAuthToken) {
@@ -23,7 +8,7 @@ export class TwilioService {
     /** ----------------------------
   *  Phone Numbers
   * -----------------------------*/
-    async listAvailableNumbersWithPricing({ country = 'US', type = ['local'], areaCode = null, contains = null, limit = 10 }) {
+    async listAvailableNumbersWithPricing({ country = 'US', type = ['local'], options }) {
 
         let pricing = {};
         const types = Array.isArray(type) ? type : [type];
@@ -41,14 +26,6 @@ export class TwilioService {
         } catch (e) {
             console.warn('Could not fetch pricing:', e.message);
         }
-
-        // {
-        //   currency: 'USD',
-        //   types: { local: { basePrice: '1.15', currentPrice: '1.15' } }
-        // }
-        const options = { limit: parseInt(limit) };
-        if (areaCode) options.areaCode = areaCode;
-        if (contains) options.contains = contains;
         let numbers = await Promise.all(types.map(async (t) => {
             try {
                 let list = await this.client.availablePhoneNumbers(country)[t].list(options);
@@ -59,7 +36,6 @@ export class TwilioService {
                 return [];
             }
         }));
-        console.log(numbers);
         return numbers.flat()
     }
 
@@ -71,16 +47,43 @@ export class TwilioService {
         return await this.client.incomingPhoneNumbers.list({ limit });
     }
 
+    async updatePhoneNumber(sid, { friendlyName, voiceUrl, voiceMethod, smsUrl, smsMethod, voiceCallerIdLookup, accountSid }) {
+        return await this.client.incomingPhoneNumbers(sid).update(params);
+    }
     async releasePhoneNumber(sid) {
         return await this.client.incomingPhoneNumbers(sid).remove();
     }
 
     /** ----------------------------
+  *  Account Details
+  * -----------------------------*/
+    getAccountDetails() {
+        return this.client.api.accounts(this.accountSid).fetch();
+    }
+    /** ----------------------------
      *  Voice: Outbound & Inbound Calls
      * -----------------------------*/
 
-    async makeOutboundCall({ to, from, twimlUrl }) {
-        return await this.client.calls.create({ to, from, url });// e.g. https://handler.twilio.com/twiml/EHxxx
+    async makeOutboundCall({ to, from, url = "https://demo.twilio.com/docs/voice.xml", twiml, statusCallback, statusCallbackEvent = ["initiated", "ringing", "answered", "completed"], statusCallbackMethod = "POST", record = true, timeout = 60, machineDetection = "Enable", machineDetectionTimeout = 30, recordingStatusCallback = null }) {
+        if (!to || !from) throw new Error("Both 'to' and 'from' numbers are required.");
+        if (twiml && url !== "https://demo.twilio.com/docs/voice.xml") throw new Error("You cannot provide both 'url' and 'twiml'. Choose one.");
+        let payload = { to, from, timeout, statusCallback, statusCallbackEvent, statusCallbackMethod, machineDetection, machineDetectionTimeout, trim: "trim-silence", record: record ? "true" : "false", recordingChannels: "dual" };
+        if (recordingStatusCallback) {
+            payload.recordingStatusCallback = recordingStatusCallback;
+            payload.recordingStatusCallbackMethod = "POST";
+            payload.recordingStatusCallbackEvent = ["completed"];
+        }
+        // URL or TwiML
+        if (twiml) {
+            payload.twiml = twiml;
+        } else {
+            payload.url = url;
+            payload.method = "POST";
+        }
+        // Create call
+        const call = await this.client.calls.create(payload);
+        // Return plain JSON for safe persistence/logging
+        return call.toJSON ? call.toJSON() : call;
     }
     async makeAIOutboundCall({ to, from, url, agentId, channelId }) {
         const VoiceResponse = new this.client.twiml.VoiceResponse();
@@ -119,26 +122,11 @@ export class TwilioService {
      *  SMS Messaging
      * -----------------------------*/
 
-    async sendSms({ to, from, body }) {
-        const result = await this.client.messages.create({
-            to, from, body,
-            statusCallback: `${process.env.SERVER_URL}/webhook/twilio/sms/status`
-        });
-
-
-        return result
+    async sendSms({ to, from, body, mediaUrl = [], statusCallback }) {
+        return await this.client.messages.create({ to, from, body, mediaUrl, statusCallback });
     }
     async SmsStatus(sid) {
-        const message = await this.client.messages(sid).fetch();
-        // queued
-        // sent
-
-        // delivered
-
-        // undelivered
-
-        // failed
-        return message
+        return await this.client.messages(sid).fetch();
     }
     async listMessages({ limit, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize }) {
         return await this.client.messages.list({ limit, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize });
@@ -150,10 +138,6 @@ export class TwilioService {
 
     async fetchUsageRecords(category = 'calls') {
         return await this.client.usage.records.list({ category, limit: 10 });
-    }
-    async fetchBalance() {
-        const balance = await this.client.balance.fetch();
-        return balance;
     }
     async fetchUsageSummary() {
         return await this.client.usage.records.daily.list({ limit: 10 });
@@ -169,10 +153,6 @@ export class TwilioService {
 
     async listAuthorizedApps() {
         return await this.client.authorizedConnectApps.list();
-    }
-
-    async listConnectApps() {
-        return await this.client.connectApps.list();
     }
     // OUTGOING CALLER IDS
     async listOutgoingCallerIds() {
