@@ -22,7 +22,7 @@ import { ticketResolvers } from './tickets/resolver.js';
 import { ticketTypeDefs } from './tickets/schema.js';
 import { notificationTypeDefs } from './notifications/schema.js';
 import { notificationResolvers } from './notifications/resolver.js';
-import {  ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
+import { ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
 // import { zohoTypeDefs } from './zoho/schema.js';
 // import { zohoResolvers } from './zoho/resolver.js';
 import { actionResolvers } from './actions/resolvers.js';
@@ -70,17 +70,38 @@ export const registerApollo = async (app, httpServer) => {
   const apolloServer = new ApolloServer({
     schema: schemaWithDirectives,
     introspection: true,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }),ApolloServerPluginLandingPageProductionDefault({ embed: true }) ],
-    formatError: (error) => {
-      console.error('GraphQL Error Details:', { message: error.message, code: error.extensions?.code, path: error.path, locations: error.locations, stack: error.stack, timestamp: new Date().toISOString() });
-      if (error.message.includes('Context creation failed')) return new GraphQLError('Authentication service unavailable', { extensions: { code: 'AUTH_SERVICE_UNAVAILABLE' } });
-      if (process.env.NODE_ENV === 'production') {
-        const safeErrors = ['Authentication failed', 'Invalid token', 'Token expired', 'Unauthorized', 'Forbidden'];
-        if (safeErrors.some(safe => error.message.includes(safe))) return error;
-        return new GraphQLError('Internal server error', { extensions: { code: 'INTERNAL_SERVER_ERROR' }, });
+    formatResponse: (response, requestContext) => {
+      if (response.errors) {
+        return response; // handled by formatError above
       }
-      return error;
+      return {
+        success: true,
+        message: "OK",
+        data: response.data,
+      };
     },
+    formatError: (error) => {
+      console.error('GraphQL Error Details:', { message: error.message, code: error.extensions?.code });
+      switch (error.code) {
+        case 20003:
+          return new GraphQLError("Authentication failed - check your credentials.", { extensions: { code: 'AUTHENTICATION_FAILED' } });
+        case 21211:
+          return new GraphQLError("Invalid phone number format.", { extensions: { code: 'INVALID_PHONE_NUMBER' } });
+        case 21408:
+          return new GraphQLError("Permission denied - check account permissions.", { extensions: { code: 'INVALID_ACCESS' } });
+        case 21610:
+          return new GraphQLError("Message body is required.", { extensions: { code: 'MESSAGE_BODY_REQUIRED' } });
+        case 30007:
+          return new GraphQLError("Message delivery failed.", { extensions: { code: 'MESSAGE_DELIVERY_FAILED' } });
+      }
+      if (error.status === 400) return new GraphQLError("Bad Request - Invalid parameters.", { extensions: { code: 'BAD_REQUEST' } });
+      if (error.status === 401) return new GraphQLError("Unauthorized - Authentication failed.", { extensions: { code: 'UNAUTHORIZED' } });
+      if (error.status === 403) return new GraphQLError("Forbidden - Insufficient permissions.", { extensions: { code: 'FORBIDDEN' } });
+      if (error.status === 429) return new GraphQLError("Too Many Requests - Rate limited.", { extensions: { code: 'RATE_LIMITED' } });
+      if (error.message.includes('Context creation failed')) return new GraphQLError('Authentication service unavailable', { extensions: { code: 'AUTH_SERVICE_UNAVAILABLE' } });
+      return new GraphQLError(error.message, { extensions: { code: error.code || error.extensions?.code }, });
+    },
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), ApolloServerPluginLandingPageProductionDefault({ embed: true })],
   });
   await apolloServer.start();
   app.use(

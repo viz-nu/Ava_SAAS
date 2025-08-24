@@ -2,7 +2,6 @@ import twilio from 'twilio';
 export class TwilioService {
     constructor(userAccountSid, userAuthToken) {
         this.client = twilio(userAccountSid, userAuthToken);
-
         this.accountSid = userAccountSid;
     }
     /** ----------------------------
@@ -39,8 +38,8 @@ export class TwilioService {
         return numbers.flat()
     }
 
-    async buyPhoneNumber(phoneNumber, friendlyName) {
-        return await this.client.incomingPhoneNumbers.create({ phoneNumber, friendlyName });
+    async buyPhoneNumber(phoneNumber, friendlyName, smsUrl, voiceUrl) {
+        return await this.client.incomingPhoneNumbers.create({ phoneNumber, friendlyName, smsUrl, voiceUrl });
     }
 
     async listOwnedPhoneNumbers(limit = 20) {
@@ -60,6 +59,15 @@ export class TwilioService {
     getAccountDetails() {
         return this.client.api.accounts(this.accountSid).fetch();
     }
+
+    /** ----------------------------
+*  Recordings Details
+* -----------------------------*/
+
+    getRecording(options) {
+        return this.client.recordings.list(options);
+    }
+
     /** ----------------------------
      *  Voice: Outbound & Inbound Calls
      * -----------------------------*/
@@ -95,8 +103,8 @@ export class TwilioService {
         const twiml = response.toString();
         await this.client.calls.create({ to, from, twiml, record: true, statusCallback: `https://${process.env.SERVER_URL}webhook/twilio/call/status`, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
     }
-    async listCalls() {
-        return await this.client.calls.list({ limit: 20 });
+    async listCalls(options) {
+        return await this.client.calls.list(options);
     }
 
     async getCallDetails(callSid) {
@@ -136,12 +144,20 @@ export class TwilioService {
      *  Usage
      * -----------------------------*/
 
-    async fetchUsageRecords(category = 'calls') {
-        return await this.client.usage.records.list({ category, limit: 10 });
+    async fetchUsageRecords(options) {
+        return await this.client.usage.records.list(options);
     }
-    async fetchUsageSummary() {
-        return await this.client.usage.records.daily.list({ limit: 10 });
+    async getTwilioUsageRecordsTimely({ limit = 10, Instance = "allTime", year }) {
+        if (Instance == "yearly") return await this.client.usage.records[Instance].list({ limit, year });
+        return await this.client.usage.records[Instance].list({ limit });
     }
+    /** ----------------------------
+        *  Pricing
+        * -----------------------------*/
+    async getPricing(country, twilioService) {
+        return await this.client.pricing.v1[twilioService].countries(country).fetch();
+    }
+
     /** ----------------------------
      *  Deauthorize App (Disconnect)
      * -----------------------------*/

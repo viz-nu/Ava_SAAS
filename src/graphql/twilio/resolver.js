@@ -26,18 +26,44 @@ export const twilioResolvers = {
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.SmsStatus(sid);
         },
+        getTwilioCalls: async (_, { integrationId, limit = 5, to, from, startTime, endTime, status, }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            const calls = await service.listCalls({ limit, to, from, startTime, endTime, status });
+            return calls;
+        },
         getTwilioMessages: async (_, { integrationId, limit = 5, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            const messages = await service.listMessages({ limit, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize });
-            return messages
+            return await service.listMessages({ limit, to, from, dateSent, dateSentBefore, dateSentAfter, pageSize });
+        },
+        getTwilioCallRecordings: async (_, { integrationId, callSid, dateCreated, limit }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            const recordings = await service.getRecording({ callSid, dateCreated, limit });
+            return recordings;
+        },
+        getTwilioUsageRecords: async (_, { integrationId, category = "calls", startDate, endDate, limit }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            return await service.fetchUsageRecords({ category, startDate, endDate, limit });;
+        },
+        getTwilioUsageRecordsTimely: async (_, { integrationId, limit, Instance = "allTime", year }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            return await service.getTwilioUsageRecordsTimely({ limit, Instance, year });;
+        },
+        getTwilioPricing: async (_, { integrationId, country = 'US', twilioService }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            return await service.getPricing(country, twilioService);
         }
     },
     Mutation: {
-        buyTwilioPhoneNumber: async (_, { integrationId, phoneNumber, friendlyName }) => {
+        buyTwilioPhoneNumber: async (_, { integrationId, phoneNumber, friendlyName, smsUrl, voiceUrl }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            return await service.buyPhoneNumber(phoneNumber, friendlyName);
+            return await service.buyPhoneNumber(phoneNumber, friendlyName, smsUrl = `${process.env.SERVER_URL}webhook/twilio/sms/status`, voiceUrl = `${process.env.SERVER_URL}webhook/twilio/call/status`);
         },
         updateTwilioPhoneNumber: async (_, { integrationId, sid, friendlyName, voiceUrl, voiceMethod, smsUrl, smsMethod, voiceCallerIdLookup, accountSid }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
@@ -49,7 +75,7 @@ export const twilioResolvers = {
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.releasePhoneNumber(sid);
         },
-        makeTwilioOutboundCall: async (_, { integrationId, to, from, twiml, record, statusCallback=`${process.env.SERVER_URL}webhook/twilio/call/status`, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback }) => {
+        makeTwilioOutboundCall: async (_, { integrationId, to, from, twiml, record, statusCallback = `${process.env.SERVER_URL}webhook/twilio/call/status`, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from, twiml, record, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback });
@@ -70,7 +96,7 @@ export const twilioResolvers = {
             });
             return callDetails;
         },
-        sendTwilioSms: async (_, { integrationId, to, from, body, mediaUrl,statusCallback=`${process.env.SERVER_URL}webhook/twilio/sms/status` }) => {
+        sendTwilioSms: async (_, { integrationId, to, from, body, mediaUrl, statusCallback = `${process.env.SERVER_URL}webhook/twilio/sms/status` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.sendSms({ to, from, body, mediaUrl, statusCallback });
