@@ -320,10 +320,11 @@ type Query {
   getTwilioSmsStatus(integrationId: ID! sid: String!):SMSResponse @requireScope(scope: "integration:read") @requireBusinessAccess
   getTwilioMessages(integrationId: ID! limit:Int  to:String  from:String  dateSent:DateTime  dateSentBefore:DateTime  dateSentAfter:DateTime  pageSize:Int):[SMSResponse] @requireScope(scope: "integration:read") @requireBusinessAccess
   getTwilioCalls(integrationId: ID! limit:Int  to:String  from:String  startTime:DateTime  endTime:DateTime  status:CallStatusEnum):[Call] @requireScope(scope: "integration:read") @requireBusinessAccess
-  getTwilioCallRecordings(integrationId: ID! callSid:String dateCreated:DateTime limit:Int): [Recording] @requireScope(scope: "integration:read") @requireBusinessAccess
+  getTwilioCallRecordings(integrationId: ID! callSid:ID dateCreated:DateTime limit:Int): [Recording] @requireScope(scope: "integration:read") @requireBusinessAccess
   getTwilioUsageRecords(integrationId: ID! category:TwilioUsageRecordsCategoryEnum! startDate:DateTime endDate:DateTime limit:Int): [TwilioUsage] @requireScope(scope: "integration:read") @requireBusinessAccess
   getTwilioUsageRecordsTimely(integrationId: ID! limit:Int Instance:TwilioUsageRecordsInstance! year:Int): [TwilioUsage] @requireScope(scope: "integration:read") @requireBusinessAccess
   getTwilioPricing(integrationId: ID! country: TwilioCountryEnum! twilioService:TwilioServicesEnum!): JSON @requireScope(scope: "integration:read") @requireBusinessAccess
+  getTwilioTranscriptions(integrationId: ID! callSid:ID ):JSON @requireScope(scope: "integration:read") @requireBusinessAccess
 }
 
 type Mutation {

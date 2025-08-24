@@ -57,7 +57,14 @@ export const twilioResolvers = {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.getPricing(country, twilioService);
-        }
+        },
+        getTwilioTranscriptions: async (_, { integrationId, limit = 10 }) => {
+            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
+            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            const Transcriptions = await service.listTranscriptions({ limit });
+            console.log(JSON.stringify(Transcriptions, null, 2));
+            return Transcriptions;
+        },
     },
     Mutation: {
         buyTwilioPhoneNumber: async (_, { integrationId, phoneNumber, friendlyName, smsUrl, voiceUrl }) => {
@@ -75,10 +82,10 @@ export const twilioResolvers = {
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.releasePhoneNumber(sid);
         },
-        makeTwilioOutboundCall: async (_, { integrationId, to, from, twiml, record, statusCallback = `${process.env.SERVER_URL}webhook/twilio/call/status`, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback }) => {
+        makeTwilioOutboundCall: async (_, { integrationId, to, from, twiml, record, transcribe, statusCallback = `${process.env.SERVER_URL}webhook/twilio/call/status`, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback = `${process.env.SERVER_URL}webhook/twilio/call/status`, transcribeCallback = `${process.env.SERVER_URL}webhook/twilio/call/status` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            return await service.makeOutboundCall({ to, from, twiml, record, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback });
+            return await service.makeOutboundCall({ to, from, twiml, record, transcribe, transcribeCallback, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback });
         },
         makeTwilioAIOutboundCall: async (_, { integrationId, to, agentId }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
