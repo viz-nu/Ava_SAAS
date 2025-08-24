@@ -23,6 +23,7 @@ const IntegrationSchema = new Schema({
         scope: String,
         expiresAt: Date,
     },
+    accountDetails: Schema.Types.Mixed,
     isActive: { type: Boolean, default: true },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
 }, {

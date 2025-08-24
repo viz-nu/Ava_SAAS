@@ -86,7 +86,7 @@ type SMSResponse{
 }
 
 """Enum for phone number types"""
-enum type {
+enum TwilioPhoneNumberType {
   local
   mobile
   tollFree
@@ -96,24 +96,47 @@ type Balance{
   balance:String
   currency:String
 }
+type TwilioAccountDetails{
+      dateCreated: DateTime
+      dateUpdated: DateTime
+      friendlyName: String
+      status: String
+      type: String
+}
+input TwilioPhoneNumberListOptions{
+    areaCode:String,
+    smsEnabled:Boolean,
+    voiceEnabled:Boolean,
+    excludeAllAddressRequired:Boolean,
+    excludeLocalAddressRequired:Boolean,
+    excludeForeignAddressRequired: Boolean, 
+     nearNumber: String,
+    nearLatLong: String,
+     distance: Int                     
+     inPostalCode: String,          
+    inRegion: String,              
+    inRateCenter: String,          
+    inLata:String,
+    limit:Int
+ }
 type Query {
-  listAvailableNumbers(integrationId: ID! country: String type: [type] areaCode: Int limit:Int): [PhoneNumber]
-  listOwnedPhoneNumbers(integrationId: ID!  limit:Int): [PhoneNumber]
-  fetchBalance(integrationId: ID!): Balance
-  getSmsStatus(integrationId: ID! sid: String!):SMSResponse
+  getTwilioAccountDetails(integrationId: ID!): TwilioAccountDetails @requireScope(scope: "integration:read") @requireBusinessAccess
+  listTwilioAvailableNumbers(integrationId: ID! country: String type: [TwilioPhoneNumberType] options:TwilioPhoneNumberListOptions): [PhoneNumber] @requireScope(scope: "integration:read") @requireBusinessAccess
+  listTwilioOwnedPhoneNumbers(integrationId: ID!  limit:Int): [PhoneNumber] @requireScope(scope: "integration:read") @requireBusinessAccess
+  getTwilioSmsStatus(integrationId: ID! sid: String!):SMSResponse @requireScope(scope: "integration:read") @requireBusinessAccess
+  getTwilioMessages(integrationId: ID! limit:Int  to:String  from:String  dateSent:DateTime  dateSentBefore:DateTime  dateSentAfter:DateTime  pageSize:Int):[SMSResponse] @requireScope(scope: "integration:read") @requireBusinessAccess
   # listCallRecordings(integrationId: ID!  limit: Int): [Recording]
-  listConnectApps(integrationId: ID!): [ConnectApp]
   # listNotifications(integrationId: ID!  limit: Int): [Notification]
-  getMessages(integrationId: ID! limit:Int  to:String  from:String  dateSent:DateTime  dateSentBefore:DateTime  dateSentAfter:DateTime  pageSize:Int):[SMSResponse]
 }
 
 type Mutation {
-  buyPhoneNumber(integrationId: ID!  phoneNumber: String!  friendlyName: String!): PhoneNumber
-  releasePhoneNumber(integrationId: ID!  sid: String!): PhoneNumber
-  makeOutboundCall(integrationId: ID!  to: String!  from: String!  twimlUrl: String!): Call
-  makeAIOutboundCall(integrationId: ID! to:String! agentId:ID! ): Call
-  sendSms(integrationId: ID!  to: String!  from: String!  body: String!): SMSResponse
-  deAuthorizeApp(integrationId: ID!  connectAppSid: String!): Boolean
+  buyTwilioPhoneNumber(integrationId: ID!  phoneNumber: String!  friendlyName: String!): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
+  updateTwilioPhoneNumber(integrationId: ID!  sid: String! friendlyName: String voiceUrl: String voiceMethod: String smsUrl: String smsMethod: String voiceCallerIdLookup: Boolean accountSid: String): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
+  releaseTwilioPhoneNumber(integrationId: ID!  sid: String!): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
+  makeTwilioOutboundCall(integrationId: ID!  to: String!  from: String! twiml:String record:Boolean statusCallback:String timeout:Int machineDetection:String machineDetectionTimeout:Int recordingStatusCallback:String ): Call @requireBusinessAccess
+  makeTwilioAIOutboundCall(integrationId: ID! to:String! agentId:ID! ): Call  @requireBusinessAccess
+  sendTwilioSms(integrationId: ID!  to: String!  from: String!  body: String! mediaUrl:[String]): SMSResponse @requireBusinessAccess
+  deAuthorizeTwilioApp(integrationId: ID!  connectAppSid: String!): Boolean @requireScope(scope: "integration:delete") @requireBusinessAccess
 }
 
 `;
