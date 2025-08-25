@@ -87,10 +87,10 @@ export const twilioResolvers = {
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from, twiml, record, transcribe, transcribeCallback, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback });
         },
-        makeTwilioAIOutboundCall: async (_, { integrationId, to, agentId }) => {
+        makeTwilioAIOutboundCall: async (_, { integrationId, to, agentId, from, url = `wss://${DOMAIN.replace(/^https?:\/\//, '')}/media-stream` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            const callDetails = await service.makeOutboundCall({ to, from: integration.config.phoneNumber, url: `wss://${DOMAIN.replace(/^https?:\/\//, '')}/agent-media-stream` || integration.config.domain, agentId, integrationId });
+            const callDetails = await service.makeAIOutboundCall({ to, from, url, agentId, integrationId });
 
             await Conversation.create({
                 business: integration.business,

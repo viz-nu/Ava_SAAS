@@ -54,6 +54,7 @@
     "psl": "^1.15.0",
     "redis": "^5.8.0",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "stopword": "^3.1.4",
     "telegraf": "^4.16.3",
     "tiktoken": "^1.0.20",
