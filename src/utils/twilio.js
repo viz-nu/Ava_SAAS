@@ -82,12 +82,12 @@ export class TwilioService {
         const call = await this.client.calls.create(payload);
         return call.toJSON ? call.toJSON() : call;
     }
-    async makeAIOutboundCall({ to, from, url, agentId, channelId }) {
+    async makeAIOutboundCall({ to, from, url, agentId, IntegrationId }) {
         const VoiceResponse = new this.client.twiml.VoiceResponse();
         const response = new VoiceResponse();
         const connect = response.connect();
         const stream = connect.stream({ url: url });
-        stream.parameter({ name: 'channelId', value: channelId.toString() });
+        stream.parameter({ name: 'IntegrationId', value: IntegrationId.toString() });
         stream.parameter({ name: 'agentId', value: agentId.toString() });
         const twiml = response.toString();
         await this.client.calls.create({ to, from, twiml, record: true, statusCallback: `https://${process.env.SERVER_URL}webhook/twilio/call/status`, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
