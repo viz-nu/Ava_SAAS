@@ -171,7 +171,7 @@ export const FetchUsingDroxy = async (url) => {
   }
 }
 export const processURLS = async (collectionId, urls, receiver, _id) => {
-  const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receiver, _id })));
+  const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receiver, _id }, { removeOnComplete: true, removeOnFail: true })));
   await Promise.all(jobs);
   return { success: true };
 };
