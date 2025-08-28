@@ -89,41 +89,42 @@ export const twilioResolvers = {
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from, twiml, record, transcribe, transcribeCallback, statusCallback, timeout, machineDetection, machineDetectionTimeout, recordingStatusCallback });
         },
-        makeTwilioAIOutboundCall: async (_, { integrationId, to, agentId, from, url = `wss://${DOMAIN.replace(/^https?:\/\//, '')}/media-stream` }) => {
+        makeTwilioAIOutboundCall: async (_, { integrationId, to, agentId, from, url = `wss://sockets.avakado.ai/media-stream` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            console.log("url:", url)
             const model = "gpt-4o-mini-realtime-preview-2024-12-17";
             // let models = ['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17']
             const session = await openai.beta.realtime.sessions.create({
-                    input_audio_format: "g711_ulaw",
-                    output_audio_format: "g711_ulaw",
-                    voice: "alloy",
-                    instructions: `
+                input_audio_format: "g711_ulaw",
+                output_audio_format: "g711_ulaw",
+                voice: "alloy",
+                instructions: `
             You are a polite AI agent. Start in English, and you also like to tell jokes.
             If the user says goodbye, do not just speak — call the 'hangup_call' tool.
             Keep your responses concise and to the point.`,
-                    tools: [
-                        {
-                            type: "function",
-                            name: "hangup_call",
-                            description: "End the current phone call when conversation is complete.",
-                            parameters: {
-                                type: "object",
-                                properties: {}, // no arguments required
-                            }
+                tools: [
+                    {
+                        type: "function",
+                        name: "hangup_call",
+                        description: "End the current phone call when conversation is complete.",
+                        parameters: {
+                            type: "object",
+                            properties: {}, // no arguments required
                         }
-                    ],
-                    model,
-                    modalities: ["text", "audio"],
-                    turn_detection: {
-                        type: 'server_vad',
-                        interrupt_response: true,
-                        threshold: 0.8,
-                        prefix_padding_ms: 300,
-                        silence_duration_ms: 500,
-                    },
-                    input_audio_transcription: { model: "whisper-1" },
-                });
+                    }
+                ],
+                model,
+                modalities: ["text", "audio"],
+                turn_detection: {
+                    type: 'server_vad',
+                    interrupt_response: true,
+                    threshold: 0.8,
+                    prefix_padding_ms: 300,
+                    silence_duration_ms: 500,
+                },
+                input_audio_transcription: { model: "whisper-1" },
+            });
             // console.log(JSON.stringify(session, null, 2));
             const callDetails = await service.makeAIOutboundCall({ to, from, url, agentId, integrationId, secretValue: session.client_secret.value, model });
             await Conversation.create({
