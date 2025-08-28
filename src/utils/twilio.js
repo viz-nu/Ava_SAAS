@@ -69,7 +69,7 @@ export class TwilioService {
      *  Voice: Outbound & Inbound Calls
      * -----------------------------*/
 
-    async makeOutboundCall({ to, from, url = "https://demo.twilio.com/docs/voice.xml", twiml, statusCallback, statusCallbackEvent = ["initiated", "ringing", "answered", "completed"], statusCallbackMethod = "POST", record = true, transcribe = true, timeout = 60, machineDetection = "Enable", machineDetectionTimeout = 30, transcribeCallback,recordingStatusCallback = null }) {
+    async makeOutboundCall({ to, from, url = "https://demo.twilio.com/docs/voice.xml", twiml, statusCallback, statusCallbackEvent = ["initiated", "ringing", "answered", "completed"], statusCallbackMethod = "POST", record = true, transcribe = true, timeout = 60, machineDetection = "Enable", machineDetectionTimeout = 30, transcribeCallback, recordingStatusCallback = null }) {
         if (!to || !from) throw new Error("Both 'to' and 'from' numbers are required.");
         if (twiml && url !== "https://demo.twilio.com/docs/voice.xml") throw new Error("You cannot provide both 'url' and 'twiml'. Choose one.");
         let payload = { to, from, timeout, statusCallback, statusCallbackEvent, statusCallbackMethod, recordingStatusCallback, transcribeCallback, machineDetection, machineDetectionTimeout, trim: "trim-silence", record, transcribe, recordingChannels: "dual" };
@@ -82,15 +82,17 @@ export class TwilioService {
         const call = await this.client.calls.create(payload);
         return call.toJSON ? call.toJSON() : call;
     }
-    async makeAIOutboundCall({ to, from, url, agentId, IntegrationId }) {
-        const VoiceResponse = new this.client.twiml.VoiceResponse();
+    async makeAIOutboundCall({ to, from, url, agentId, integrationId, secretValue, model }) {
+        const VoiceResponse = twilio.twiml.VoiceResponse;
         const response = new VoiceResponse();
         const connect = response.connect();
-        const stream = connect.stream({ url: url });
-        stream.parameter({ name: 'IntegrationId', value: IntegrationId.toString() });
-        stream.parameter({ name: 'agentId', value: agentId.toString() });
+        const stream = connect.stream({ url });
+        stream.parameter({ name: 'IntegrationId', value: integrationId });
+        stream.parameter({ name: 'agentId', value: agentId });
+        stream.parameter({ name: 'secretValue', value: secretValue });
+        stream.parameter({ name: 'model', value: model });
         const twiml = response.toString();
-        await this.client.calls.create({ to, from, twiml, record: true, statusCallback: `https://${process.env.SERVER_URL}webhook/twilio/call/status`, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
+        return await this.client.calls.create({ to, from, twiml, record: true, statusCallback: `https://${process.env.SERVER_URL}webhook/twilio/call/status`, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
     }
     async listCalls(options) {
         return await this.client.calls.list(options);
