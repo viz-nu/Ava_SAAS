@@ -32,7 +32,7 @@ twilioRouter.post('/sms/status', urlencoded({ extended: false }), validationMidd
 });
 twilioRouter.post('/call/status', urlencoded({ extended: false }), validationMiddleware, async (req, res) => {
     try {
-        // console.log("twilio call status update", JSON.stringify(req.body, null, 2));
+        console.log("twilio call status update", JSON.stringify(req.body, null, 2));
         return res.status(200).send("Success");
     } catch (error) {
         console.error(error);
