@@ -1,5 +1,6 @@
 import { Router, urlencoded } from "express";
 import twilio from "twilio";
+import { Conversation } from "../models/Conversations.js";
 export const twilioRouter = Router();
 const { TWILIO_AUTH_TOKEN } = process.env;
 function absoluteUrl(req) {
@@ -38,8 +39,18 @@ twilioRouter.post(
     "/call/status",
     urlencoded({ extended: false }),
     validateTwilio,
-    (req, res) => {
+    async (req, res) => {
         console.log("twilio call status update", JSON.stringify(req.body, null, 2));
+        const { CallSid, CallStatus, RecordingStatus } = req.body;
+        const conversation = await Conversation.findOne({ voiceCallIdentifierNumberSID: CallSid });
+        if (CallStatus) {
+            if (conversation) {
+                conversation.metadata.status = CallStatus;
+                conversation.metadata.callDetails = req.body;
+                if (CallStatus === "completed") await conversation.updateAnalytics();
+            }
+        }
+        if (RecordingStatus === "completed") conversation.metadata.callDetails = { ...conversation.metadata.callDetails, recording: { ...req.body } };
         res.status(200).send("Success");
     }
 );
