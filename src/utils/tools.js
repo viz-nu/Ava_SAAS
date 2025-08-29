@@ -38,34 +38,6 @@ export const updateSession = async (conversationId, inputData) => {
         console.log(error);
     }
 }
-export const dataBaker = async (schema, actionId, conversationId, parentPath = "") => {
-    let obj = new Object(), temp2;
-    switch (schema.dataType) {
-        case "string":
-            obj[schema.key] = schema.type == "static" ? schema.defaultValue : (await sessionFetcher(actionId, conversationId, parentPath + "/" + schema.key))?.data || null;
-            break;
-        case "number":
-            obj[schema.key] = schema.type == "static" ? schema.defaultValue : (await sessionFetcher(actionId, conversationId, parentPath + "/" + schema.key))?.data || null;
-            break;
-        case "object":
-            temp2 = new Object();
-            for (const element of schema.childSchema) {
-                let temp = await dataBaker(element, actionId, conversationId, parentPath + "/" + schema.key); // Fix array merging
-                temp2 = { ...temp2, ...temp };
-            }
-            obj[schema.key] = temp2
-            break;
-        case "array":
-            temp2 = [];
-            for (const [i, element] of schema.childSchema.entries()) {
-                let temp = await dataBaker(element, actionId, conversationId, parentPath + "/" + schema.key); // Fix array merging
-                temp2 = [...temp2, temp[i]];
-            }
-            obj[schema.key] = temp2
-            break;
-    }
-    return obj
-}
 export const generateMeetingUrl = (meetingName) => {
     // Clean up and format the meeting name for use in URL
     const cleanName = meetingName
@@ -102,17 +74,6 @@ export const getLocation = async (latitude, longitude) => {
         return { latitude, longitude }
     }
 }
-export const parseLLMResponse = (responseText) => {
-    const mainText = responseText.split('$followupquestions$')[0].trim();
-    const followups = [];
-    const fqRegex = /\$fq\$(.*?)\$\/fq\$/gs;
-    let match;
-    while ((match = fqRegex.exec(responseText)) !== null) {
-        followups.push(match[1].trim());
-    }
-
-    return { mainText, followups };
-}
 export function createToolWrapper(toolDef) {
     const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
     const wrapperBody = `
@@ -133,27 +94,6 @@ export function createToolWrapper(toolDef) {
         needsApproval: toolDef.needsApproval
     }
     return toolSchema;
-}
-export function extractMainAndFollowUps(llmResponse) {
-    const followupRegex = /\$followupquestions\$(.*?)\$\/followupquestions\$/s;
-    const match = llmResponse.match(followupRegex);
-
-    let mainText = llmResponse;
-    let followUps = [];
-
-    if (match) {
-        // Remove the followup section from main text
-        mainText = llmResponse.replace(followupRegex, '').trim();
-
-        // Extract individual follow-up questions
-        const fqRegex = /\$fq\$(.*?)\$\/fq\$/gs;
-        let fqMatch;
-        while ((fqMatch = fqRegex.exec(match[1])) !== null) {
-            followUps.push(fqMatch[1].trim());
-        }
-    }
-
-    return { mainText, followUps };
 }
 export function buildFollowUpButtons(followUps = []) {
     return {
@@ -205,7 +145,6 @@ export const markHourBuckets = (arr, start, end) => {
 }
 export const knowledgeToolBaker = (collections) => {
     if (!collections || collections.length < 1) return null;
-
     const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
     const wrapperBody = `
         "use strict";
@@ -218,7 +157,7 @@ export const knowledgeToolBaker = (collections) => {
     if (input.options.source.length < 1) {
         throw new Error('Source array must have at least one collection');
     }
-    const response = await fetch('https://chatapi.campusroot.com/fetch-from-db', {
+    const response = await fetch('${process.env.SERVER_URL}fetch-from-db', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
