@@ -278,9 +278,17 @@ export const scopeRateLimit = (scope, maxRequests = 100, windowMs = 15 * 60 * 10
 
 export const authForGraphQL = async (req, res) => {
     try {
-        const isIntrospectionQuery = req.body?.query?.includes('IntrospectionQuery') || req.body?.query?.includes('__schema');
+        const query = req.body?.query;
+        let isIntrospectionQuery = false;
+        if (typeof query === "string") {
+            // Normal case: query is a string
+            isIntrospectionQuery = query.includes("IntrospectionQuery") || query.includes("__schema");
+        } else if (Array.isArray(req.body)) {
+            // Batched queries
+            isIntrospectionQuery = req.body.some((q) => typeof q.query === "string" && (q.query.includes("IntrospectionQuery") || q.query.includes("__schema")));
+        }
         if (isIntrospectionQuery) {
-            console.log('Allowing introspection query without auth');
+            console.log("Allowing introspection query without auth");
             return { user: null, isAuthenticated: false, isIntrospection: true };
         }
         const authHeader = req.headers.authorization;
