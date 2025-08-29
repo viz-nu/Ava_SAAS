@@ -17,7 +17,7 @@ export const IntegrationResolvers = {
         }
     },
     Mutation: {
-        createIntegration: async (_, { code, domain, type, AccountSid, state }, context, info) => {
+        createIntegration: async (_, { code, domain, type, name, purpose, AccountSid, state }, context, info) => {
             let integration
             switch (type) {
                 case "zoho":
@@ -27,12 +27,12 @@ export const IntegrationResolvers = {
                     integration = await Integration.create({
                         business: context.user.business,
                         metaData: {
-                            name: 'Zoho CRM',
+                            name: name || 'Zoho CRM',
                             description: 'Zoho CRM',
                             icon: 'https://www.zoho.com/favicon.ico',
                             color: '#000000',
                             purpose: 'crm',
-                            type: 'zoho'
+                            type
                         },
                         secrets: {
                             tokenType: data.token_type,
@@ -54,12 +54,12 @@ export const IntegrationResolvers = {
                     integration = await Integration.create({
                         business: context.user.business,
                         metaData: {
-                            name: 'Twilio',
+                            name: name || 'Twilio',
                             description: 'Twilio SMS and Voice',
                             icon: 'https://www.svgrepo.com/show/354472/twilio-icon.svg',
                             color: '#000000',
-                            purpose: 'voice and sms',
-                            type: 'twilio'
+                            purpose: purpose || 'voice and sms',
+                            type
                         },
                         config: {
                             AccountSid: AccountSid,

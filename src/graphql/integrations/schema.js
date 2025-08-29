@@ -72,6 +72,8 @@ type Mutation {
         code: String
         """Zoho domain region (com, eu, in, com_au, jp, ca)"""
         domain: String
+        name: String!
+        purpose:String
         """Type of integration (zoho, twilio)"""
         type: IntegrationTypeEnum!
         """Twilio Account SID (required for Twilio integration)"""
