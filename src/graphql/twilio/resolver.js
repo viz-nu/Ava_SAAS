@@ -97,9 +97,17 @@ export const twilioResolvers = {
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             // if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
-                console.log(JSON.stringify(channel));
-            if (!channel?.config?.integration?.config?.AccountSid) throw new GraphQLError("Twilio integration missing", { extensions: { code: "MISSING_TWILIO_CONFIG" } });
-            const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+            console.log("Checking integration:", channel.config.integration);
+
+            const accountSid = channel?.config?.integration?.config?.AccountSid;
+            if (!accountSid) {
+                console.error("Integration object:", channel.config.integration);
+                throw new GraphQLError("Twilio integration missing", { extensions: { code: "MISSING_TWILIO_CONFIG" } });
+            }
+
+            const service = new TwilioService(accountSid, TWILIO_AUTH_TOKEN);
+
+            // const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             const model = agentDetails.personalInfo.model;
             const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
             const callDetails = await service.makeAIOutboundCall({ to, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), agentId, conversationId: conversation._id.toString(), model });
