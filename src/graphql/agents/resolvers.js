@@ -45,11 +45,10 @@ export const agentResolvers = {
                 .populate('actions')
                 .select(projection);
         },
-
         updateAgent: async (_, { id, agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const projection = flattenFields(requestedFields);
-            let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, isFeatured, analysisMetrics } = agent;
+            let {actions = [], channels = [], collections = [] } = agent;
             const [foundChannels, foundCollections, foundActions] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
@@ -67,12 +66,10 @@ export const agentResolvers = {
                 .populate('actions')
                 .select(projection);
         },
-
         deleteAgent: async (_, { id }, context) => {
             const result = await AgentModel.findByIdAndDelete(id);
             return !!result;
         },
-
         generatePrompt: async (_, { prompt }, context) => {
             const systemInstruction = `You are an expert prompt engineer. Your job is to take a rough or draft input describing an AI assistant and generate a polished, detailed, and optimized system prompt. The final output should clearly define the assistant's name, role, goals, tone, limitations, language, audience, response style, and fallback behavior in a structured and professional format.`;
             const aiResponse = await openai.chat.completions.create({
