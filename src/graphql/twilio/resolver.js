@@ -101,7 +101,8 @@ export const twilioResolvers = {
 
             const accountSid = channel?.config?.integration?.config?.AccountSid;
             if (!accountSid) {
-                console.error("Integration object:", channel.config.integration);
+                console.error("config object:", JSON.stringify(channel.config));
+                console.error("Integration object:", JSON.stringify(channel.config.integration));
                 throw new GraphQLError("Twilio integration missing", { extensions: { code: "MISSING_TWILIO_CONFIG" } });
             }
 
