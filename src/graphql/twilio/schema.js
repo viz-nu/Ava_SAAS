@@ -331,8 +331,8 @@ type Mutation {
   buyTwilioPhoneNumber(integrationId: ID!  phoneNumber: String!  friendlyName: String! voiceUrl:String smsUrl:String): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
   updateTwilioPhoneNumber(integrationId: ID!  sid: String! friendlyName: String voiceUrl: String voiceMethod: String smsUrl: String smsMethod: String voiceCallerIdLookup: Boolean accountSid: String): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
   releaseTwilioPhoneNumber(integrationId: ID!  sid: String!): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
-  makeTwilioOutboundCall(integrationId: ID!  to: String!  from: String! twiml:String record:Boolean statusCallback:String timeout:Int machineDetection:String machineDetectionTimeout:Int recordingStatusCallback:String ): Call @requireBusinessAccess
-  makeTwilioAIOutboundCall(integrationId: ID! to:String! agentId:ID! from:String!  url:String): Call  @requireBusinessAccess
+  makeTwilioOutboundTestCall(channelId: ID! to:String! agentId:ID!): Call @requireBusinessAccess
+  makeTwilioAIOutboundCall(channelId: ID! to:String! agentId:ID!): Call  @requireBusinessAccess
   sendTwilioSms(integrationId: ID!  to: String!  from: String!  body: String! statusCallback:String mediaUrl:[String]): SMSResponse @requireBusinessAccess
   deAuthorizeTwilioApp(integrationId: ID!  connectAppSid: String!): Boolean @requireScope(scope: "integration:delete") @requireBusinessAccess
 }

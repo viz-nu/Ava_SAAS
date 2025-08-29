@@ -117,7 +117,8 @@ const PhoneConfig = new Schema(
         provider: { type: String, enum: ['twilio', 'plivo'] },
         integration: { type: Schema.Types.ObjectId, ref: 'Integration' },
         phoneNumber: String,
-        voiceWebhookUrl: String,
+        voiceUpdatesWebhookUrl: { type: String, default: `${process.env.SERVER_URL}webhook/twilio/call/status?conversationId=` },
+        webSocketsUrl: { type: String, default: `wss://sockets.avakado.ai/media-stream` },
         fallbackUrl: String,
     },
     baseOpts
