@@ -92,7 +92,7 @@ export const twilioResolvers = {
             return await service.makeOutboundCall({ to, from });
         },
         makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
-            const channel = await Channel.findById(channelId).select({ config: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } });
+            const channel = await Channel.findById(channelId).select({ config: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
             const agentDetails = await AgentModel.findById(agentId).select({ "personalInfo.model": 1 })
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             // if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
@@ -105,7 +105,6 @@ export const twilioResolvers = {
                 console.error("Integration object:", JSON.stringify(channel.config.integration));
                 throw new GraphQLError("Twilio integration missing", { extensions: { code: "MISSING_TWILIO_CONFIG" } });
             }
-
             const service = new TwilioService(accountSid, TWILIO_AUTH_TOKEN);
 
             // const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
