@@ -95,11 +95,11 @@ export const twilioResolvers = {
         makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
             const channel = await Channel.findById(channelId, "config")
             const agentDetails = await AgentModel.findById(agentId, "personalInfo.model")
+            console.log({ channel, agentDetails });
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             // if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
             await Integration.populate(channel, [{ path: "config.integration", select: "config secrets" }])
-            console.log({ channel, agentDetails });
             const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             const model = agentDetails.personalInfo.model;
             const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
