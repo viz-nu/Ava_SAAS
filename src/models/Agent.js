@@ -14,6 +14,22 @@ const AgentSchema = new Schema({
         welcomeMessage: String,
         model: { type: String, default: 'gpt-4.1-mini' },
         temperature: { type: Number, default: 0.5 },
+        VoiceAgentConfig: {
+            voice: { type: String, default: 'alloy' },
+            input_audio_format: String,
+            output_audio_format: String,
+            advancedVoiceSettings: {
+                speed: { type: Number, default: 1 },
+                turn_detection: {
+                    type: { type: String, default: "server_vad" },
+                    interrupt_response: { type: Boolean, default: true },
+                    threshold: { type: Number, default: 0.8 },
+                    prefix_padding_ms: { type: Number, default: 0.8 },
+                    silence_duration_ms: { type: Number, default: 500 },
+
+                }
+            }
+        }
     },
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],

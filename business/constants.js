@@ -14,6 +14,30 @@ export const BATCH_CONFIG = {
 };
 
 export const MODEL_PRICING = {
+  'gpt-4o-realtime-preview': {
+    input: 0.032,  // per 1K audio tokens
+    output: 0.064
+  },
+  'gpt-4o-realtime-preview-2025-06-03': {
+    input: 0.032,
+    output: 0.064
+  },
+  'gpt-4o-realtime-preview-2024-12-17': {
+    input: 0.032,
+    output: 0.064
+  },
+  'gpt-4o-realtime-preview-2024-10-01': {
+    input: 0.032,
+    output: 0.064
+  },
+  'gpt-4o-mini-realtime-preview': {
+    input: 0.010,
+    output: 0.020
+  },
+  'gpt-4o-mini-realtime-preview-2024-12-17': {
+    input: 0.010,
+    output: 0.020
+  },
   'gpt-4': {
     input: 0.03,   // per 1K tokens
     output: 0.06
@@ -92,7 +116,7 @@ export const VALIDATION_RULES = {
 
 export const CHANNEL_TYPES = [
   'email',
-  'whatsapp', 
+  'whatsapp',
   'telegram',
   'web',
   'phone',
@@ -127,7 +151,7 @@ export const SUCCESS_MESSAGES = {
 
 export const LOG_LEVELS = {
   ERROR: 'error',
-  WARN: 'warn', 
+  WARN: 'warn',
   INFO: 'info',
   DEBUG: 'debug'
 };
