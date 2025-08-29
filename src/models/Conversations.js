@@ -2,7 +2,7 @@ import { model, Schema } from 'mongoose';
 import { Message } from './Messages.js';
 import { Agent, run } from '@openai/agents';
 import { buildJSONSchema } from '../utils/tools.js';
-const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive", "disconnected"];
+// const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive", "disconnected"];
 const TranscriptionSchema = new Schema({
     transcript: String,
     timestamp: Date,
@@ -41,7 +41,7 @@ const ConversationSchema = new Schema({
     transcripts: [TranscriptionSchema],
     PreContext: String,
     metadata: {
-        status: { type: String, enum: ConversationStatusEnum, default: "initiated" },
+        status: { type: String, default: "initiated" },
         pendingInterruptions: [{ type: Schema.Types.Mixed }],
         totalMessages: Number,
         reactions: { neutral: Number, like: Number, dislike: Number },
