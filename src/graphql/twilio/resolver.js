@@ -97,8 +97,8 @@ export const twilioResolvers = {
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             // if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
+            console.log("checking config", JSON.stringify(channel))
             console.log("Checking integration:", channel.config.integration);
-
             const accountSid = channel?.config?.integration?.config?.AccountSid;
             if (!accountSid) {
                 console.error("config object:", JSON.stringify(channel.config));
