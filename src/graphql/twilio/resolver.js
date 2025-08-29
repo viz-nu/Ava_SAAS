@@ -97,6 +97,7 @@ export const twilioResolvers = {
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             // if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
+                console.log(JSON.stringify(channel));
             if (!channel?.config?.integration?.config?.AccountSid) throw new GraphQLError("Twilio integration missing", { extensions: { code: "MISSING_TWILIO_CONFIG" } });
             const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             const model = agentDetails.personalInfo.model;
