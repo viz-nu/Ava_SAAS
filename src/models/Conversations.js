@@ -3,6 +3,13 @@ import { Message } from './Messages.js';
 import { Agent, run } from '@openai/agents';
 import { buildJSONSchema } from '../utils/tools.js';
 const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive", "disconnected"];
+const TranscriptionSchema = new Schema({
+    transcript: String,
+    timestamp: Date,
+    speaker: String,
+    source: String,
+    usage: Schema.Types.Mixed
+});
 const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
@@ -21,6 +28,18 @@ const ConversationSchema = new Schema({
         model: String,
         usage: { type: Schema.Types.Mixed }
     },
+    VoiceCallTokens: {
+        model: String,
+        total_text_input_tokens: Number,
+        total_audio_input_tokens: Number,
+        total_text_output_tokens: Number,
+        total_audio_output_tokens: Number,
+        total_cached_text: Number,
+        total_cached_audio: Number,
+        input_Transcript_Duration_whisper: Number
+    },
+    transcripts: [TranscriptionSchema],
+    PreContext: String,
     metadata: {
         status: { type: String, enum: ConversationStatusEnum, default: "initiated" },
         pendingInterruptions: [{ type: Schema.Types.Mixed }],
@@ -37,15 +56,22 @@ const ConversationSchema = new Schema({
     timestamps: true
 });
 ConversationSchema.methods.updateAnalytics = async function () {
-    const messages = await Message.find({ conversationId: this._id });
-    this.metadata = {
-        totalMessages: messages.length,
-        reactions: messages.reduce((acc, msg) => {
-            acc[msg.reaction] = (acc[msg.reaction] || 0) + 1;
-            return acc;
-        }, { neutral: 0, like: 0, dislike: 0 })
-    };
-    const formatted = messages.map(m => `User: ${m.query}\nAgent: ${m.response}`).join("\n\n");
+    let formatted = "";
+    let messages = await Message.find({ conversationId: this._id });
+    if (messages.length > 0) {
+        this.metadata = {
+            totalMessages: messages.length,
+            reactions: messages.reduce((acc, msg) => {
+                acc[msg.reaction] = (acc[msg.reaction] || 0) + 1;
+                return acc;
+            }, { neutral: 0, like: 0, dislike: 0 })
+        };
+        formatted = messages.map(m => `User: ${m.query}\nAgent: ${m.response}`).join("\n\n");
+    }
+    else if (this.transcripts.length > 0) {
+        this.metadata.totalMessages = this.transcripts.length;
+        formatted = this.transcripts.map(t => `${t.speaker}: ${t.transcript}`).join("\n\n");
+    }
     const agentDetails = await this.populate('agent');
     if (agentDetails.agent.analysisMetrics) {
         const outputType = buildJSONSchema(agentDetails.agent.analysisMetrics);
@@ -77,9 +103,5 @@ ConversationSchema.methods.updateAnalytics = async function () {
         }
     }
     await this.save();
-}
-ConversationSchema.methods.UpdateCallDetails = function (details) {
-    this.metadata.callDetails = { ...details }
-    return this.save();
 }
 export const Conversation = model('Conversation', ConversationSchema, "Conversations");
