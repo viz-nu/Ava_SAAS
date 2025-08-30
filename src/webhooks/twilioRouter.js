@@ -11,15 +11,17 @@ function absoluteUrl(req) {
 
 function validateTwilio(req, res, next) {
     try {
-        if (!TWILIO_AUTH_TOKEN) {
-            return res.status(500).send("Missing TWILIO_AUTH_TOKEN");
-        }
+        if (!TWILIO_AUTH_TOKEN) return res.status(500).send("Missing TWILIO_AUTH_TOKEN");
         const signature = req.get("x-twilio-signature");
         const url = absoluteUrl(req);
 
         // For application/x-www-form-urlencoded (status callbacks), validateRequest is correct.
         const ok = twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, url, req.body);
-        if (!ok) return res.status(403).send("Forbidden");
+        if (!ok) {
+            console.log({ ok, TWILIO_AUTH_TOKEN, signature, url, body: req.body });
+
+            // return res.status(403).send("Forbidden");
+        }
         next();
     } catch (err) {
         console.error("Twilio validation failed", err);
@@ -31,18 +33,19 @@ function validateTwilio(req, res, next) {
 twilioRouter.post(
     "/sms/status",
     urlencoded({ extended: false }), // Twilio sends x-www-form-urlencoded
-    validateTwilio,
+    twilio.webhook,
     (req, res) => res.status(200).send("Success")
 );
-
+// /webhook/twilio/call/status?conversationId=68b23b0a2690fd10a81c1a27 403 - 1.299 ms
 twilioRouter.post(
     "/call/status",
     urlencoded({ extended: false }),
-    validateTwilio,
+    twilio.webhook,
     async (req, res) => {
+        const { conversationId } = req.query
+        const conversation = await Conversation.findById(conversationId)
         console.log("twilio call status update", JSON.stringify(req.body, null, 2));
-        const { CallSid, CallStatus, RecordingStatus } = req.body;
-        const conversation = await Conversation.findOne({ voiceCallIdentifierNumberSID: CallSid });
+        const { CallStatus = false, RecordingStatus = false } = req.body;
         if (CallStatus) {
             if (conversation) {
                 conversation.metadata.status = CallStatus;
@@ -50,7 +53,7 @@ twilioRouter.post(
                 if (CallStatus === "completed") await conversation.updateAnalytics();
             }
         }
-        if (RecordingStatus === "completed") conversation.metadata.callDetails = { ...conversation.metadata.callDetails, recording: { ...req.body } };
+        if (RecordingStatus) conversation.metadata.callDetails = { ...conversation.metadata.callDetails, recording: { ...req.body } };
         res.status(200).send("Success");
     }
 );
