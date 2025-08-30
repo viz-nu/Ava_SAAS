@@ -33,14 +33,14 @@ export const twilioRouter = Router();
 twilioRouter.post(
     "/sms/status",
     urlencoded({ extended: false }), // Twilio sends x-www-form-urlencoded
-    twilio.webhook,
+    // twilio.webhook,
     (req, res) => res.status(200).send("Success")
 );
 // /webhook/twilio/call/status?conversationId=68b23b0a2690fd10a81c1a27 403 - 1.299 ms
 twilioRouter.post(
     "/call/status",
     urlencoded({ extended: false }),
-    twilio.webhook,
+    // twilio.webhook,
     async (req, res) => {
         const { conversationId } = req.query
         const conversation = await Conversation.findById(conversationId)
