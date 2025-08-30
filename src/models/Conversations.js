@@ -51,6 +51,7 @@ const ConversationSchema = new Schema({
         },
         userLocation: Schema.Types.Mixed,
         callDetails: Schema.Types.Mixed,
+        sequenceOfEvents: [Schema.Types.Mixed],
     }
 }, {
     timestamps: true
