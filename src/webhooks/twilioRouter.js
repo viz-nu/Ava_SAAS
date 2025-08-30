@@ -45,7 +45,6 @@ twilioRouter.post(
         const { conversationId } = req.query
         const conversation = await Conversation.findById(conversationId)
         conversation.metadata.sequenceOfEvents.push(req.body)
-        console.log("twilio call status update", JSON.stringify(req.body, null, 2));
         const { CallStatus = false, RecordingStatus = false } = req.body;
         if (CallStatus) {
             if (conversation) {
