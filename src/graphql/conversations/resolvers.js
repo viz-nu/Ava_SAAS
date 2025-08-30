@@ -18,7 +18,7 @@ export const conversationResolvers = {
         if (to) filter.createdAt.$lte = new Date(to);
       }
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
-      const projection = flattenFields(requestedFields);
+      const { projection, nested } = flattenFields(requestedFields);
       const conversations = await Conversation.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
       return conversations;
     }

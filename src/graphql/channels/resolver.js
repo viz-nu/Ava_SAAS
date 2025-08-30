@@ -13,7 +13,7 @@ export const channelResolvers = {
     Query: {
         async getChannels(_, { id, type, status }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             if (type) filter.type = type;

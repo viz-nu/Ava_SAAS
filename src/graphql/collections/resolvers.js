@@ -9,6 +9,7 @@ import { adminNamespace, io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 import { processFile } from "../../utils/fileHelper.js";
+import { Business } from '../../models/Business.js';
 export const collectionResolvers = {
     Query: {
         collections: async (_, { id, limit = 10, isPublic }, context, info) => {
@@ -17,25 +18,26 @@ export const collectionResolvers = {
             if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
-            return await Collection.find(filter)
-                .populate('business')
-                .populate('createdBy')
+            const { projection, nested } = flattenFields(requestedFields);
+            let collections = await Collection.find(filter)
                 .select(projection)
                 .limit(limit)
                 .sort({ createdAt: -1 });
+            await Business.populate(collections, { path: 'business', select: nested.business });
+            await User.populate(collections, { path: 'createdBy', select: nested.createdBy });
+            return collections;
         }
     },
 
     Mutation: {
         createCollection: async (_, { collection }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const { name, description, contents, isPublic, isFeatured } = collection;
             const newCollection = await Collection.create({ name, description, contents, business: context.user.business, createdBy: context.user._id })
-                .populate('business')
-                .populate('createdBy')
                 .select(projection);
+            await Business.populate(newCollection, { path: 'business', select: nested.business });
+            await User.populate(newCollection, { path: 'createdBy', select: nested.createdBy });
             (async function processCollection(newCollection, receiver = context.user.business) {
                 try {
                     for (const content of newCollection.contents) {
@@ -68,7 +70,7 @@ export const collectionResolvers = {
         },
         updateCollection: async (_, { id, action, name, description, removeContents, addContents }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const collection = await Collection.findOne({ _id: id, business: context.user.business });
             if (!collection) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             switch (action) {
@@ -94,7 +96,10 @@ export const collectionResolvers = {
                 default:
                     throw new GraphQLError("Invalid action", { extensions: { code: "INVALID_ACTION" } });
             }
-            return await collection.save().populate('business').populate('createdBy').select(projection);
+            const updatedCollection = await collection.save().select(projection);
+            await Business.populate(updatedCollection, { path: 'business', select: nested.business });
+            await User.populate(updatedCollection, { path: 'createdBy', select: nested.createdBy });
+            return updatedCollection;
         },
         deleteCollection: async (_, { id }, context) => {
             const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);

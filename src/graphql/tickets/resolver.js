@@ -5,7 +5,7 @@ export const ticketResolvers = {
     Query: {
         async fetchTickets(_, { notifierEmail, channel, priority, status, id }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             if (notifierEmail) filter.notifierEmail = notifierEmail;
@@ -16,7 +16,7 @@ export const ticketResolvers = {
         }
     },
     Mutation: {
-       async updateTicket(_, { input, id }, context, info){ return {}},
-       async deleteTicket(_, { id }, context, info){ return true}
+        async updateTicket(_, { input, id }, context, info) { return {} },
+        async deleteTicket(_, { id }, context, info) { return true }
     }
 };

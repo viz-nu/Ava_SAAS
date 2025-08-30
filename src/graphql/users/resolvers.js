@@ -16,13 +16,13 @@ export const userResolvers = {
     Query: {
         me: async (_, filters, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const user = await User.findById(context.user._id).select(projection);
             return user
         },
         users: async (_, { id, limit = 10, role, isVerified }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const filter = {};
             filter.business = context.user.business;
             if (role) filter.role = role;

@@ -5,7 +5,7 @@ export const notificationResolvers = {
     Query: {
         async fetchNotifications(_, __, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             return await Notification.find({ business: context.user.business }).select(projection).sort({ createdAt: -1 });
         },
     },
