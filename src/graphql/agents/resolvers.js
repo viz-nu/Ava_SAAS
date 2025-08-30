@@ -5,28 +5,31 @@ import { Action } from '../../models/Action.js';
 import { flattenFields } from '../../utils/graphqlTools.js';
 import { openai } from '../../utils/openai.js';
 import { Channel } from '../../models/Channels.js';
+import { Business } from '../../models/Business.js';
+import { User } from '../../models/User.js';
 export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, isPublic, isFeatured, id }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             const filter = {};
             filter.business = context.user.business;
             if (isPublic !== undefined) filter.isPublic = isPublic;
             if (isFeatured !== undefined) filter.isFeatured = isFeatured;
             if (id !== undefined) filter._id = id;
-            return await AgentModel.find(filter)
-                .populate('business')
-                .populate('createdBy')
-                .populate('channels')
-                .populate('collections')
-                .select(projection).limit(limit).sort({ createdAt: -1 });
+            const agents = await AgentModel.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
+            await Business.populate(agents, { path: 'business', select: nested.business });
+            await User.populate(agents, { path: 'createdBy', select: nested.createdBy });
+            await Channel.populate(agents, { path: 'channels', select: nested.channels });
+            await Collection.populate(agents, { path: 'collections', select: nested.collections });
+            await Action.populate(agents, { path: 'actions', select: nested.actions });
+            return agents;
         }
     },
     Mutation: {
         createAgent: async (_, { agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
+            const { projection, nested } = flattenFields(requestedFields);
             let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, isFeatured, analysisMetrics } = agent;
             const [foundChannels, foundCollections, foundActions] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
@@ -36,19 +39,20 @@ export const agentResolvers = {
             if (foundChannels.length !== channels.length) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             if (foundCollections.length !== collections.length) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
-            return await AgentModel
+            const newAgent = await AgentModel
                 .create({ appearance, personalInfo, channels, actions, collections, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured, analysisMetrics })
-                .populate('business')
-                .populate('createdBy')
-                .populate('channels')
-                .populate('collections')
-                .populate('actions')
                 .select(projection);
+            await Business.populate(newAgent, { path: 'business', select: nested.business });
+            await User.populate(newAgent, { path: 'createdBy', select: nested.createdBy });
+            await Channel.populate(newAgent, { path: 'channels', select: nested.channels });
+            await Collection.populate(newAgent, { path: 'collections', select: nested.collections });
+            await Action.populate(newAgent, { path: 'actions', select: nested.actions });
+            return newAgent;
         },
         updateAgent: async (_, { id, agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
-            let {actions = [], channels = [], collections = [] } = agent;
+            const { projection, nested } = flattenFields(requestedFields);
+            let { actions = [], channels = [], collections = [] } = agent;
             const [foundChannels, foundCollections, foundActions] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
@@ -57,14 +61,15 @@ export const agentResolvers = {
             if (foundChannels.length !== channels.length) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             if (foundCollections.length !== collections.length) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
-            return await AgentModel
+            const updatedAgent = await AgentModel
                 .findByIdAndUpdate(id, { ...agent, updatedAt: new Date() }, { new: true })
-                .populate('business')
-                .populate('createdBy')
-                .populate('channels')
-                .populate('collections')
-                .populate('actions')
                 .select(projection);
+            await Business.populate(updatedAgent, { path: 'business', select: nested.business });
+            await User.populate(updatedAgent, { path: 'createdBy', select: nested.createdBy });
+            await Channel.populate(updatedAgent, { path: 'channels', select: nested.channels });
+            await Collection.populate(updatedAgent, { path: 'collections', select: nested.collections });
+            await Action.populate(updatedAgent, { path: 'actions', select: nested.actions });
+            return updatedAgent;
         },
         deleteAgent: async (_, { id }, context) => {
             const result = await AgentModel.findByIdAndDelete(id);

@@ -4,6 +4,8 @@ import { ZohoCRMIntegration } from "../../utils/Zoho.js";
 import graphqlFields from "graphql-fields";
 import { flattenFields } from "../../utils/graphqlTools.js";
 import { TwilioService } from "../../utils/twilio.js";
+import { Business } from "../../models/Business.js";
+import { User } from "../../models/User.js";
 const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
@@ -11,8 +13,10 @@ export const IntegrationResolvers = {
             const filter = { business: context.business._id };
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const projection = flattenFields(requestedFields);
-            const integration = await Integration.find(filter).populate('business createdBy').select(projection).limit(limit).sort({ createdAt: -1 });;
+            const { projection, nested } = flattenFields(requestedFields);
+            const integration = await Integration.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
+            await Business.populate(integration, { path: 'business', select: nested.business });
+            await User.populate(integration, { path: 'createdBy', select: nested.createdBy });
             return integration;
         }
     },
@@ -72,7 +76,9 @@ export const IntegrationResolvers = {
                 default:
                     break;
             }
-            return await integration.populate('business createdBy');
+            await Business.populate(integration, { path: 'business', select: nested.business });
+            await User.populate(integration, { path: 'createdBy', select: nested.createdBy });
+            return integration;
         },
         deAuthorizeIntegration: async (_, { id }, context, info) => {
             const integration = await Integration.findOne({ _id: id, business: context.user.business });
