@@ -64,15 +64,16 @@ export const createApp = async () => {
         }));
         app.use(cookieParser());
         app.use(morgan(':date[web] :method :url :status - :response-time ms'));
-        app.use(bodyParser.urlencoded({ extended: true }));
         app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
-        app.use(express.urlencoded({ limit: '50mb', extended: true }));
         app.use((req, res, next) => {
             req.body = sanitize(req.body);
             req.params = sanitize(req.params);
             if (JSON.stringify(req.query) !== JSON.stringify(sanitize(req.query))) return res.status(400).json({ error: 'Invalid query parameters detected', message: 'Query contains potentially malicious content' });
             next();
         });
+        app.use("/webhook", webhookRouter);
+        app.use(express.urlencoded({ limit: '50mb', extended: true }));
+        app.use(bodyParser.urlencoded({ extended: true }));
         // Routes
         app.get('/', (_, res) => res.status(200).send('Server running'));
         // weighted routes
@@ -390,7 +391,6 @@ export const createApp = async () => {
             }
         })
         app.use("/api/v1", cors(corsOptions), indexRouter);
-        app.use("/webhook", webhookRouter);
         // Apollo setup
         await registerApollo(app, server);
         // Sockets
