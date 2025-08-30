@@ -74,7 +74,7 @@ export const twilioResolvers = {
         buyTwilioPhoneNumber: async (_, { integrationId, phoneNumber, friendlyName, smsUrl, voiceUrl }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            return await service.buyPhoneNumber(phoneNumber, friendlyName, smsUrl = `${process.env.SERVER_URL}webhook/twilio/sms/status`, voiceUrl = `${process.env.SERVER_URL}webhook/twilio/call/status`);
+            return await service.buyPhoneNumber(phoneNumber, friendlyName);
         },
         updateTwilioPhoneNumber: async (_, { integrationId, sid, friendlyName, voiceUrl, voiceMethod, smsUrl, smsMethod, voiceCallerIdLookup, accountSid }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
