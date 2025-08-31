@@ -10,8 +10,8 @@ const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
         fetchIntegration: async (_, { id, limit = 5 }, context, info) => {
-            const filter = { business: context.business._id };
-            if (id) filter._id = id;
+            const filter = { business: context.user.business};
+            // if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const integration = await Integration.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
