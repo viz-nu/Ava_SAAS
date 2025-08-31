@@ -1,6 +1,7 @@
 import graphqlFields from "graphql-fields";
 import { Ticket } from "../../models/Tickets.js";
 import { flattenFields } from "../../utils/graphqlTools.js";
+import { Business } from "../../models/Business.js";
 export const ticketResolvers = {
     Query: {
         async fetchTickets(_, { notifierEmail, channel, priority, status, id }, context, info) {
@@ -12,7 +13,9 @@ export const ticketResolvers = {
             if (status) filter.status = status;
             if (channel) filter.channel = id;
             if (priority) filter.priority = priority;
-            return await Ticket.find(filter).select(projection).sort({ createdAt: -1 });
+            const tickets = await Ticket.find(filter).select(projection).sort({ createdAt: -1 });
+            Business.populate(tickets, { path: "business", select: nested })
+            return tickets
         }
     },
     Mutation: {
