@@ -105,6 +105,3 @@ urlProcessingQueue.on('stalled', async (job) => {
         adminNamespace.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } })
     }
 })
-// await urlProcessingQueue.obliterate({ force: true });
-// const activeJobs = await urlProcessingQueue.getActive();
-// console.log('Currently processing jobs:', activeJobs.map(j => j.id));

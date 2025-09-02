@@ -20,9 +20,9 @@ type Channel {
   """Custom UI configuration elements"""
   UIElements: JSON
   """Creation timestamp"""
-  createdAt: String
+  createdAt: DateTime
   """Last update timestamp"""
-  updatedAt: String
+  updatedAt: DateTime
   """Channel-specific configuration settings"""
   config: JSON
 }
