@@ -9,10 +9,10 @@ type Job {
     priority: Int
     schedule: scheduleJob
     jobType: jobTypeEnum
-    payload: outboundCallPayload | null
-    result_ref: JSON | null
-    error_ref: JSON | null
-    log: logEntry | null
+    payload: outboundCallPayload
+    result_ref: JSON
+    error_ref: JSON
+    log: logEntry
     tags: [String]
     createdBy: User
     business: Business
@@ -55,7 +55,7 @@ type scheduleJob {
     backoff: backoff
     cancel_requested: Boolean
 }
-type scheduleTypeEnum {
+enum scheduleTypeEnum {
     once
     cron
 }
@@ -69,7 +69,7 @@ type attempts {
     made: Int
     reason: String
 }
-type backoffTypeEnum {
+enum backoffTypeEnum {
     fixed
     exponential
 }
@@ -108,14 +108,65 @@ type ContactDetails {
     whatsappId: String
     instagramId: String
 }
-Query {
+input receiverInput {
+    personalInfo: PersonalInfoInput
+    communicationChannels: [ID]
+    preferredLanguage: String
+    Instructions: String
+}
+input personalInfoInput {
+    name: String
+    contactDetails: contactDetailsInput
+    miscInfo: JSON
+}
+input contactDetailsInput {
+    email: String
+    phone: String
+    telegramId: String
+    whatsappId: String
+    instagramId: String
+}
+input scheduleCampaignInput {
+    startAt: DateTime
+    endAt: DateTime
+    timezone: String
+}
+input scheduleJobInput {
+    run_at: DateTime
+    type: scheduleTypeEnum
+    timezone: String
+    backoff: backoffInput
+    cancel_requested: Boolean
+}
+input backoffInput {
+    type: backoffTypeEnum
+    delay_ms: Int
+    attempts: attemptsInput
+}
+input attemptsInput {
+    max: Int
+    made: Int
+    reason: String
+}
+input outboundCallPayloadInput {
+    channel: ID
+    agent: ID
+    to: String
+    accessToken: String
+    PreContext: String
+    expectedDuration: Int
+    maxRetries: Int
+    callbackUrl: String
+    cps: Int
+}
+type Query {
     fetchJobs(campaignId: ID, status: jobStatusEnum, priority: Int, jobType: jobTypeEnum id: ID schedule_type: scheduleTypeEnum schedule_run_at: DateTime limit: Int page: Int): [Job]
     fetchCampaigns( id: ID, limit: Int page: Int ): [Campaign]
 }
-Mutation {
-    createCampaign(name: String, agentId: ID, receivers: [Receiver], schedule: scheduleCampaign, cps: Int): Campaign
-    createJob(name: String, description: String, payload: outboundCallPayload, schedule: scheduleJob, tags: [String], priority: Int): Job
-    updateJobSchedule(id: ID, schedule: scheduleJob): Job
+type Mutation {
+    createCampaign(name: String, agentId: ID, receivers: [receiverInput], schedule: scheduleCampaignInput, cps: Int): Campaign
+    createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job
+    updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
     deleteJob(id: ID): Boolean
 }
 `

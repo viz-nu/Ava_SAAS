@@ -33,6 +33,8 @@ import { collectionResolvers } from './collections/resolvers.js';
 import { collectionTypeDefs } from './collections/schema.js';
 import { IntegrationTypeDefs } from './integrations/schema.js';
 import { IntegrationResolvers } from './integrations/resolver.js';
+import { jobResolvers } from './job/resolver.js';
+import { jobTypeDefs } from './job/schema.js';
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
@@ -46,7 +48,8 @@ const typeDefs = mergeTypeDefs([
   // zohoTypeDefs,
   agentTypeDefs,
   actionTypeDefs,
-  collectionTypeDefs
+  collectionTypeDefs,
+  jobTypeDefs
 ]);
 const resolvers = mergeResolvers([
   conversationResolvers,
@@ -59,7 +62,8 @@ const resolvers = mergeResolvers([
   // zohoResolvers,
   agentResolvers,
   actionResolvers,
-  collectionResolvers
+  collectionResolvers,
+  jobResolvers
 ]);
 export const registerApollo = async (app, httpServer) => {
   const schema = makeExecutableSchema({

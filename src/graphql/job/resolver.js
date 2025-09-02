@@ -5,7 +5,7 @@ import { GraphQLError } from "graphql";
 import { Campaign } from "../../models/Campaign.js";
 import { Business } from "../../models/Business.js";
 import { User } from "../../models/User.js";
-import { Channel } from "../../models/Channel.js";
+import { Channel } from '../../models/Channels.js';
 import { AgentModel } from "../../models/Agent.js";
 import { generateTokens } from "../../utils/tokens.js";
 export const jobResolvers = {
