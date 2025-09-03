@@ -90,6 +90,7 @@ export const jobResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             if (new Date(schedule.run_at) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
+            if (new Date(schedule.run_at) < new Date(Date.now() + 60 * 1000)) throw new GraphQLError("Schedule run at date should not be less than 1 minute from now")
             // verify that payload.channel , schedule.run_at exist in db already and then add 1sec to prevent overlap
             const existingJob = await Job.findOne({ $and: [{ 'payload.channel': payload.channel }, { 'schedule.run_at': new Date(schedule.run_at) }] });
             while (existingJob) {

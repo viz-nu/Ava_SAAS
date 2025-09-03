@@ -38,7 +38,6 @@ type outboundCallPayload {
     channel: Channel
     agent: Agent
     to: String
-    accessToken: String
     PreContext: String
     expectedDuration: Int
     maxRetries: Int
@@ -134,9 +133,6 @@ input scheduleCampaignInput {
 input scheduleJobInput {
     run_at: DateTime
     type: scheduleTypeEnum
-    timezone: String
-    backoff: backoffInput
-    cancel_requested: Boolean
 }
 input backoffInput {
     type: backoffTypeEnum
@@ -152,11 +148,9 @@ input outboundCallPayloadInput {
     channel: ID
     agent: ID
     to: String
-    accessToken: String
     PreContext: String
     expectedDuration: Int
     maxRetries: Int
-    callbackUrl: String
     cps: Int
 }
 type Query {
