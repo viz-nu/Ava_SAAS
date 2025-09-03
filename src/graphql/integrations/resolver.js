@@ -10,7 +10,7 @@ const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
         fetchIntegration: async (_, { id, limit = 5 }, context, info) => {
-            const filter = { business: context.user.business};
+            const filter = { business: context.user.business };
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
@@ -55,6 +55,8 @@ export const IntegrationResolvers = {
                     break;
                 case "twilio":
                     if (!AccountSid) return new GraphQLError('AccountSid is required for Twilio integration', { extensions: { code: 'INVALID_INPUT' } });
+                    const service = new TwilioService(AccountSid, TWILIO_AUTH_TOKEN);
+                    let accountDetails = JSON.parse(JSON.stringify(await service.getAccountDetails()));
                     integration = await Integration.create({
                         business: context.user.business,
                         metaData: {
@@ -69,6 +71,11 @@ export const IntegrationResolvers = {
                             AccountSid: AccountSid,
                             state: state,
                         },
+                        secrets: {
+                            tokenType: "Barer",
+                            accessToken: TWILIO_AUTH_TOKEN,
+                        },
+                        accountDetails: accountDetails,
                         isActive: true,
                         createdBy: context.user._id
                     })
@@ -76,6 +83,8 @@ export const IntegrationResolvers = {
                 default:
                     break;
             }
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const { projection, nested } = flattenFields(requestedFields);
             await Business.populate(integration, { path: 'business', select: nested.business });
             await User.populate(integration, { path: 'createdBy', select: nested.createdBy });
             return integration;
