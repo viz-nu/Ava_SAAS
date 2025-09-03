@@ -6,7 +6,7 @@ type Channel {
   """Display name of the channel"""
   name: String!
   """ID of the business that owns this channel"""
-  business: ID!
+    business: Business
   """Type of communication channel (email, whatsapp, etc)"""
   type: ChannelTypeEnum!
   """Current status of the channel (active, inactive, etc)"""

@@ -133,7 +133,13 @@ export const channelResolvers = {
                     const { integrationId, phoneNumber } = config;
                     const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1 });
                     if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
-                    channel.config = { integration: integration._id, provider: integration.metaData.type, phoneNumber }
+                    channel.config = { 
+                        integration: integration._id, 
+                        provider: integration.metaData.type, 
+                        phoneNumber, 
+                        webSocketsUrl: `wss://sockets.avakado.ai/media-stream`,
+                        voiceUpdatesWebhookUrl: `${process.env.SERVER_URL}webhook/twilio/call/status?conversationId=`
+                    }
                     await channel.save()
                     await channel.updateStatus("phone channel configured")
                     break;
