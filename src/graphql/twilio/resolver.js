@@ -89,7 +89,7 @@ export const twilioResolvers = {
         makeTwilioOutboundTestCall: async (_, { channelId, to }) => {
             const channel = await Channel.findById(channelId).select({ config: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
             const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            return await service.makeOutboundCall({ to, from });
+            return await service.makeOutboundCall({ to, from: channel.config.phoneNumber });
         },
         makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
             const channel = await Channel.findById(channelId).select({ config: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
