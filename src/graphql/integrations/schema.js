@@ -54,6 +54,10 @@ type Integration {
     isActive: Boolean
     """User who created the integration"""
     createdBy: User
+    """Creation timestamp"""
+    createdAt: DateTime
+    """Last update timestamp"""
+    updatedAt: DateTime
 }
 
 type Query {
