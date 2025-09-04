@@ -96,17 +96,27 @@ export const IntegrationResolvers = {
             if (!integration) return new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
             switch (integration.metaData.type) {
                 case "twilio":
-                    // const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-                    // await service.deauthorizeConnectApp(integration.config.AccountSid);
-                    // remove channel connected to integration 
-                    const deletedChannel = await Channel.findOneAndDelete({ "config.integration": integrationId, business: context.user.business });
-                    if (deletedChannel) {
-                        console.log("Deleted channel id:", deletedChannel._id);
-                        await AgentModel.updateMany({ channels: deletedChannel._id }, { $pull: { channels: deletedChannel._id } });
-                    }
                     break;
                 default:
                     break;
+            }
+            const channelsToDelete = await Channel.find(
+                { "config.integration": integrationId, business: context.user.business },
+                { _id: 1 } // only fetch _id
+            );
+            console.log({ "channelsToDelete": channelsToDelete })
+            if (channelsToDelete.length > 0) {
+                const channelIds = channelsToDelete.map(c => c._id);
+
+                // Step 2: Delete them
+                await Channel.deleteMany({ _id: { $in: channelIds } });
+
+                // Step 3: Pull them from all Agent documents
+                await AgentModel.updateMany(
+                    { channels: { $in: channelIds } },
+                    { $pull: { channels: { $in: channelIds } } }
+                );
+                console.log("Deleted channel ids:", channelIds);
             }
             await Integration.findByIdAndDelete(integrationId);
             return true;
