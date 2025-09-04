@@ -131,9 +131,9 @@ export class TwilioService {
      * -----------------------------*/
 
     // CONNECT APPS
-    async deauthorizeConnectApp(connectAppSid) {
-        return await this.client.authorizedConnectApps(connectAppSid).remove();
-    }
+    // async deauthorizeConnectApp(connectAppSid) {
+    //     return await this.client.authorizedConnectApps(connectAppSid).remove();
+    // } // doesnt work
 
     // TRANSCRIPTIONS
     async listTranscriptions(options) {
