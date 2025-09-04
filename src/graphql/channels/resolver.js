@@ -22,7 +22,6 @@ export const channelResolvers = {
             return await Channel.find(filter).select(projection);
         },
     },
-
     Mutation: {
         async createChannel(_, { input }, context) {
             const { name, type, config, systemPrompt, isPublic, UIElements } = input;
