@@ -5,6 +5,7 @@ const TurnDetectionTypeEnum = ['server_vad', 'semantic_vad'];
 const ToolChoiceEnum = ['auto', 'none', 'required'];
 const AudioFormatEnum = ['pcm16', 'wav', 'mp3', 'g711_ulaw', 'g711_alaw', 'opus'];
 const OpenAiVoices = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"];
+const OpenAiRealtimeModels = ['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17']
 const ModalitiesEnum = ["audio", "text"];
 
 // --- AUDIO TRANSCRIPTION ---
@@ -68,7 +69,6 @@ const AudioInputSchema = new Schema(
 const AudioOutputSchema = new Schema(
     {
         format: { type: String, default: "g711_ulaw", enum: AudioFormatEnum },
-        voice: { type: String, enum: OpenAiVoices, default: "alloy" },
         speed: { type: Number, min: 0.25, max: 2.0, default: 1.0 },
         getTranscription: { type: Boolean, default: true },
     },
@@ -87,6 +87,8 @@ const AudioSchema = new Schema(
 // --- ASSISTANT CONFIG ---
 const AssistantConfigSchema = new Schema(
     {
+        model: { type: String, enum: OpenAiRealtimeModels, default: 'gpt-4o-mini-realtime-preview' },
+        voice: { type: String, enum: OpenAiVoices, default: "alloy" },
         type: { type: String, default: 'realtime' },
         output_modalities: [{ type: String, enum: ModalitiesEnum }],
         audio: { type: AudioSchema },
