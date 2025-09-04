@@ -6,6 +6,8 @@ import { flattenFields } from "../../utils/graphqlTools.js";
 import { TwilioService } from "../../utils/twilio.js";
 import { Business } from "../../models/Business.js";
 import { User } from "../../models/User.js";
+import { Channel } from "../../models/Channels.js";
+import { AgentModel } from "../../models/Agent.js";
 const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
@@ -96,11 +98,17 @@ export const IntegrationResolvers = {
                 case "twilio":
                     const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
                     await service.deauthorizeConnectApp(connectAppSid);
+                    // remove channel connected to integration 
+                    const deletedChannel = await Channel.findOneAndDelete({ "config.integration": id, business: context.user.business });
+                    if (deletedChannel) {
+                        console.log("Deleted channel id:", deletedChannel._id);
+                        await AgentModel.updateMany({ channels: deletedChannel._id }, { $pull: { channels: deletedChannel._id } });
+                    }
                     break;
                 default:
                     break;
             }
-            // await Integration.deleteOne({ _id: id });
+            await Integration.deleteOne({ _id: id });
             return true;
         },
 
