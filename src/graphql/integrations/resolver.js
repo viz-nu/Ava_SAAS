@@ -99,7 +99,7 @@ export const IntegrationResolvers = {
                     // const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
                     // await service.deauthorizeConnectApp(integration.config.AccountSid);
                     // remove channel connected to integration 
-                    const deletedChannel = await Channel.findOneAndDelete({ "config.integration": id, business: context.user.business });
+                    const deletedChannel = await Channel.findOneAndDelete({ "config.integration": integrationId, business: context.user.business });
                     if (deletedChannel) {
                         console.log("Deleted channel id:", deletedChannel._id);
                         await AgentModel.updateMany({ channels: deletedChannel._id }, { $pull: { channels: deletedChannel._id } });
