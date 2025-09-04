@@ -110,12 +110,6 @@ export const twilioResolvers = {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
             const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.sendSms({ to, from, body, mediaUrl, statusCallback });
-        },
-        deAuthorizeTwilioApp: async (_, { integrationId, connectAppSid }) => {
-            const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
-            const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            await service.deauthorizeConnectApp(connectAppSid);
-            return true;
-        },
+        }
     }
 };
