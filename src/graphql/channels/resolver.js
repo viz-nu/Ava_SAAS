@@ -8,6 +8,7 @@ import FormData from 'form-data';
 import { randomBytes } from "crypto"
 import { Integration } from '../../models/Integrations.js';
 import { GraphQLError } from 'graphql';
+import { AgentModel } from '../../models/Agent.js';
 const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID, TWILIO_AUTH_TOKEN } = process.env;
 export const channelResolvers = {
     Query: {
@@ -133,10 +134,10 @@ export const channelResolvers = {
                     const { integrationId, phoneNumber } = config;
                     const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1 });
                     if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
-                    channel.config = { 
-                        integration: integration._id, 
-                        provider: integration.metaData.type, 
-                        phoneNumber, 
+                    channel.config = {
+                        integration: integration._id,
+                        provider: integration.metaData.type,
+                        phoneNumber,
                         webSocketsUrl: `wss://sockets.avakado.ai/media-stream`,
                         voiceUpdatesWebhookUrl: `${process.env.SERVER_URL}webhook/twilio/call/status?conversationId=`
                     }
@@ -367,7 +368,11 @@ export const channelResolvers = {
                 default:
                     break;
             }
-            Channel.findByIdAndDelete(id)
+            const deletedChannel = await Channel.findOneAndDelete({ _id: id, business: context.user.business });
+            if (deletedChannel) {
+                console.log("Deleted channel id:", deletedChannel._id);
+                await AgentModel.updateMany({ channels: deletedChannel._id }, { $pull: { channels: deletedChannel._id } });
+            }
         },
     },
 
