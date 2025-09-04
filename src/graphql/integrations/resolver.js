@@ -108,7 +108,7 @@ export const IntegrationResolvers = {
                 default:
                     break;
             }
-            await Integration.deleteOne({ _id: integrationId });
+            await Integration.findByIdAndDelete(integrationId);
             return true;
         },
 
