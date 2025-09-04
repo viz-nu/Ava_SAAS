@@ -96,8 +96,8 @@ export const IntegrationResolvers = {
             if (!integration) return new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
             switch (integration.metaData.type) {
                 case "twilio":
-                    const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-                    await service.deauthorizeConnectApp(integration.config.AccountSid);
+                    // const service = new TwilioService(integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+                    // await service.deauthorizeConnectApp(integration.config.AccountSid);
                     // remove channel connected to integration 
                     const deletedChannel = await Channel.findOneAndDelete({ "config.integration": id, business: context.user.business });
                     if (deletedChannel) {
