@@ -334,6 +334,5 @@ type Mutation {
   makeTwilioOutboundTestCall(channelId: ID! to:String!): Call @requireBusinessAccess
   makeTwilioAIOutboundCall(channelId: ID! to:String! agentId:ID! PreContext:String!): Call  @requireBusinessAccess
   sendTwilioSms(integrationId: ID!  to: String!  from: String!  body: String! statusCallback:String mediaUrl:[String]): SMSResponse @requireBusinessAccess
-  deAuthorizeTwilioApp(integrationId: ID!  connectAppSid: String!): Boolean @requireScope(scope: "integration:delete") @requireBusinessAccess
 }
 `;
