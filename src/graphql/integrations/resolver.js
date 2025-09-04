@@ -91,8 +91,8 @@ export const IntegrationResolvers = {
             await User.populate(integration, { path: 'createdBy', select: nested.createdBy });
             return integration;
         },
-        deAuthorizeIntegration: async (_, { id }, context, info) => {
-            const integration = await Integration.findOne({ _id: id, business: context.user.business });
+        deAuthorizeIntegration: async (_, { integrationId }, context, info) => {
+            const integration = await Integration.findOne({ _id: integrationId, business: context.user.business });
             if (!integration) return new GraphQLError('Integration not found', { extensions: { code: 'NOT_FOUND' } });
             switch (integration.metaData.type) {
                 case "twilio":
@@ -108,7 +108,7 @@ export const IntegrationResolvers = {
                 default:
                     break;
             }
-            await Integration.deleteOne({ _id: id });
+            await Integration.deleteOne({ _id: integrationId });
             return true;
         },
 
