@@ -39,9 +39,7 @@ export const agentResolvers = {
             if (foundChannels.length !== channels.length) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             if (foundCollections.length !== collections.length) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
-            const newAgent = await AgentModel
-                .create({ appearance, personalInfo, channels, actions, collections, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured, analysisMetrics })
-                .select(projection);
+            const newAgent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured, analysisMetrics })
             await Business.populate(newAgent, { path: 'business', select: nested.business });
             await User.populate(newAgent, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newAgent, { path: 'channels', select: nested.channels });
