@@ -33,6 +33,7 @@ export const agentTypeDefs = `#graphql
     model: String
     """ Creativity/randomness parameter for responses (0-1) """
     temperature: Float
+     VoiceAgentSessionConfig: JSON,
   }
 
   """ Main agent type containing all agent properties """
@@ -87,6 +88,7 @@ export const agentTypeDefs = `#graphql
     welcomeMessage: String
     model: String
     temperature: Float
+    VoiceAgentSessionConfig:JSON
   }
 
   """ Input type for creating/updating agents """
