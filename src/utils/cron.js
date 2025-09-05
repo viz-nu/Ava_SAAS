@@ -1,5 +1,6 @@
 import cron from "node-cron";
 import { syncWithDB } from "./JobsQueue.js";
+import { connectDB } from "./dbConnect.js";
 
 
 export let isSyncRunning = false;
@@ -10,6 +11,7 @@ export const safeSync = async ()=> {
         return;
     }
     isSyncRunning = true;
+    await connectDB()
     try {
         console.log("🔄 Running DB sync...");
         await syncWithDB();
