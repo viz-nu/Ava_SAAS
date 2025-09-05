@@ -33,8 +33,8 @@ const JobSchema = new Schema({
     error_ref: Schema.Types.Mixed,
     log: [logEntry],
     tags: [String],
-    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-    business: { type: Schema.Types.ObjectId, ref: 'Business' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
 }, {
     discriminatorKey: 'jobType', timestamps: true, index: [
         { status: 1, 'schedule.run_at': 1 },

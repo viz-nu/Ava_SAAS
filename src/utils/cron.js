@@ -4,7 +4,7 @@ import { syncWithDB } from "./JobsQueue.js";
 
 export let isSyncRunning = false;
 
-export async function safeSync() {
+export const safeSync = async ()=> {
     if (isSyncRunning) {
         console.log("⚠️ Sync already in progress, skipping this run");
         return;
