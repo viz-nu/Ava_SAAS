@@ -8,6 +8,7 @@ import { User } from "../../models/User.js";
 import { Channel } from '../../models/Channels.js';
 import { AgentModel } from "../../models/Agent.js";
 import { generateTokens } from "../../utils/tokens.js";
+import { safeSync } from "../../utils/cron.js";
 export const jobResolvers = {
     Query: {
         fetchJobs: async (_, { campaignId, status, priority, jobType, id, schedule_type, schedule_run_at, limit = 10, page = 1 }, context, info) => {
@@ -53,6 +54,7 @@ export const jobResolvers = {
             // create jobs for each receiver
             for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
                 const runAt = new Date(newCampaign.schedule.startAt.getTime() + (index * 1000 / cps))
+                const { newAccessToken } = await generateTokens(context.user._id)
                 await Job.create({
                     name: newCampaign.name + " - " + receiver.personalInfo.name || "Anonymous",
                     description: "Outbound call to " + receiver.personalInfo.name || "Anonymous" + " from " + newCampaign.name,
@@ -64,7 +66,7 @@ export const jobResolvers = {
                         agent: newCampaign.agent,
                         cps: newCampaign.cps,
                         channel: receiver.personalInfo.communicationChannels[0],
-                        accessToken: await generateTokens(context.user._id)
+                        accessToken: newAccessToken
                     },
                     schedule: {
                         run_at: runAt,
@@ -98,8 +100,9 @@ export const jobResolvers = {
                 existingJob = await Job.findOne({ $and: [{ 'payload.channel': payload.channel }, { 'schedule.run_at': new Date(schedule.run_at) }] });
             }
             schedule.run_at = new Date(schedule.run_at);
-            payload.accessToken = await generateTokens(context.user._id)
-            const newJob = await Job.create({ name, description, payload, schedule, tags, priority, business: context.user.business, createdBy: context.user._id, jobType: "outboundCall", log: [{ level: "info", message: "Job created" }] }).select(projection);
+            const { newAccessToken } = await generateTokens(context.user._id)
+            payload.accessToken = newAccessToken
+            const newJob = await Job.create({ name, description, payload, schedule, tags, priority, business: context.user.business, createdBy: context.user._id, jobType: "outboundCall", log: [{ level: "info", message: "Job created" }] });
             await safeSync();
             await Business.populate(newJob, { path: 'business', select: nested.business });
             await User.populate(newJob, { path: 'createdBy', select: nested.createdBy });
