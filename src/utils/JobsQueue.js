@@ -29,7 +29,7 @@ const initializeJobProcessingQueue = async () => {
             console.log(JSON.stringify(jobDoc, null, 2));
             let result;
             switch (jobDoc.jobType) {
-                case "outbound-call":
+                case "outboundCall":
                     try {
                         result = await runGraphQLQuery({
                             query: `
@@ -62,7 +62,7 @@ const initializeJobProcessingQueue = async () => {
                             },
                             endpoint: `https://chatapi.campusroot.com/graphql/`,
                             token: jobDoc.payload.accessToken
-                        });
+                        });                        
                     } catch (error) {
                         console.error("error in outbound-call", error);
                     }
@@ -70,7 +70,7 @@ const initializeJobProcessingQueue = async () => {
                 default:
                     break;
             }
-            console.log(`✅ GraphQL result for job ${jobId}:`, result);
+            console.log(`✅ GraphQL result for job ${jobId}:`, JSON.stringify(result));
 //             ✅ GraphQL result for job 68baeac00e45d8e1a2e5209a: undefined
 // 🎉 Job 68baeac00e45d8e1a2e5209a completed with result: undefined
             await Job.findByIdAndUpdate(jobId, { status: "completed", result_ref: result });
