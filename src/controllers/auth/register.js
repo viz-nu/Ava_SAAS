@@ -16,7 +16,6 @@ export const register = errorWrapper(async (req, res, next) => {
     const newOrganization = await Business.create({ name: BusinessName, logoURL: logoURL })
     let emailToken = (Math.random() + 1).toString(16).substring(2);
     const user = await User.create({ email: email, password: bcrypt.hashSync(password, 12), role: role, name: name, business: newOrganization._id, isVerified: false, emailToken });
-    newOrganization.members.push(user._id)
     newOrganization.createdBy = user._id
     const doc = await createFolder(newOrganization._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO)
     newOrganization.docData = {
