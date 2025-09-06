@@ -392,15 +392,37 @@ export const createApp = async () => {
         })
         app.use("/api/v1", cors(corsOptions), indexRouter);
         // Apollo setup
-        await registerApollo(app, server);
+        try {
+           await registerApollo(app, server); 
+        } catch (error) {
+            console.error("error with Apollo setup", error);
+            throw error;
+        }
+        
         // Sockets
-        await initializeSocket(server)
+        try {
+            await initializeSocket(server)
+        } catch (error) {
+            console.error("error with Socket setup", error);
+            throw error;
+        }
         // Error handling
-        app.use(errorHandlerMiddleware);
-        app.use("/{*splat}", (_, res) => res.status(404).send("Route does not exist"))
+        try {
+            app.use(errorHandlerMiddleware);
+        } catch (error) {
+            console.error("error with Error handling", error);
+            throw error;
+        }
+        try {
+            app.use("/{*splat}", (_, res) => res.status(404).send("Route does not exist"))
+        } catch (error) {
+            console.error("error with Route does not exist", error);
+            throw error;
+        }
 
         return { app, server };
     } catch (error) {
         console.error("failed to start server", error);
+        throw error;
     }
 };

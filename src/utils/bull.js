@@ -4,18 +4,16 @@ import { adminNamespace, io } from './io.js';
 import { Collection } from '../models/Collection.js';
 import 'dotenv/config'
 import Queue from "bull";
+import { getRedisClient } from "./dbConnect.js";
+
+// Don't create the queue immediately - create it when needed
 export const urlProcessingQueue = new Queue('url-processing', {
-    redis: {
-        host: process.env.REDIS_HOST,
-        port: Number(process.env.REDIS_PORT),
-        username: process.env.REDIS_USERNAME, // Redis 6+ ACL username
-        password: process.env.REDIS_PASSWORD,
-        db: Number(process.env.REDIS_DATABASE) || 0
-    },
+    redis: await getRedisClient(),
     settings: {
-        maxStalledCount: 3 // Increase retries before failing
+        maxStalledCount: 3
     }
 });
+// Set up the processor
 urlProcessingQueue.process(async (job) => {
     const { url, collectionId, receiver, _id } = job.data;
     try {
@@ -104,4 +102,4 @@ urlProcessingQueue.on('stalled', async (job) => {
         await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $set: { "contents.$.status": completedJobs < failedJobs ? "failed" : "active", "contents.$.error": "stalled" } })
         adminNamespace.to(receiver.toString()).emit("trigger", { action: "collection-status", data: { collectionId, status: completedJobs < failedJobs ? "failed" : "active" } })
     }
-})
+});
