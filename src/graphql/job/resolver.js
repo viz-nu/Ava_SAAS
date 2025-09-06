@@ -46,15 +46,16 @@ export const jobResolvers = {
         createCampaign: async (_, { name, agentId, receivers, schedule, cps }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule start at date should not be greater than 14 days from now")
+            if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
+            if (new Date(schedule.startAt) < new Date(Date.now() + 60 * 1000)) throw new GraphQLError("Schedule run at date should not be less than 1 minute from now")
             const newCampaign = await Campaign.create({ name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id }).select(projection);
             await Business.populate(newCampaign, { path: 'business', select: nested.business });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newCampaign, { path: 'receivers.personalInfo.communicationChannels', select: nested.receivers.personalInfo.communicationChannels });
             // create jobs for each receiver
+            const { newAccessToken } = await generateTokens(context.user._id)
             for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
                 const runAt = new Date(newCampaign.schedule.startAt.getTime() + (index * 1000 / cps))
-                const { newAccessToken } = await generateTokens(context.user._id)
                 await Job.create({
                     name: newCampaign.name + " - " + receiver.personalInfo.name || "Anonymous",
                     description: "Outbound call to " + receiver.personalInfo.name || "Anonymous" + " from " + newCampaign.name,
