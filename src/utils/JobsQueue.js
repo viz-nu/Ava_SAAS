@@ -58,7 +58,7 @@ const initializeJobProcessingQueue = async () => {
                                 "channelId": jobDoc.payload.channel,
                                 "to": jobDoc.payload.to,
                                 "agentId": jobDoc.payload.agent,
-                                "preContext": jobDoc.payload.preContext
+                                "preContext": jobDoc.payload.PreContext
                             },
                             endpoint: `https://chatapi.campusroot.com/graphql/`,
                             token: jobDoc.payload.accessToken
