@@ -43,7 +43,7 @@ export const sitemapGenerator = async (mainUrl) => {
     console.error(`Error processing ${mainUrl}:`, error.message);
     if (axios.isAxiosError(error)) {
       console.error('Error status:', error.response?.status);
-      console.error('Error fetching tokens:', error.response?.data || error.message);
+      console.error('Error at sitemapGenerator:', error.response?.data || error.message);
     } else {
       console.error('Unexpected error:', error);
     }

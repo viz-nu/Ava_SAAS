@@ -36,7 +36,7 @@ export const sendWAMessage = async ({ token, phone_number_id, messaging_product 
         console.error("❌ Error sending WhatsApp message:");
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response?.data || error.message);
+            console.error('Error at sendWAMessage:', error.response?.data || error.message);
         } else {
             console.error('Unexpected error:', error);
         }
@@ -60,7 +60,7 @@ export const getMediaTranscriptions = async ({ token, mediaId, openAiKey, transc
         console.error("Error occurred while fetching MediaUrl:");
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response?.data || error.message);
+            console.error('Error at getMediaTranscriptions:', error.response?.data || error.message);
         } else {
             console.error('Unexpected error:', error);
         }
