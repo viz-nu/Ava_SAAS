@@ -69,7 +69,7 @@ async function getZohoTokens(authorizationCode) {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+            console.error('Error at getZohoTokens:', error.response ? error.response.data : error.message);
         } else {
             console.error('Unexpected error:', error);
         }
@@ -98,7 +98,7 @@ export const regenerateToken = async () => {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+            console.error('Error at regenerateToken:', error.response ? error.response.data : error.message);
         } else {
             console.error('Unexpected error:', error);
         }
@@ -132,7 +132,7 @@ export const createFolder = async (name, parent_id) => {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+            console.error('Error at createFolder:', error.response ? error.response.data : error.message);
         } else {
             console.error('Unexpected error:', error);
         }
@@ -152,7 +152,7 @@ export const validateAccessToken = async (token) => {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+            console.error('Error at validateAccessToken:', error.response ? error.response.data : error.message);
         } else {
             console.error('Unexpected error:', error);
         }
@@ -197,7 +197,7 @@ export const uploadFileToWorkDrive = async ({ originalname, path, mimetype, file
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response ? error.response.data : error.message);
+            console.error('Error at uploadFileToWorkDrive:', error.response ? error.response.data : error.message);
         } else {
             console.error('Unexpected error:', error);
         }
@@ -240,7 +240,7 @@ export const deleteFileInWorkDrive = async (resource_id) => {
         // Log and return error response
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response?.data || error.message);
+            console.error('Error at deleteFileInWorkDrive:', error.response?.data || error.message);
         } else {
             console.error('Unexpected error:', error);
         }

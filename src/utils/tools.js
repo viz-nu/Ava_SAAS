@@ -67,7 +67,7 @@ export const getLocation = async (latitude, longitude) => {
     } catch (error) {
         if (axios.isAxiosError(error)) {
             console.error('Error status:', error.response?.status);
-            console.error('Error fetching tokens:', error.response?.data || error.message);
+            console.error('Error at getLocation:', error.response?.data || error.message);
         } else {
             console.error('Unexpected error:', error);
         }
