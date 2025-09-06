@@ -59,3 +59,31 @@ export const initialize = async () => {
         process.exit(1); // Exit the process if initialization fails
     }
 };
+
+export const closeConnections = async () => {
+    try {
+        if (redisClient) {
+            await redisClient.quit();
+            console.log('Redis connection closed');
+        }
+        if (mongoose.connection.readyState === 1) {
+            await mongoose.connection.close();
+            console.log('MongoDB connection closed');
+        }
+    } catch (error) {
+        console.error('Error closing connections:', error);
+    }
+};
+
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('Received SIGINT, closing connections...');
+    await closeConnections();
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('Received SIGTERM, closing connections...');
+    await closeConnections();
+    process.exit(0);
+});

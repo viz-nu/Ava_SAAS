@@ -2,239 +2,204 @@ import { Job } from '../models/Job.js';
 import 'dotenv/config'
 import Queue from "bull";
 import axios from "axios";
-export const jobProcessing = new Queue("job-processing", {
-    redis: {
+import { getRedisClient } from "./dbConnect.js";
+export let jobProcessing = null;
+const initializeJobProcessingQueue = async () => {
+    if (jobProcessing) return jobProcessing;
+
+    console.log('🔄 Initializing job processing queue...');
+    const redisClient = {
         host: process.env.REDIS_HOST,
         port: Number(process.env.REDIS_PORT),
         username: process.env.REDIS_USERNAME, // Redis 6+ ACL username
         password: process.env.REDIS_PASSWORD,
         db: Number(process.env.REDIS_DATABASE) || 0
-    },
-    settings: {
-        maxStalledCount: 3 // Increase retries before failing
-    }
-})
-jobProcessing.process(async (bullJob) => {
-    const { jobId } = bullJob.data;
-    console.log(`🔄 Fetching job ${jobId} from DB...`);
-    const jobDoc = await Job.findById(jobId);
-    if (!jobDoc) throw new Error(`Job ${jobId} not found in DB`);
-    console.log(`🚀 Running GraphQL query for job ${jobId}...`);
-    let result;
-    switch (jobDoc.type) {
-        case "outbound-call":
-            result = await runGraphQLQuery({
-                query: `
-                mutation Mutation($channelId: ID!, $to: String!, $agentId: ID!, $preContext: String!) {
-  makeTwilioAIOutboundCall(channelId: $channelId, to: $to, agentId: $agentId, PreContext: $preContext) {
-    sid
-    to
-    from
-    status
-    duration
-    price
-    priceUnit
-    direction
-    startTime
-    endTime
-    answeredBy
-    forwardedFrom
-    parentCallSid
-    callerName
-    groupSid
-    queueTime
-    trunkSid
-  }
-}`,
-                variables: {
-                    "channelId": jobDoc.payload.channel,
-                    "to": jobDoc.payload.to,
-                    "agentId": jobDoc.payload.agent,
-                    "preContext": jobDoc.payload.preContext
-                },
-                endpoint: `https://chatapi.campusroot.com/graphql/`,
-                token: jobDoc.payload.accessToken
-            });
-            break;
-        default:
-            break;
-    }
+    };
+    jobProcessing = new Queue("job-processing", {
+        redis: redisClient,
+        settings: {
+            maxStalledCount: 3
+        }
+    });
+    jobProcessing.process(async (bullJob) => {
+        try {
+            const { jobId } = bullJob.data;
+            const jobDoc = await Job.findById(jobId);
+            if (!jobDoc) throw new Error(`Job ${jobId} not found in DB`);
+            console.log(JSON.stringify(jobDoc, null, 2));
+            let result;
+            switch (jobDoc.jobType) {
+                case "outbound-call":
+                    try {
+                        result = await runGraphQLQuery({
+                            query: `
+                        mutation Mutation($channelId: ID!, $to: String!, $agentId: ID!, $preContext: String!) {
+          makeTwilioAIOutboundCall(channelId: $channelId, to: $to, agentId: $agentId, PreContext: $preContext) {
+            sid
+            to
+            from
+            status
+            duration
+            price
+            priceUnit
+            direction
+            startTime
+            endTime
+            answeredBy
+            forwardedFrom
+            parentCallSid
+            callerName
+            groupSid
+            queueTime
+            trunkSid
+          }
+        }`,
+                            variables: {
+                                "channelId": jobDoc.payload.channel,
+                                "to": jobDoc.payload.to,
+                                "agentId": jobDoc.payload.agent,
+                                "preContext": jobDoc.payload.preContext
+                            },
+                            endpoint: `https://chatapi.campusroot.com/graphql/`,
+                            token: jobDoc.payload.accessToken
+                        });
+                    } catch (error) {
+                        console.error("error in outbound-call", error);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            console.log(`✅ GraphQL result for job ${jobId}:`, result);
+//             ✅ GraphQL result for job 68baeac00e45d8e1a2e5209a: undefined
+// 🎉 Job 68baeac00e45d8e1a2e5209a completed with result: undefined
+            await Job.findByIdAndUpdate(jobId, { status: "completed", result_ref: result });
+            return result;
+        } catch (error) {
+            console.error("error in job processing", error);
+        }
 
-    console.log(`✅ GraphQL result for job ${jobId}:`, result);
-    await Job.findByIdAndUpdate(jobId, { status: "completed", result_ref: result });
-    return result;
-});
-// ---- Events ----
-jobProcessing.on("completed", async (job, result) => {
-    console.log(`🎉 Job ${job.id} completed with result:`, result);
-    await Job.findOneAndUpdate({ bullMQJobId: job.id }, { status: "completed" });
-    job.remove(); // clear from Redis after completion
-});
+        // triggered job {
+        //     "id": "68bae8f6a022ea6bd00982f1",
+        //     "name": "__default__",
+        //     "data": {
+        //       "jobId": "68bae8f6a022ea6bd00982f1"
+        //     },
+        //     "opts": {
+        //       "jobId": "68bae8f6a022ea6bd00982f1",
+        //       "delay": 109898,
+        //       "removeOnComplete": true,
+        //       "removeOnFail": true,
+        //       "removeOnStalled": true,
+        //       "attempts": 1,
+        //       "timestamp": 1757079798922
+        //     },
+        //     "progress": 0,
+        //     "delay": 0,
+        //     "timestamp": 1757079798922,
+        //     "attemptsMade": 0,
+        //     "stacktrace": [],
+        //     "returnvalue": null,
+        //     "debounceId": null,
+        //     "finishedOn": null,
+        //     "processedOn": 1757079908817
+        //   }
+    });
 
-jobProcessing.on("failed", async (job, err) => {
-    console.error(`❌ Job ${job.id} failed:`, err.message);
-    await Job.findOneAndUpdate({ bullMQJobId: job.id }, { status: "failed" });
-    job.remove(); // clear from Redis after completion
-});
+    // Set up event handlers
+    jobProcessing.on("completed", async (job, result) => {
+        console.log(`🎉 Job ${job.id} completed with result:`, result);
+        await Job.findOneAndUpdate({ bullMQJobId: job.id }, { status: "completed" });
+        job.remove();
+    });
 
-jobProcessing.on("stalled", async (job) => {
-    console.warn(`⚠️ Job ${job.id} stalled, retrying...`);
-    await Job.findOneAndUpdate({ bullMQJobId: job.id }, { status: "stalled" });
-    job.remove(); // clear from Redis after completion
-});
+    jobProcessing.on("failed", async (job, err) => {
+        console.error(`❌ Job ${job.id} failed:`, err.message);
+        await Job.findOneAndUpdate({ bullMQJobId: job.id }, { status: "failed" });
+        job.remove();
+    });
+
+    jobProcessing.on("stalled", async (job) => {
+        console.warn(`⚠️ Job ${job.id} stalled, retrying...`);
+        await Job.findOneAndUpdate({ bullMQJobId: job.id }, { status: "stalled" });
+        job.remove();
+    });
+
+    console.log('✅ Job processing queue initialized');
+    return jobProcessing;
+}
+export const getJobProcessingQueue = async () => {
+    return await initializeJobProcessingQueue();
+};
+initializeJobProcessingQueue().catch(console.error);
 
 export const syncWithDB = async () => {
-    const now = new Date();
-    const sixHoursLater = new Date(now.getTime() + 7 * 60 * 60 * 1000); // add 7 hours
-    const jobs = await Job.find({
-        "schedule.run_at": { $gte: now, $lte: sixHoursLater }, // between now & 6h
-        "schedule.cancel_requested": false,
-        bullMQJobId: { $exists: false },
-    }).sort({ "schedule.run_at": 1 });
-    for (const job of jobs) {
-        await scheduleJob(job._id, job.schedule.run_at);
+    try {
+        const jobProcessing = await getJobProcessingQueue();
+        const now = new Date();
+        const sixHoursLater = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+
+        const jobs = await Job.find({
+            "schedule.run_at": { $gte: now, $lte: sixHoursLater },
+            "schedule.cancel_requested": false,
+            bullMQJobId: { $exists: false },
+        }).sort({ "schedule.run_at": 1 });
+
+        console.log(`found jobs ${jobs.length}`);
+
+        if (jobs.length === 0) {
+            console.log('✅ No jobs to schedule');
+            return;
+        }
+
+        console.log('🚀 Starting to schedule jobs...');
+
+        for (const job of jobs) {
+            try {
+                console.log(`⏰ Scheduling job ${job._id} for ${job.schedule.run_at}`);
+                await scheduleJob(job._id, job.schedule.run_at, jobProcessing);
+                console.log(`✅ Successfully scheduled job ${job._id}`);
+            } catch (error) {
+                console.error(`❌ Failed to schedule job ${job._id}:`, error);
+            }
+        }
+
+        console.log('🎉 Finished scheduling all jobs');
+    } catch (error) {
+        console.error('💥 Error in syncWithDB:', error);
+        throw error;
     }
-}
-// ---- Functions ----
-export const fetchJob = async (bullJobId) => {
+};
+
+export const scheduleJob = async (jobId, scheduledTime, jobProcessing) => {
+    try {
+        console.log(`⏰ scheduleJob called with jobId: ${jobId}, scheduledTime: ${scheduledTime}`);
+        const delay = Math.max(0, new Date(scheduledTime).getTime() - Date.now());
+
+        console.log(`⏱️ Calculated delay: ${delay}ms`);
+        const scheduledJob = await jobProcessing.add({ jobId }, { jobId, delay, removeOnComplete: true, removeOnFail: true, removeOnStalled: true, });
+        console.log("job scheduled", {
+            id: scheduledJob.id,
+            timestamp: scheduledJob.timestamp,
+            delay: scheduledJob.delay
+        });
+        await Job.findOneAndUpdate({ _id: jobId }, { bullMQJobId: scheduledJob.id });
+        console.log(`💾 Updated job ${jobId} with bullMQJobId: ${scheduledJob.id}`);
+        return scheduledJob;
+    } catch (error) {
+        console.error(`💥 Error in scheduleJob for jobId ${jobId}:`, error);
+        throw error;
+    }
+};
+
+// Update other functions to use initializeQueue
+export const fetchJob = async (bullJobId, jobProcessing) => {
     const job = await jobProcessing.getJob(bullJobId);
     if (!job) throw new Error(`Job ${bullJobId} not found`);
     return job;
-}
-// ---- Functions ----
-export async function scheduleJob(jobId, scheduledTime) {
-    const delay = Math.max(0, new Date(scheduledTime).getTime() - Date.now());
-    const scheduledJob = await jobProcessing.add(
-        { jobId },
-        {
-            delay,
-            attempts: 3,
-            backoff: { type: "exponential", delay: 60000 },
-            removeOnComplete: true, // auto-remove after success
-            removeOnFail: false,
-            removeOnStalled: true,
-        }
-    );
-//     Scheduled job in queue: Job {
-//   opts: {
-//     delay: 123131,
-//     attempts: 3,
-//     backoff: { type: 'exponential', delay: 60000 },
-//     removeOnComplete: true,
-//     removeOnFail: false,
-//     removeOnStalled: true,
-//     jobId: undefined,
-//     timestamp: 1757056676869
-//   },
-//   name: '__default__',
-//   queue: Queue {
-//     name: 'job-processing',
-//     token: 'b688e2f8-004b-4179-a2d9-1d920ede4c08',
-//     keyPrefix: 'bull',
-//     clients: [ [Commander], [Commander], [Commander] ],
-//     clientInitialized: true,
-//     _events: [Object: null prototype] {
-//       close: [Array],
-//       error: [Function (anonymous)],
-//       completed: [AsyncFunction (anonymous)],
-//       failed: [AsyncFunction (anonymous)],
-//       stalled: [AsyncFunction (anonymous)]
-//     },
-//     _eventsCount: 5,
-//     _initializing: Promise { undefined },
-//     handlers: { __default__: [Function (anonymous)] },
-//     processing: [ '__default__:0': [Promise] ],
-//     retrieving: 0,
-//     drained: true,
-//     settings: {
-//       maxStalledCount: 3,
-//       lockDuration: 30000,
-//       stalledInterval: 30000,
-//       guardInterval: 5000,
-//       retryProcessDelay: 5000,
-//       drainDelay: 5,
-//       backoffStrategies: {},
-//       isSharedChildPool: false,
-//       lockRenewTime: 15000
-//     },
-//     metrics: undefined,
-//     timers: TimerManager { idle: true, listeners: [], timers: {} },
-//     moveUnlockedJobsToWait: [Function: bound ],
-//     processJob: [Function: bound ],
-//     getJobFromId: [Function: bound ] AsyncFunction,
-//     keys: {
-//       '': 'bull:job-processing:',
-//       active: 'bull:job-processing:active',
-//       wait: 'bull:job-processing:wait',
-//       waiting: 'bull:job-processing:waiting',
-//       paused: 'bull:job-processing:paused',
-//       resumed: 'bull:job-processing:resumed',
-//       'meta-paused': 'bull:job-processing:meta-paused',
-//       id: 'bull:job-processing:id',
-//       delayed: 'bull:job-processing:delayed',
-//       priority: 'bull:job-processing:priority',
-//       'stalled-check': 'bull:job-processing:stalled-check',
-//       completed: 'bull:job-processing:completed',
-//       failed: 'bull:job-processing:failed',
-//       stalled: 'bull:job-processing:stalled',
-//       repeat: 'bull:job-processing:repeat',
-//       limiter: 'bull:job-processing:limiter',
-//       drained: 'bull:job-processing:drained',
-//       duplicated: 'bull:job-processing:duplicated',
-//       progress: 'bull:job-processing:progress',
-//       de: 'bull:job-processing:de'
-//     },
-//     delayedTimestamp: 1757056800000,
-//     _initializingProcess: Promise { null },
-//     errorRetryTimer: {},
-//     subscriberInitialized: true,
-//     registeredEvents: { delayed: [Promise] },
-//     bclientInitialized: true,
-//     delayTimer: Timeout {
-//       _idleTimeout: 5000,
-//       _idlePrev: [TimersList],
-//       _idleNext: [Timeout],
-//       _idleStart: 123677,
-//       _onTimeout: [Function (anonymous)],
-//       _timerArgs: undefined,
-//       _repeat: null,
-//       _destroyed: false,
-//       [Symbol(refed)]: true,
-//       [Symbol(kHasPrimitive)]: false,
-//       [Symbol(asyncId)]: 12812,
-//       [Symbol(triggerId)]: 0
-//     },
-//     moveUnlockedJobsToWaitInterval: Timeout {
-//       _idleTimeout: 30000,
-//       _idlePrev: [Timeout],
-//       _idleNext: [Timeout],
-//       _idleStart: 122659,
-//       _onTimeout: [Function: bound ],
-//       _timerArgs: undefined,
-//       _repeat: 30000,
-//       _destroyed: false,
-//       [Symbol(refed)]: true,
-//       [Symbol(kHasPrimitive)]: false,
-//       [Symbol(asyncId)]: 8163,
-//       [Symbol(triggerId)]: 0
-//     }
-//   },
-//   data: { jobId: new ObjectId('68ba8ea42f86ba8124d4c0ca') },
-//   _progress: 0,
-//   delay: 123131,
-//   timestamp: 1757056676869,
-//   stacktrace: [],
-//   returnvalue: null,
-//   attemptsMade: 0,
-//   toKey: [Function: wrapper],
-//   debounceId: undefined,
-//   id: '2'
-// }
+};
 
-    await Job.findOneAndUpdate({ _id: jobId }, { bullMQJobId: scheduledJob.id });
-    return scheduledJob;
-}
-export async function rescheduleJob(bullJobId, newTime) {
+export async function rescheduleJob(bullJobId, newTime, jobProcessing) {
     const job = await jobProcessing.getJob(bullJobId);
     if (!job) throw new Error(`Job ${bullJobId} not found`);
     await job.remove();
@@ -242,10 +207,11 @@ export async function rescheduleJob(bullJobId, newTime) {
     const rescheduledJob = await jobProcessing.add(
         job.data,
         {
+            jobId: bullJobId,
             delay,
             attempts: 3,
             backoff: { type: "exponential", delay: 60000 },
-            removeOnComplete: true, // auto-remove after success
+            removeOnComplete: true,
             removeOnFail: true,
             removeOnStalled: true,
         }
@@ -253,33 +219,37 @@ export async function rescheduleJob(bullJobId, newTime) {
     await Job.findOneAndUpdate({ bullMQJobId: bullJobId }, { status: "scheduled", bullMQJobId: rescheduledJob.id });
     return rescheduledJob;
 }
-export async function cancelJob(bullJobId) {
+
+export async function cancelJob(bullJobId, jobProcessing) {
     const job = await jobProcessing.getJob(bullJobId);
     if (!job) throw new Error(`Job ${bullJobId} not found`);
     await job.remove();
     await Job.findOneAndUpdate({ bullMQJobId: bullJobId }, { status: "canceled", "schedule.cancel_requested": true });
     return job;
 }
-export async function retryJob(bullJobId) {
+
+export async function retryJob(bullJobId, jobProcessing) {
     const job = await jobProcessing.getJob(bullJobId);
     if (!job) throw new Error(`Job ${bullJobId} not found`);
     await job.remove();
     await Job.findOneAndUpdate({ bullMQJobId: bullJobId }, { status: "retry" });
     return job;
 }
-async function runGraphQLQuery(endpoint, query, variables, accessToken) {
 
+async function runGraphQLQuery({ query, variables, endpoint, token }) {
     try {
         const response = await axios.post(endpoint, { query, variables },
             {
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`, // optional
+                    Authorization: `Bearer ${token}`,
                 },
             }
         );
         console.log("GraphQL Response:", response.data.data);
+        return response.data.data;
     } catch (error) {
         console.error("GraphQL Error:", error.response?.data || error.message);
+        throw error;
     }
 }

@@ -1,23 +1,15 @@
 import { Server } from "socket.io";
-import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { Conversation } from "../models/Conversations.js";
 import 'dotenv/config'
+import { getRedisClient } from "./dbConnect.js";
 export let io, adminNamespace, ChatNameSpace, RegularUserNameSpace;
 
 export async function initializeSocket(server) {
     // Setup Redis
-    const pubClient = createClient({
-        socket: {
-            host: process.env.REDIS_HOST,
-            port: parseInt(process.env.REDIS_PORT),
-        },
-        username: process.env.REDIS_USERNAME,
-        password: process.env.REDIS_PASSWORD,
-        database: parseInt(process.env.REDIS_DATABASE),
-    });
+    const pubClient = await getRedisClient();
     const subClient = pubClient.duplicate();
-    await Promise.all([pubClient.connect(), subClient.connect()]);
+    // await subClient.connect();
 
     // Initialize Socket.IO
     io = new Server(server, {

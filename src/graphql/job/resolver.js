@@ -106,8 +106,6 @@ export const jobResolvers = {
             await safeSync();
             await Business.populate(newJob, { path: 'business', select: nested.business });
             await User.populate(newJob, { path: 'createdBy', select: nested.createdBy });
-            await Channel.populate(newJob, { path: 'payload.channel', select: nested.payload.channel });
-            await AgentModel.populate(newJob, { path: 'payload.agent', select: nested.payload.agent });
             return newJob;
         },
         deleteJob: async (_, { id }, context, info) => {
