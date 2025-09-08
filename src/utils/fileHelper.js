@@ -135,7 +135,8 @@ export const processFile = async (collectionId, url, receiver, _id) => {
                         url: url
                     },
                 },
-                $addToSet: { topics: topics }
+                $addToSet: { topics: topics },
+                $set: { "contents.$.status": active }
             }
         );
         fs.unlinkSync(tempFilePath);
@@ -152,9 +153,7 @@ export const processFile = async (collectionId, url, receiver, _id) => {
                         url: url
                     },
                 },
-                $set: {
-                    "contents.$.status": "active"
-                }
+                $set: { "contents.$.status": "failed" }
             }
         );
         return { success: false, error: error.message || error, data: null }
