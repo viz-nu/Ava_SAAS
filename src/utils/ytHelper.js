@@ -19,7 +19,8 @@ export const processYT = async (collectionId, urls, receiver, _id) => {
                             url: url
                         },
                     },
-                    $addToSet: { topics: topics }
+                    $addToSet: { topics: topics },
+                    $set: { "contents.$.status": active }
                 }
             );
             completed += 1
