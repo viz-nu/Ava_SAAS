@@ -60,13 +60,11 @@ ConversationSchema.methods.updateAnalytics = async function () {
     let formatted = "";
     let messages = await Message.find({ conversationId: this._id });
     if (messages.length > 0) {
-        this.metadata = {
-            totalMessages: messages.length,
-            reactions: messages.reduce((acc, msg) => {
-                acc[msg.reaction] = (acc[msg.reaction] || 0) + 1;
-                return acc;
-            }, { neutral: 0, like: 0, dislike: 0 })
-        };
+        this.metadata.totalMessages = messages.length
+        this.metadata.reactions = messages.reduce((acc, msg) => {
+            acc[msg.reaction] = (acc[msg.reaction] || 0) + 1;
+            return acc;
+        }, { neutral: 0, like: 0, dislike: 0 })
         formatted = messages.map(m => `User: ${m.query}\nAgent: ${m.response}`).join("\n\n");
     }
     else if (this.transcripts.length > 0) {
