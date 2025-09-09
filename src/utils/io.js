@@ -35,7 +35,13 @@ export async function initializeSocket(server) {
                 switch (action) {
                     case 'getActiveUsersByAgent':
                         const { agentId } = data;
-                        const numberOfActiveUsers = Number((await ChatNameSpace.in(agentId).fetchSockets()).length)
+                        let sockets = []
+                        try {
+                            sockets = await ChatNameSpace.in(agentId).fetchSockets()
+                        } catch (error) {
+                            console.error(error);
+                        }
+                        const numberOfActiveUsers = Number(sockets.length)
                         socket.emit("trigger", { action: "activeUsers", data: { count: numberOfActiveUsers } });
                         break;
                     // case 'message':
