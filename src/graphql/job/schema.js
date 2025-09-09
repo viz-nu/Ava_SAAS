@@ -76,6 +76,7 @@ type Campaign {
     _id: ID!
     name: String
     agent: Agent
+    communicationChannels: [Channel]
     receivers: [Receiver]
     schedule: scheduleCampaign
     cps: Int
@@ -91,7 +92,6 @@ type scheduleCampaign {
 }
 type Receiver {
     personalInfo: PersonalInfo
-    communicationChannels: [Channel]
     preferredLanguage: String
     Instructions: String
 }
@@ -109,7 +109,6 @@ type ContactDetails {
 }
 input receiverInput {
     personalInfo: PersonalInfoInput
-    communicationChannels: [ID]
     preferredLanguage: String
     Instructions: String
 }
@@ -158,7 +157,7 @@ type Query {
     fetchCampaigns( id: ID, limit: Int page: Int ): [Campaign]
 }
 type Mutation {
-    createCampaign(name: String, agentId: ID, receivers: [receiverInput], schedule: scheduleCampaignInput, cps: Int): Campaign
+    createCampaign(name: String, agentId: ID, receivers: [receiverInput], schedule: scheduleCampaignInput, cps: Int communicationChannels: [ID]): Campaign
     createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job
     updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
     deleteJob(id: ID): Boolean

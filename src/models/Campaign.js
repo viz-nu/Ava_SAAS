@@ -8,7 +8,6 @@ const receiversSchema = new Schema({
         },
         miscInfo: Schema.Types.Mixed
     },
-    communicationChannels: [{ type: Schema.Types.ObjectId, ref: "Channel" }],
     preferredLanguage: String,
     instructions: String
 }, { _id: false })
@@ -20,6 +19,7 @@ const CampaignSchema = new Schema({
         endAt: Date,
         timeZone: String,
     },
+    communicationChannels: [{ type: Schema.Types.ObjectId, ref: "Channel" }],
     cps: Number,
     receivers: [receiversSchema],
     business: { type: Schema.Types.ObjectId, ref: "Business" },
