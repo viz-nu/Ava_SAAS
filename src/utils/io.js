@@ -80,13 +80,25 @@ export async function initializeSocket(server) {
         console.log("Chat joined conversation room:", conversationId);
         socket.join(agentId);
         console.log("Chat joined agent room:", agentId);
-        const usersLength = (await ChatNameSpace.in(agentId).fetchSockets()).length
+        let sockets = []
+        try {
+            sockets = await ChatNameSpace.in(agentId).fetchSockets()
+        } catch (error) {
+            console.error(error);
+        }
+        const usersLength = sockets.length
         adminNamespace.to(organizationId).emit('trigger', { action: "activeUsers", data: { count: usersLength, agentId: agentId } });
         socket.on('disconnect', async (reason) => {
             console.log("chat disconnected:", socket.id, "reason:", reason);
             try {
                 const conversation = await Conversation.findOneAndUpdate({ "metadata.sockets.socketId": socket.id }, { $set: { "metadata.sockets.disconnectReason": reason, "metadata.status": "disconnected" } }, { new: true })
-                const usersLength = (await ChatNameSpace.in(agentId).fetchSockets()).length
+                let sockets = []
+                try {
+                    sockets = await ChatNameSpace.in(agentId).fetchSockets()
+                } catch (error) {
+                    console.error(error);
+                }
+                const usersLength = sockets.length || 0
                 adminNamespace.to(organizationId).emit('trigger', { action: "activeUsers", data: { count: usersLength, agentId: agentId } });
                 if (conversation) {
                     await conversation.updateAnalytics();
