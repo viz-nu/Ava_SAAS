@@ -38,7 +38,7 @@ export const jobResolvers = {
             await Business.populate(campaigns, { path: 'business', select: nested.business });
             await User.populate(campaigns, { path: 'createdBy', select: nested.createdBy });
             await AgentModel.populate(campaigns, { path: 'agent', select: nested.agent });
-            await Channel.populate(campaigns, { path: 'receivers.personalInfo.communicationChannels', select: nested.receivers.personalInfo.communicationChannels });
+            await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.communicationChannels });
             return campaigns;
         }
     },
@@ -51,7 +51,7 @@ export const jobResolvers = {
             const newCampaign = await Campaign.create({ name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id }).select(projection);
             await Business.populate(newCampaign, { path: 'business', select: nested.business });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
-            await Channel.populate(newCampaign, { path: 'receivers.personalInfo.communicationChannels', select: nested.receivers.personalInfo.communicationChannels });
+            await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
             // create jobs for each receiver
             const { newAccessToken } = await generateTokens(context.user._id)
             for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
@@ -66,7 +66,7 @@ export const jobResolvers = {
                         to: receiver.personalInfo.contactDetails.phone,
                         agent: newCampaign.agent,
                         cps: newCampaign.cps,
-                        channel: receiver.personalInfo.communicationChannels[0],
+                        channel: newCampaign.communicationChannels[0],
                         accessToken: newAccessToken
                     },
                     schedule: {
