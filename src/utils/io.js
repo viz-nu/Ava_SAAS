@@ -20,7 +20,7 @@ export async function initializeSocket(server) {
         },
     });
     // Use Redis adapter
-    io.adapter(createAdapter(pubClient, subClient));
+    io.adapter(createAdapter(pubClient, subClient, { requestsTimeout: 5000 }));
     // Create a separate namespace for admin-related events
     adminNamespace = io.of('/admin');
     adminNamespace.on('connection', (socket) => {
