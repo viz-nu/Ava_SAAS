@@ -22,8 +22,8 @@ const CampaignSchema = new Schema({
     communicationChannels: [{ type: Schema.Types.ObjectId, ref: "Channel" }],
     cps: Number,
     receivers: [receiversSchema],
-    business: { type: Schema.Types.ObjectId, ref: "Business" },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     status: { type: String, enum: ["active", "paused", "completed"], default: "active" }
 }, { timestamps: true });
 export const Campaign = model('Campaign', CampaignSchema, 'Campaign');
