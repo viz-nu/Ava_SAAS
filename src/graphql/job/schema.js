@@ -108,11 +108,11 @@ type ContactDetails {
     instagramId: String
 }
 input receiverInput {
-    personalInfo: PersonalInfoInput
+    personalInfo: receiverPersonalInfoInput
     preferredLanguage: String
     Instructions: String
 }
-input personalInfoInput {
+input receiverPersonalInfoInput {
     name: String
     contactDetails: contactDetailsInput
     miscInfo: JSON
