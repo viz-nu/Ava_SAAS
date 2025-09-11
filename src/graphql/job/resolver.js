@@ -35,10 +35,10 @@ export const jobResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const campaigns = await Campaign.find(filter).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
-            // await Business.populate(campaigns, { path: 'business', select: nested.business });
-            // await User.populate(campaigns, { path: 'createdBy', select: nested.createdBy });
-            // await AgentModel.populate(campaigns, { path: 'agent', select: nested.agent });
-            // await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.communicationChannels });
+            await Business.populate(campaigns, { path: 'business', select: nested.business });
+            await User.populate(campaigns, { path: 'createdBy', select: nested.createdBy });
+            await AgentModel.populate(campaigns, { path: 'agent', select: nested.agent });
+            await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.communicationChannels });
             return campaigns;
         }
     },
@@ -49,9 +49,9 @@ export const jobResolvers = {
             if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
             if (new Date(schedule.startAt) < new Date(Date.now() + 60 * 1000)) throw new GraphQLError("Schedule run at date should not be less than 1 minute from now")
             const newCampaign = await Campaign.create({ name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id });
-            // await Business.populate(newCampaign, { path: 'business', select: nested.business });
-            // await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
-            // await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
+            await Business.populate(newCampaign, { path: 'business', select: nested.business });
+            await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
+            await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
             // create jobs for each receiver
             const { newAccessToken } = await generateTokens(context.user._id)
             for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
