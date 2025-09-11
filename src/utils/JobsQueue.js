@@ -62,7 +62,7 @@ export const initializeJobProcessingQueue = async () => {
                             token: jobDoc.payload.accessToken
                         });
                     } catch (error) {
-                        console.error("error in outbound-call", error);
+                        console.error("error in outbound-call", error.response?.data || error.message);
                     }
                     break;
                 default:

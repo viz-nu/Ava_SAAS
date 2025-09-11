@@ -332,7 +332,7 @@ type Mutation {
   updateTwilioPhoneNumber(integrationId: ID!  sid: String! friendlyName: String voiceUrl: String voiceMethod: String smsUrl: String smsMethod: String voiceCallerIdLookup: Boolean accountSid: String): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
   releaseTwilioPhoneNumber(integrationId: ID!  sid: String!): PhoneNumber @requireScope(scope: "integration:update") @requireBusinessAccess
   makeTwilioOutboundTestCall(channelId: ID! to:String!): Call @requireBusinessAccess
-  makeTwilioAIOutboundCall(channelId: ID! to:String! agentId:ID! PreContext:String!): Call  @requireBusinessAccess
+  makeTwilioAIOutboundCall(channelId: ID! to:String! agentId:ID! PreContext:String): Call  @requireBusinessAccess
   sendTwilioSms(integrationId: ID!  to: String!  from: String!  body: String! statusCallback:String mediaUrl:[String]): SMSResponse @requireBusinessAccess
 }
 `;
