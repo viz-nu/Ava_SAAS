@@ -43,12 +43,12 @@ export const jobResolvers = {
         }
     },
     Mutation: {
-        createCampaign: async (_, { name, agentId, receivers, schedule, cps }, context, info) => {
+        createCampaign: async (_, { name, agentId, receivers, schedule, cps, communicationChannels }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
             if (new Date(schedule.startAt) < new Date(Date.now() + 60 * 1000)) throw new GraphQLError("Schedule run at date should not be less than 1 minute from now")
-            const newCampaign = await Campaign.create({ name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id });
+            const newCampaign = await Campaign.create({ communicationChannels, name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id });
             await Business.populate(newCampaign, { path: 'business', select: nested.business });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
