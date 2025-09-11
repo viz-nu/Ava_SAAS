@@ -46,7 +46,6 @@ export const jobResolvers = {
         createCampaign: async (_, { name, agentId, receivers, schedule, cps, communicationChannels }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            console.log({ name, agentId, receivers, schedule, cps, communicationChannels });
             if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
             if (new Date(schedule.startAt) < new Date(Date.now() + 60 * 1000)) throw new GraphQLError("Schedule run at date should not be less than 1 minute from now")
             const newCampaign = await Campaign.create({ communicationChannels, name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id });
@@ -54,40 +53,40 @@ export const jobResolvers = {
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
             // create jobs for each receiver
-            // const { newAccessToken } = await generateTokens(context.user._id)
-            // for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
-            //     const runAt = new Date(newCampaign.schedule.startAt.getTime() + (index * 1000 / cps))
-            //     await Job.create({
-            //         name: newCampaign.name + " - " + receiver.personalInfo.name || "Anonymous",
-            //         description: "Outbound call to " + receiver.personalInfo.name || "Anonymous" + " from " + newCampaign.name,
-            //         business: context.user.business,
-            //         createdBy: context.user._id,
-            //         jobType: "outboundCall",
-            //         payload: {
-            //             to: receiver.personalInfo.contactDetails.phone,
-            //             agent: newCampaign.agent,
-            //             cps: newCampaign.cps,
-            //             channel: newCampaign.communicationChannels[0],
-            //             accessToken: newAccessToken
-            //         },
-            //         schedule: {
-            //             run_at: runAt,
-            //             type: "once",
-            //             timezone: new Date().getTimezoneOffset(),
-            //         },
-            //         tags: [newCampaign.name, receiver.personalInfo.name || "Anonymous", receiver.personalInfo.email || "AnonymousEmail"],
-            //         priority: 1,
-            //         log: [{
-            //             level: "info",
-            //             message: "Job created from campaign",
-            //             data: {
-            //                 campaign: newCampaign._id,
-            //                 receiver: receiver.personalInfo
-            //             }
-            //         }]
-            //     });
-            // }
-            // await safeSync();
+            const { newAccessToken } = await generateTokens(context.user._id)
+            for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
+                const runAt = new Date(newCampaign.schedule.startAt.getTime() + (index * 1000 / cps))
+                await Job.create({
+                    name: newCampaign.name + " - " + receiver.personalInfo.name || "Anonymous",
+                    description: "Outbound call to " + receiver.personalInfo.name || "Anonymous" + " from " + newCampaign.name,
+                    business: context.user.business,
+                    createdBy: context.user._id,
+                    jobType: "outboundCall",
+                    payload: {
+                        to: receiver.personalInfo.contactDetails.phone,
+                        agent: newCampaign.agent,
+                        cps: newCampaign.cps,
+                        channel: newCampaign.communicationChannels[0],
+                        accessToken: newAccessToken
+                    },
+                    schedule: {
+                        run_at: runAt,
+                        type: "once",
+                        timezone: new Date().getTimezoneOffset(),
+                    },
+                    tags: [newCampaign.name, receiver.personalInfo.name || "Anonymous", receiver.personalInfo.email || "AnonymousEmail"],
+                    priority: 1,
+                    log: [{
+                        level: "info",
+                        message: "Job created from campaign",
+                        data: {
+                            campaign: newCampaign._id,
+                            receiver: receiver.personalInfo
+                        }
+                    }]
+                });
+            }
+            await safeSync();
             return newCampaign;
         },
         createJob: async (_, { name, description, payload, schedule, tags, priority }, context, info) => {
