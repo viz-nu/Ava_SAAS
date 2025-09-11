@@ -35,10 +35,10 @@ export const jobResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const campaigns = await Campaign.find(filter).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
-            await Business.populate(campaigns, { path: 'business', select: nested.business });
-            await User.populate(campaigns, { path: 'createdBy', select: nested.createdBy });
-            await AgentModel.populate(campaigns, { path: 'agent', select: nested.agent });
-            await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.communicationChannels });
+            // await Business.populate(campaigns, { path: 'business', select: nested.business });
+            // await User.populate(campaigns, { path: 'createdBy', select: nested.createdBy });
+            // await AgentModel.populate(campaigns, { path: 'agent', select: nested.agent });
+            // await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.communicationChannels });
             return campaigns;
         }
     },
