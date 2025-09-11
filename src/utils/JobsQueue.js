@@ -31,7 +31,7 @@ export const initializeJobProcessingQueue = async () => {
                     try {
                         result = await runGraphQLQuery({
                             query: `
-                        mutation Mutation($channelId: ID!, $to: String!, $agentId: ID!, $preContext: String!) {
+                        mutation Mutation($channelId: ID!, $to: String!, $agentId: ID!, $preContext: String) {
           makeTwilioAIOutboundCall(channelId: $channelId, to: $to, agentId: $agentId, PreContext: $preContext) {
             sid
             to
