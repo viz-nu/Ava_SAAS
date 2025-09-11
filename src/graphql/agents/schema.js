@@ -81,7 +81,7 @@ export const agentTypeDefs = `#graphql
   }
 
   """ Input type for core agent settings """
-  input PersonalInfoInput {
+  input AgentPersonalInfoInput {
     name: String
     systemPrompt: String
     quickQuestions: [QuickQuestionInput]
@@ -94,7 +94,7 @@ export const agentTypeDefs = `#graphql
   """ Input type for creating/updating agents """
   input AgentInput {
     appearance: AppearanceInput
-    personalInfo: PersonalInfoInput
+    personalInfo: AgentPersonalInfoInput
     collections: [ID]
     channels: [ID]
     actions: [ID]
