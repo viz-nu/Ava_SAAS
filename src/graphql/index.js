@@ -78,10 +78,22 @@ export const registerApollo = async (app, httpServer) => {
       if (response.errors) {
         return response; // handled by formatError above
       }
+      // Function to recursively remove __typename fields
+      const removeTypename = (obj) => {
+        if (obj === null || typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) return obj.map(removeTypename);
+        const cleaned = {};
+        for (const [key, value] of Object.entries(obj)) {
+          if (key !== '__typename') {
+            cleaned[key] = removeTypename(value);
+          }
+        }
+        return cleaned;
+      };
       return {
         success: true,
         message: "OK",
-        data: response.data,
+        data: removeTypename(response.data),
       };
     },
     formatError: (error) => {
