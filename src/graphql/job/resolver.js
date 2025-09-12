@@ -43,7 +43,7 @@ export const jobResolvers = {
         }
     },
     Mutation: {
-        createCampaign: async (_, { name, agentId, receivers, schedule, cps, communicationChannels }, context, info) => {
+        createCampaign: async (_, { name, agentId, receivers, schedule, cps, communicationChannels, instructions }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
@@ -67,7 +67,8 @@ export const jobResolvers = {
                         agent: newCampaign.agent,
                         cps: newCampaign.cps,
                         channel: newCampaign.communicationChannels[0],
-                        accessToken: newAccessToken
+                        accessToken: newAccessToken,
+                        PreContext: `${instructions}\n${receiver.instructions}\n${JSON.stringify(receiver.personalInfo)}\n${receiver.preferredLanguage}`
                     },
                     schedule: {
                         run_at: runAt,
