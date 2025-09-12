@@ -92,11 +92,11 @@ type scheduleCampaign {
     timezone: String
 }
 type Receiver {
-    personalInfo: JobPersonalInfo
+    personalInfo: CampaignPersonalInfo
     preferredLanguage: String
     instructions: String
 }
-type JobPersonalInfo {
+type CampaignPersonalInfo {
     name: String
     contactDetails: ContactDetails
     miscInfo: JSON
