@@ -91,12 +91,13 @@ export const twilioResolvers = {
             const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from: channel.config.phoneNumber });
         },
-        makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
+        makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext = false }) => {
             const channel = await Channel.findById(channelId).select({ config: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
             const agentDetails = await AgentModel.findById(agentId).select({ "personalInfo": 1 })
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.VoiceAgentSessionConfig.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
             if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
+            if (!PreContext) PreContext = "you are made an outbound call now start by saying warm welcome statement"
             const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             const model = agentDetails.personalInfo.VoiceAgentSessionConfig.model;
             const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
