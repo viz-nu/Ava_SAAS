@@ -68,7 +68,7 @@ export const jobResolvers = {
                         cps: newCampaign.cps,
                         channel: newCampaign.communicationChannels[0],
                         accessToken: newAccessToken,
-                        PreContext: `${instructions}\n${receiver.instructions}\n${JSON.stringify(receiver.personalInfo)}\n${receiver.preferredLanguage}`
+                        PreContext: `${instructions}\n${receiver.instructions}\n${JSON.stringify(receiver.personalInfo)}\npreferredLanguage:${receiver.preferredLanguage}`
                     },
                     schedule: {
                         run_at: runAt,
