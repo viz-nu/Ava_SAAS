@@ -12,7 +12,9 @@ enum ConversationStatusEnum {
   inactive
   """Connection terminated"""
   disconnected
-}
+  completed
+  busy
+  }
 
 """Available communication channels for conversations"""
 enum ChannelStatusEnum {
