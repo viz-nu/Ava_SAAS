@@ -84,6 +84,7 @@ type Conversation {
   agent: Agent
   """Data extracted from conversation"""
   extractedData: JSON
+  transcripts:JSON
   """Conversation metadata"""
   metadata: Metadata
   """When conversation started"""
