@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { parseStringPromise } from "xml2js";
 import https from "https";
+import "dotenv/config";
 // import pLimit from "p-limit";
 import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
 // import { io } from './io.js';
@@ -172,7 +173,8 @@ export const FetchUsingDroxy = async (url) => {
 }
 export const processURLS = async (collectionId, urls, receiver, _id) => {
   try {
-    await axios.post(`${process.env.BULL_URL}processingUrls/jobs`, { data: urls.map(({ url }) => ({ url, collectionId, receiver, _id, options: {} })), });
+    // await axios.post(`${process.env.BULL_URL}processingUrls/jobs`, { data: urls.map(({ url }) => ({ url, collectionId, receiver, _id, options: {} })), });
+    console.log(JSON.stringify({ url: `${process.env.BULL_URL}processingUrls/jobs`, data: urls.map(({ url }) => ({ url, collectionId, receiver, _id, options: {} })) }, null, 2));
   } catch (error) {
     console.error('Failed to add URL processing job:', error);
     throw error;
