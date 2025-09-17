@@ -6,7 +6,7 @@ import { digest } from "./setup.js";
 import { URL } from "url";
 import officeParser from "officeparser";
 import { Collection } from "../models/Collection.js";
-import { adminNamespace, io } from "./io.js";
+// import { adminNamespace, io } from "./io.js";
 const mimeToExt = {
     // Documents & Text Files
     "application/pdf": "pdf",
@@ -140,7 +140,7 @@ export const processFile = async (collectionId, url, receiver, _id) => {
             }
         );
         fs.unlinkSync(tempFilePath);
-        adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1, collectionId: collectionId } })
+        // adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1, collectionId: collectionId } })
         return { success: true, data: null }
     } catch (error) {
         console.error(error);

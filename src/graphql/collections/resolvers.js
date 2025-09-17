@@ -1,11 +1,11 @@
 import { Collection } from '../../models/Collection.js';
 import { Data } from '../../models/Data.js';
 import { AgentModel } from '../../models/Agent.js';
-import { urlProcessingQueue } from "../../utils/bull.js";
+// import { urlProcessingQueue } from "../../utils/bull.js";
 import { User } from '../../models/User.js';
 import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
-import { adminNamespace, io } from "../../utils/io.js";
+// import { adminNamespace, io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 import { processFile } from "../../utils/fileHelper.js";
@@ -43,7 +43,7 @@ export const collectionResolvers = {
                     for (const content of newCollection.contents) {
                         const { source, metaData, _id } = content;
                         let result
-                        adminNamespace.to(context.user.business.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } });
+                        // adminNamespace.to(context.user.business.toString()).emit("trigger", { action: "collection-status", data: { collectionId: newCollection._id, status: "loading" } });
                         switch (source) {
                             case "website":
                                 console.log("website process started");
@@ -102,12 +102,12 @@ export const collectionResolvers = {
             return updatedCollection;
         },
         deleteCollection: async (_, { id }, context) => {
-            const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
+            // const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
             await Promise.all([
                 Collection.findByIdAndDelete(id),
                 AgentModel.updateMany({ collections: id, business: context.user.business }, { $pull: { collections: id } }),
                 Data.deleteMany({ collection: id }),
-                ...jobs.filter(job => job.data.collectionId === id).map(job => job.remove())
+                // ...jobs.filter(job => job.data.collectionId === id).map(job => job.remove())
             ])
             return true;
         }

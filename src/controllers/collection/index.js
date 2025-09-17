@@ -5,9 +5,9 @@ import { Collection } from "../../models/Collection.js";
 import { Data } from "../../models/Data.js";
 import { User } from "../../models/User.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
-import { urlProcessingQueue } from "../../utils/bull.js";
+// import { urlProcessingQueue } from "../../utils/bull.js";
 import { processFile } from "../../utils/fileHelper.js";
-import { adminNamespace, io } from "../../utils/io.js";
+// import { adminNamespace, io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 // Create Collection
@@ -23,7 +23,7 @@ export const createCollection = errorWrapper(async (req, res) => {
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
                 let result;
-                adminNamespace.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
+                // adminNamespace.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
                 switch (source) {
                     case "website":
                         console.log("website process started");

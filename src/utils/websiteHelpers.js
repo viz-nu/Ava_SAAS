@@ -3,9 +3,9 @@ import { parseStringPromise } from "xml2js";
 import https from "https";
 // import pLimit from "p-limit";
 import { SitemapLoader } from "@langchain/community/document_loaders/web/sitemap";
-import { io } from './io.js';
+// import { io } from './io.js';
 import { Collection } from '../models/Collection.js';
-import { urlProcessingQueue } from "./bull.js";
+// import { urlProcessingQueue } from "./bull.js";
 export const sitemapGenerator = async (mainUrl) => {
   try {
     // Attempt to fetch robots.txt
@@ -171,8 +171,8 @@ export const FetchUsingDroxy = async (url) => {
   }
 }
 export const processURLS = async (collectionId, urls, receiver, _id) => {
-  const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receiver, _id }, { removeOnComplete: true, removeOnFail: true })));
-  await Promise.all(jobs);
+  // const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receiver, _id }, { removeOnComplete: true, removeOnFail: true })));
+  // await Promise.all(jobs);
   return { success: true };
 };
 export const fetchUrlsUsingLangChain = async (sitemapUrl, visited = new Set()) => {
