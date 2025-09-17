@@ -104,7 +104,7 @@ export const twilioResolvers = {
             conversation.voiceCallIdentifierNumberSID = callDetails.sid;
             conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
             await conversation.save();
-            return callDetails;
+            return conversation._id.toString();
         },
         sendTwilioSms: async (_, { integrationId, to, from, body, mediaUrl, statusCallback = `${process.env.SERVER_URL}webhook/twilio/sms/status` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();

@@ -171,9 +171,12 @@ export const FetchUsingDroxy = async (url) => {
   }
 }
 export const processURLS = async (collectionId, urls, receiver, _id) => {
-  // const jobs = urls.map(({ url }) => (urlProcessingQueue.add({ url, collectionId, receiver, _id }, { removeOnComplete: true, removeOnFail: true })));
-  // await Promise.all(jobs);
-  return { success: true };
+  try {
+    await axios.post(`${process.env.BULL_URL}/processingUrls/jobs`, { data: urls.map(({ url }) => ({ url, collectionId, receiver, _id, options: {} })), });
+  } catch (error) {
+    console.error('Failed to add URL processing job:', error);
+    throw error;
+  }
 };
 export const fetchUrlsUsingLangChain = async (sitemapUrl, visited = new Set()) => {
   try {
