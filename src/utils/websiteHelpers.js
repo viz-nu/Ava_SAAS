@@ -172,7 +172,7 @@ export const FetchUsingDroxy = async (url) => {
 }
 export const processURLS = async (collectionId, urls, receiver, _id) => {
   try {
-    await axios.post(`${process.env.BULL_URL}/processingUrls/jobs`, { data: urls.map(({ url }) => ({ url, collectionId, receiver, _id, options: {} })), });
+    await axios.post(`${process.env.BULL_URL}processingUrls/jobs`, { data: urls.map(({ url }) => ({ url, collectionId, receiver, _id, options: {} })), });
   } catch (error) {
     console.error('Failed to add URL processing job:', error);
     throw error;
