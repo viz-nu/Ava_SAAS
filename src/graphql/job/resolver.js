@@ -8,7 +8,7 @@ import { User } from "../../models/User.js";
 import { Channel } from '../../models/Channels.js';
 import { AgentModel } from "../../models/Agent.js";
 import { generateTokens } from "../../utils/tokens.js";
-// import { safeSync } from "../../utils/cron.js";
+import axios from "axios";
 export const jobResolvers = {
     Query: {
         fetchJobs: async (_, { campaignId, status, priority, jobType, id, schedule_type, schedule_run_at, limit = 10, page = 1 }, context, info) => {
@@ -87,7 +87,7 @@ export const jobResolvers = {
                     }]
                 });
             }
-            // await safeSync();
+            await axios.post(`${process.env.BULL_URL}/triggerSync`, { action: "createJob", data: null });
             return newCampaign;
         },
         createJob: async (_, { name, description, payload, schedule, tags, priority }, context, info) => {
@@ -105,7 +105,7 @@ export const jobResolvers = {
             const { newAccessToken } = await generateTokens(context.user._id)
             payload.accessToken = newAccessToken
             const newJob = await Job.create({ name, description, payload, schedule, tags, priority, business: context.user.business, createdBy: context.user._id, jobType: "outboundCall", log: [{ level: "info", message: "Job created" }] });
-            // await safeSync();
+            await axios.post(`${process.env.BULL_URL}/triggerSync`, { action: "createJob", data: null });
             await Business.populate(newJob, { path: 'business', select: nested.business });
             await User.populate(newJob, { path: 'createdBy', select: nested.createdBy });
             return newJob;
@@ -114,7 +114,7 @@ export const jobResolvers = {
             const job = await Job.findOne({ _id: id, business: context.user.business });
             if (!job) throw new GraphQLError("Invalid Id")
             await Job.findByIdAndDelete(id);
-            // await safeSync();
+            await axios.post(`${process.env.BULL_URL}/triggerSync`, { action: "deleteJob", data: { id } });
             return true;
         },
         updateJobSchedule: async (_, { id, schedule }, context, info) => {
@@ -131,7 +131,7 @@ export const jobResolvers = {
                 }
             })
             await job.save();
-            // await safeSync();
+            await axios.post(`${process.env.BULL_URL}/triggerSync`, { action: "rescheduleJob", data: { id, scheduledTime: schedule.run_at } });
             await Business.populate(job, { path: 'business', select: nested.business });
             await User.populate(job, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(job, { path: 'payload.channel', select: nested.payload.channel });

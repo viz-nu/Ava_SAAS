@@ -22,20 +22,19 @@ export const createCollection = errorWrapper(async (req, res) => {
         try {
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
-                let result;
                 // adminNamespace.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
                 switch (source) {
                     case "website":
                         console.log("website process started");
-                        if (metaData?.urls) result = await processURLS(collection._id, metaData.urls, receiver, _id);
+                        if (metaData?.urls) await processURLS(collection._id, metaData.urls, receiver, _id);
                         break;
                     case "youtube":
                         console.log("youtube process started");
-                        if (metaData?.urls) result = await processYT(collection._id, metaData.urls, receiver, _id);
+                        if (metaData?.urls) await processYT(collection._id, metaData.urls, receiver, _id);
                         break;
                     case "file":
                         console.log("file process started");
-                        if (metaData?.urls) result = await processFile(collection._id, metaData.urls[0].url, receiver, _id);
+                        if (metaData?.urls) await processFile(collection._id, metaData.urls[0].url, receiver, _id);
                         break;
                     default:
                         console.warn(`Unknown source type: ${source}`);
