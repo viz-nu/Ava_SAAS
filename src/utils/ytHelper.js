@@ -1,7 +1,7 @@
 import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
 import { digest } from "./setup.js";
 import { Collection } from "../models/Collection.js";
-import { adminNamespace, io } from "./io.js";
+// import { adminNamespace, io } from "./io.js";
 export const processYT = async (collectionId, urls, receiver, _id) => {
     let total = urls.length, completed = 0, topics = []
     try {
@@ -25,7 +25,7 @@ export const processYT = async (collectionId, urls, receiver, _id) => {
             );
             completed += 1
             const progressData = { total, progress: completed, collectionId: collectionId }
-            adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
+            // adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: progressData });
         }
         console.log("Finished processing YouTube videos")
         return { success: true }

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { createClient } from 'redis';
+// import { createClient } from 'redis';
 import 'dotenv/config'
 export const connectDB = async (retryCount = 0) => {
     try {
@@ -16,42 +16,42 @@ export const connectDB = async (retryCount = 0) => {
         }
     }
 };
-export let redisClient;
+// export let redisClient;
 
-export const connectRedis = async () => {
-    if (redisClient) return redisClient
-    try {
-        redisClient = createClient({
-            socket: {
-                host: process.env.REDIS_HOST,
-                port: parseInt(process.env.REDIS_PORT),
-            },
-            username: process.env.REDIS_USERNAME,
-            password: process.env.REDIS_PASSWORD,
-            database: parseInt(process.env.REDIS_DATABASE)
-        });
-        // Error handling
-        redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-        redisClient.on('connect', () => console.log('Connected to Redis'));
-        redisClient.on('ready', () => console.log('Redis client ready'));
-        redisClient.on('end', () => console.log('Redis connection ended'));
-        await redisClient.connect();
-        return redisClient;
-    } catch (err) {
-        console.error('Error connecting to Redis:', err);
-    }
-};
+// export const connectRedis = async () => {
+//     if (redisClient) return redisClient
+//     try {
+//         redisClient = createClient({
+//             socket: {
+//                 host: process.env.REDIS_HOST,
+//                 port: parseInt(process.env.REDIS_PORT),
+//             },
+//             username: process.env.REDIS_USERNAME,
+//             password: process.env.REDIS_PASSWORD,
+//             database: parseInt(process.env.REDIS_DATABASE)
+//         });
+//         // Error handling
+//         redisClient.on('error', (err) => console.error('Redis Client Error:', err));
+//         redisClient.on('connect', () => console.log('Connected to Redis'));
+//         redisClient.on('ready', () => console.log('Redis client ready'));
+//         redisClient.on('end', () => console.log('Redis connection ended'));
+//         await redisClient.connect();
+//         return redisClient;
+//     } catch (err) {
+//         console.error('Error connecting to Redis:', err);
+//     }
+// };
 
-export const getRedisClient = async () => {
-    if (!redisClient) await connectRedis();
-    return redisClient;
-};
+// export const getRedisClient = async () => {
+//     if (!redisClient) await connectRedis();
+//     return redisClient;
+// };
 
 export const initialize = async () => {
     try {
         await Promise.all([
             connectDB(),
-            connectRedis()
+            // connectRedis()
         ])
         console.log('Application initialized successfully');
     } catch (err) {
@@ -62,10 +62,10 @@ export const initialize = async () => {
 
 export const closeConnections = async () => {
     try {
-        if (redisClient) {
-            await redisClient.quit();
-            console.log('Redis connection closed');
-        }
+        // if (redisClient) {
+        //     await redisClient.quit();
+        //     console.log('Redis connection closed');
+        // }
         if (mongoose.connection.readyState === 1) {
             await mongoose.connection.close();
             console.log('MongoDB connection closed');
