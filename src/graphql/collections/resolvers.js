@@ -35,7 +35,7 @@ export const collectionResolvers = {
             const { projection, nested } = flattenFields(requestedFields);
             let { name, description, contents, isPublic, isFeatured } = collection;
             contents = contents.map(content => {
-                content.metaData.detailedReport = content.metaData.urls.map(url => ({ "url": url, "attempted": false }));
+                content.metaData.detailedReport = content.metaData.urls.map(u => ({ url: u.url, attempted: false, success: false, error: null }));
                 return content;
             });
             const newCollection = await Collection.create({ name, description, contents, business: context.user.business, createdBy: context.user._id })
