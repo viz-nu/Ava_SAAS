@@ -17,7 +17,7 @@ export const createCollection = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     contents = contents.map(content => {
-        content.metaData.detailedReport = content.metaData.urls.map(url => ({ "url": url, "attempted": false }));
+        content.metaData.detailedReport = content.metaData.urls.map(u => ({ url: u.url, attempted: false, success: false, error: null }));
         return content;
     });
     const collection = new Collection({ name, description, contents: contents, business: business._id, createdBy: req.user._id });

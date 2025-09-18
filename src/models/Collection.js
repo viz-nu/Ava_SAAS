@@ -7,7 +7,7 @@ const metaData = new Schema({
         "error": String,
         "attempted": { type: Boolean, default: false }
     }]
-})
+},{ _id: false });
 const content = new Schema({
     source: { type: String, enum: ['website', 'youtube', 'file'] },
     metaData: metaData,
