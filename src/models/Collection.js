@@ -1,7 +1,16 @@
 import { model, Schema } from 'mongoose';
+const metaData = new Schema({
+    urls: [{ "url": String }],
+    detailedReport: [{
+        "success": Boolean,
+        "url": String,
+        "error": String,
+        "attempted": { type: Boolean, default: false }
+    }]
+})
 const content = new Schema({
     source: { type: String, enum: ['website', 'youtube', 'file'] },
-    metaData: { type: Schema.Types.Mixed },
+    metaData: metaData,
     status: { type: String, default: "loading", enum: ["active", "loading", "failed"] },
     error: { type: String }
 })
