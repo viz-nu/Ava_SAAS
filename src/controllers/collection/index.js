@@ -13,10 +13,14 @@ import { processYT } from "../../utils/ytHelper.js";
 // Create Collection
 export const createCollection = errorWrapper(async (req, res) => {
     await collectionSchema.validate(req.body);
-    const { name, contents, description } = req.body;
+    let { name, contents, description } = req.body;
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
-    const collection = new Collection({ name, description, contents, business: business._id, createdBy: req.user._id });
+    contents = contents.map(content => {
+        content.metaData.detailedReport = content.metaData.urls.map(url => ({ "url": url, "attempted": false }));
+        return content;
+    });
+    const collection = new Collection({ name, description, contents: contents, business: business._id, createdBy: req.user._id });
     await collection.save();
     (async function processCollection(collection, receiver = req.user.business) {
         try {

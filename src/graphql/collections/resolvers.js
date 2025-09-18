@@ -33,7 +33,11 @@ export const collectionResolvers = {
         createCollection: async (_, { collection }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const { name, description, contents, isPublic, isFeatured } = collection;
+            let { name, description, contents, isPublic, isFeatured } = collection;
+            contents = contents.map(content => {
+                content.metaData.detailedReport = content.metaData.urls.map(url => ({ "url": url, "attempted": false }));
+                return content;
+            });
             const newCollection = await Collection.create({ name, description, contents, business: context.user.business, createdBy: context.user._id })
                 .select(projection);
             await Business.populate(newCollection, { path: 'business', select: nested.business });
