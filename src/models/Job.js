@@ -111,7 +111,8 @@ const outboundCallPayload = new Schema({
     expectedDuration: Number,
     maxRetries: { type: Number, default: 3 },
     callbackUrl: String,
-    cps: Number
+    cps: Number,
+    conversationId: { type: Schema.Types.ObjectId, ref: 'conversation' }
 }, { _id: false })
 /* ───────────────────────────── Outbound Call Job ──────────────────────────── */
 Job.discriminator('outboundCall', new Schema({ payload: outboundCallPayload }, { timestamps: true, discriminatorKey: 'jobType' }));
