@@ -36,6 +36,7 @@ enum jobStatusEnum {
 }
 type outboundCallPayload {
     channel: Channel
+    conversationId: Conversation
     agent: Agent
     to: String
     PreContext: String
