@@ -8,6 +8,7 @@ const receiversSchema = new Schema({
         },
         miscInfo: Schema.Types.Mixed
     },
+    job: { type: Schema.Types.ObjectId, ref: "Job" },
     preferredLanguage: String,
     instructions: String
 }, { _id: false })

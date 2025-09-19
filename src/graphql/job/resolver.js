@@ -56,7 +56,7 @@ export const jobResolvers = {
             const { newAccessToken } = await generateTokens(context.user._id)
             for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
                 const runAt = new Date(newCampaign.schedule.startAt.getTime() + (index * 1000 / cps))
-                await Job.create({
+                const job = await Job.create({
                     name: newCampaign.name + " - " + receiver.personalInfo.name || "Anonymous",
                     description: "Outbound call to " + receiver.personalInfo.name || "Anonymous" + " from " + newCampaign.name,
                     business: context.user.business,
@@ -86,7 +86,9 @@ export const jobResolvers = {
                         }
                     }]
                 });
+                receiver.job = job._id
             }
+            await newCampaign.save(); 
             await axios.post(`${process.env.BULL_URL}api/queues/triggerSync`, { action: "createJob", data: null });
             return newCampaign;
         },
