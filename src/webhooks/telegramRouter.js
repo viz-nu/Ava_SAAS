@@ -17,8 +17,8 @@ const sendApprovalRequest = async (bot, chatId, interruptions) => {
 async function processUserMessage(chatId, userMessage, bot, agentDetails, message) {
     const { userMessageType, userMessageData } = userMessage
     const conversation = await Conversation.findOne({ telegramChatId: chatId });
-    const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
-    if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
+    const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+    if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
     console.log("toolsJson", JSON.stringify(toolsJson, null, 2));
     const extraPrompt = `
                 If max turns are exceeded, provide a concise summary or polite closing message.
