@@ -29,7 +29,8 @@ export const WhatsAppBotResponseSchema = z.object({
     .nullable() // allow missing buttons for plain text
 });
 async function processUserMessage(message, userMessage, bot, agentDetails) {
-  const toolsJson = agentDetails?.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+  const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
+  if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
   const extraPrompt = `
   If max turns are exceeded, provide a concise summary or polite closing message.
 
@@ -59,7 +60,6 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
         { "id": "new_order", "text": "Place a New Order" }
       ]
   }`;
-  if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
   const agent = new Agent({
     name: agentDetails.personalInfo.name,
     instructions: agentDetails.personalInfo.systemPrompt + extraPrompt,
