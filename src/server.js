@@ -8,7 +8,6 @@ import bodyParser from 'body-parser';
 import { initialize } from "./utils/dbConnect.js";
 import errorHandlerMiddleware from './middleware/errorHandler.js';
 import { registerApollo } from './graphql/index.js';
-// import { initializeSocket } from './utils/io.js';
 import { indexRouter } from "./routers/index.js";
 import { webhookRouter } from "./webhooks/index.js";
 import sanitize from 'mongo-sanitize';
@@ -27,7 +26,6 @@ import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
-// import { initializeJobProcessingQueue } from './utils/JobsQueue.js';
 const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174", "http://localhost:3000", "https://studio.apollographql.com","https://app.avakado.ai"];
 export const corsOptions = {
     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error('Not allowed by CORS')),
@@ -48,7 +46,6 @@ export const openCors = cors();
 export const createApp = async () => {
     try {
         await initialize();
-        // await initializeJobProcessingQueue();
         const app = express();
         const server = http.createServer(app);
         // Middleware
@@ -398,14 +395,6 @@ export const createApp = async () => {
            await registerApollo(app, server); 
         } catch (error) {
             console.error("error with Apollo setup", error);
-            throw error;
-        }
-        
-        // Sockets
-        try {
-            // await initializeSocket(server)
-        } catch (error) {
-            console.error("error with Socket setup", error);
             throw error;
         }
         // Error handling
