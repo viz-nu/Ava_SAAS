@@ -19,7 +19,6 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
     const conversation = await Conversation.findOne({ telegramChatId: chatId });
     const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
     if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
-    console.log("toolsJson", JSON.stringify(toolsJson, null, 2));
     const extraPrompt = `
                 If max turns are exceeded, provide a concise summary or polite closing message.
                 Always return a JSON object with:
@@ -83,7 +82,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
     result.rawResponses.forEach(ele => { usage.input_tokens += ele.usage.inputTokens; usage.output_tokens += ele.usage.outputTokens; usage.total_tokens += ele.usage.totalTokens; });
     const { message: replyText, buttons } = result.finalOutput;
     const inlineKeyboard = buttons ? buttons.map(b => [{ text: b.text, callback_data: b.callback_data || undefined, url: b.url || undefined }]) : [];
-    await Message.create({ business: agentDetails.business._id, query: userMessage, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
+    await Message.create({ business: agentDetails.business._id, query: userMessageData, response: JSON.stringify(result.finalOutput), conversationId: conversation._id, responseTokens: { model: agentDetails.personalInfo.model ?? null, usage } });
     await bot.telegram.sendMessage(chatId, replyText, { reply_markup: { inline_keyboard: inlineKeyboard } });
 }
 export const BotResponseSchema = z.object({
