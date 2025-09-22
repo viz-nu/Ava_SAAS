@@ -8,6 +8,7 @@ import { Conversation } from "../../models/Conversations.js";
 import { calculateCost } from "../../utils/openai.js";
 import { Collection } from "../../models/Collection.js";
 import { AgentModel } from "../../models/Agent.js";
+import { CostCalculator } from "../../utils/costCalculator.js";
 export const Dashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).select("collections name logoURL facts sector tagline address description contact");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
@@ -144,10 +145,11 @@ export const Dashboard = errorWrapper(async (req, res) => {
 export const newDashboard = errorWrapper(async (req, res) => {
     const business = await Business.findById(req.user.business).select("name logoURL facts sector tagline address description contact analytics");
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
+    // const lastUpdated = new Date(0);
     const lastUpdated = business.analytics?.lastUpdated ?? new Date(0);
     const now = new Date();
     if (now - lastUpdated < 5 * 60 * 1000) return { statusCode: 200, message: "Dashboard retrieved", data: business }
-    const [newConversations, newCollections, chatTokens] = await Promise.all([
+    const [newConversations, newCollections, chatTokens, AnalysisTokensRes] = await Promise.all([
         Conversation.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("agent channel createdAt updatedAt"),
         Collection.find({ business: business._id, createdAt: { $gte: lastUpdated } }).select("createdAt updatedAt"),
         Message.aggregate([
@@ -158,6 +160,22 @@ export const newDashboard = errorWrapper(async (req, res) => {
                     totalChatTokensUsed: { $sum: "$responseTokens.usage.total_tokens" },
                     inputChatTokensUsed: { $sum: "$responseTokens.usage.input_tokens" },
                     outputChatTokensUsed: { $sum: "$responseTokens.usage.output_tokens" }
+                }
+            }
+        ]),
+        Conversation.aggregate([
+            {
+                $match: {
+                    business: business._id,
+                    createdAt: { $gte: lastUpdated }
+                }
+            },
+            {
+                $group: {
+                    _id: "$analysisTokens.model",
+                    TotalAnalysisInputTokens: { $sum: "$analysisTokens.usage.input_tokens" },
+                    TotalAnalysisOutputTokens: { $sum: "$analysisTokens.usage.output_tokens" },
+                    TotalAnalysisTotalTokens: { $sum: "$analysisTokens.usage.total_tokens" }
                 }
             }
         ])
@@ -174,56 +192,18 @@ export const newDashboard = errorWrapper(async (req, res) => {
             }
         }
     ])
-    let existingKnowledgeCosts = business.analytics.creditsUsage.knowledgeCosts
-    for (const ele of knowledgeTokensRes) {
-        existingKnowledgeCosts.totalEmbeddingTokens += ele.totalEmbeddingTokens
-        existingKnowledgeCosts.TotalSummarizationInputTokens += ele.TotalSummarizationInputTokens
-        existingKnowledgeCosts.TotalSummarizationOutputTokens += ele.TotalSummarizationOutputTokens
-        existingKnowledgeCosts.TotalSummarizationTotalTokens += ele.TotalSummarizationTotalTokens
-        let kt = calculateCost("text-embedding-3-small", ele.totalEmbeddingTokens, 0)
-        let st = calculateCost("gpt-4o-mini", ele.TotalSummarizationInputTokens, ele.TotalSummarizationOutputTokens)
-        existingKnowledgeCosts.OverAllKnowledgeCost += (kt.totalCost + st.totalCost)
-    }
-    const AnalysisTokensRes = await Conversation.aggregate([
-        { $match: { collection: { $in: newConversations.map(ele => ele._id) } } },
-        {
-            $group: {
-                _id: "$analysisTokens.model",
-                TotalAnalysisInputTokens: { $sum: "$analysisTokens.usage.total_tokens" },
-                TotalAnalysisOutputTokens: { $sum: "$analysisTokens.usage.output_tokens" },
-                TotalAnalysisTotalTokens: { $sum: "$analysisTokens.usage.input_tokens" }
-            }
-        }
-    ])
-    let existingAnalysisCosts = business.analytics.creditsUsage.analysisCosts
-    for (const ele of AnalysisTokensRes) {
-        if (ele._id == null) continue;
-        // Add token counts
-        existingAnalysisCosts.totalAnalysisTokensUsed += Number(ele.TotalAnalysisTotalTokens);
-        // Get computed costs
-        const { inputCost, outputCost, totalCost } = calculateCost(ele._id, ele.TotalAnalysisInputTokens, ele.TotalAnalysisOutputTokens) || {};
-        // Accumulate cost fields properly
-        existingAnalysisCosts.costOfInputAnalysisTokens += inputCost;
-        existingAnalysisCosts.costOfOutputAnalysisTokens += outputCost;
-        existingAnalysisCosts.OverAllAnalysisCost += totalCost;
-    }
-    let existingChatCosts = business.analytics.creditsUsage.chatCosts;
-    for (const ele of chatTokens) {
-        if (ele._id == null) continue;
-        // Add token counts
-        existingChatCosts.totalChatTokensUsed += Number(ele.totalChatTokensUsed);
-        // Get computed costs
-        const { inputCost, outputCost, totalCost } = calculateCost(ele._id, ele.inputChatTokensUsed, ele.outputChatTokensUsed) || {};
-        // Accumulate cost fields properly
-        existingChatCosts.costOfInputChatTokens += inputCost;
-        existingChatCosts.costOfOutputChatTokens += outputCost;
-        existingChatCosts.OverAllChatCost += totalCost;
-    }
+    let [existingKnowledgeCosts, existingAnalysisCosts,existingChatCosts] = [business.analytics.creditsUsage.knowledgeCosts, business.analytics.creditsUsage.analysisCosts,business.analytics.creditsUsage.chatCosts];
+    // let existingKnowledgeCosts = { totalEmbeddingTokens: 0, TotalSummarizationInputTokens: 0, TotalSummarizationOutputTokens: 0, TotalSummarizationTotalTokens: 0, OverAllKnowledgeCost: 0 };
+    // let existingAnalysisCosts = { totalAnalysisTokensUsed: 0, costOfInputAnalysisTokens: 0, costOfOutputAnalysisTokens: 0, OverAllAnalysisCost: 0 };
+    // let existingChatCosts = { totalChatTokensUsed: 0, costOfInputChatTokens: 0, costOfOutputChatTokens: 0, OverAllChatCost: 0 };
+    business.analytics.creditsUsage.knowledgeCosts = CostCalculator({ knowledgeTokensRes, existingKnowledgeCosts, type: "knowledge" })
+    business.analytics.creditsUsage.analysisCosts = CostCalculator({ AnalysisTokensRes, existingAnalysisCosts, type: "analysis" })
+    business.analytics.creditsUsage.chatCosts = CostCalculator({ chatTokens, existingChatCosts, type: "chat" })
     for (const conv of newConversations) business.addEngagementAnalytics(conv.agent, new Date(conv.createdAt), new Date(conv.updatedAt), conv.channel, conv.channelFullDetails)
     business.pruneOldConversationDates();
     business.analytics.lastUpdated = now;
     await business.save();
-    return { statusCode: 200, message: "Dashboard retrieved", data: business, misc: { business: business._id, createdAt: { $gte: lastUpdated } } }
+    return { statusCode: 200, message: "Dashboard retrieved", data: business }
 });
 export const DetailedAnalysis = errorWrapper(async (req, res) => {
     // const { selectedIntents } = req.body;

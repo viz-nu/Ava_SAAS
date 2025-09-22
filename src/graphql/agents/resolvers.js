@@ -76,12 +76,12 @@ export const agentResolvers = {
         generatePrompt: async (_, { prompt }, context) => {
             const systemInstruction = `You are an expert prompt engineer. Your job is to take a rough or draft input describing an AI assistant and generate a polished, detailed, and optimized system prompt. The final output should clearly define the assistant's name, role, goals, tone, limitations, language, audience, response style, and fallback behavior in a structured and professional format.`;
             const aiResponse = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
+                model: "gpt-4.1-mini-2025-04-14",
                 messages: [
                     { role: "system", content: systemInstruction },
                     { role: "user", content: JSON.stringify(prompt) }
                 ],
-                max_tokens: 500,
+                // max_tokens: 500,
             });
             // note usage
             console.log("prompt gen response", JSON.stringify(aiResponse, null, 2));
