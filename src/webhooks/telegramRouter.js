@@ -170,6 +170,7 @@ telegramRouter.post('/:botId', async (req, res) => {
                 return;
             } catch (error) {
                 console.error("Processing error:", error);
+                if (error.name === 'MaxTurnsExceededError' || error.message.includes('Max turns') || error.message.includes('exceeded')) await bot.telegram.sendMessage(chatId, "I apologize, but I've reached the maximum number of processing attempts for this request. Please try rephrasing your question or breaking it into smaller parts, and I'll be happy to help you.", {});
             }
         });
     } catch (error) {
