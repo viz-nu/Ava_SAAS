@@ -4,6 +4,7 @@ import { generateTokens } from "../../utils/tokens.js";
 import bcrypt from "bcryptjs";
 export const Login = errorWrapper(async (req, res) => {
     const { email, password } = req.body;
+    console.log({ email, password });
     const user = await User.findOne({ email: email })
     if (!user || !user._id) return { statusCode: 401, message: "Invalid email" }
     if (!bcrypt.compareSync(password, user.password)) return { statusCode: 401, message: "Invalid password" }
