@@ -90,8 +90,8 @@ export const BotResponseSchema = z.object({
     buttons: z.array(
         z.object({
             text: z.string(),
-            callback_data: z.string().nullable(), // ✅ Now nullable
-            url: z.string().nullable()            // ✅ Now nullable
+            callback_data: z.string().nullable() // ✅ Now nullable
+            // url: z.string().nullable()            // ✅ Now nullable
         })
     ).nullable() // ✅ The whole buttons array can be null
 });
