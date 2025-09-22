@@ -19,6 +19,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
     const conversation = await Conversation.findOne({ telegramChatId: chatId });
     const toolsJson = agentDetails.actions?.map(ele => (tool(createToolWrapper(ele)))) || [];
     if (agentDetails.collections.length > 0) toolsJson.push(tool(createToolWrapper(knowledgeToolBaker(agentDetails.collections))));
+    console.log({ toolsJson });
     const extraPrompt = `
                 If max turns are exceeded, provide a concise summary or polite closing message.
                 Always return a JSON object with:
