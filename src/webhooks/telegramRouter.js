@@ -70,7 +70,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
             await bot.telegram.sendMessage(chatId, "❌ Tool rejected. Continuing without this action...");
         }
     }
-    const result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message.from.first_name ? "User Name: " + message.from.first_name : ""}\nDate: ${new Date().toDateString()} \n Channel:telegram \n telegramId:${message.from.id} ` });
+    const result = await run(agent, state, { stream: false, maxTurns: 3, context: `${message?.from?.first_name ? "User Name: " + message?.from?.first_name : ""}\nDate: ${new Date().toDateString()} \n Channel:telegram \n telegramId:${message?.from?.id} ` });
     if (result.interruptions?.length > 0) {
         const interruptionData = result.interruptions.map(interruption => ({ ...interruption, timestamp: new Date(), status: 'pending' }));
         conversation = await Conversation.findByIdAndUpdate(conversation._id, { $push: { "metadata.pendingInterruptions": { $each: interruptionData } }, $set: { state: JSON.stringify(result.state) } }, { new: true });
