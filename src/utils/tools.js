@@ -284,7 +284,7 @@ export const buildJSONSchema = (def) => {
             break;
         case "null":
             break;
-        default: console.warn(`Unknown dataType: ${def.dataType}`);
+        default: console.warn(`Unknown dataType: ${def.dataType}`,"def",JSON.stringify(def, null, 2));
             break;
     }
     return schema;
