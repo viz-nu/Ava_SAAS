@@ -49,6 +49,7 @@ const ConversationSchema = new Schema({
             socketId: String,
             disconnectReason: String,
         },
+        browserUrl: String,
         userLocation: Schema.Types.Mixed,
         callDetails: Schema.Types.Mixed,
         sequenceOfEvents: [Schema.Types.Mixed],
