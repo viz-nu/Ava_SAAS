@@ -22,22 +22,6 @@ export const conversationResolvers = {
       const conversations = await Conversation.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
       return conversations;
     }
-  },
-  Mutation: {
-    updateConversationAnalysis: async (_, { conversationIds }, context, info) => {
-      try {
-        const conversations = await Conversation.find({
-          _id: {
-            $in: conversationIds
-          }
-        });
-        await Promise.all(conversations.map(async (conversation) => await conversation.updateAnalytics()));
-        return conversations;
-      } catch (error) {
-        console.error(error);
-      }
-
-    },
   }
 };
 

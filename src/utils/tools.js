@@ -125,24 +125,6 @@ function generateHeading() {
     ];
     return variants[Math.floor(Math.random() * variants.length)];
 }
-/** Mark every hour slot the conversation overlapped */
-export const markHourBuckets = (arr, start, end) => {
-    if (!start || !end || end < start) return;
-
-    // Align cursor to the beginning of the start hour
-    let cursor = new Date(start);
-    cursor.setMinutes(0, 0, 0);
-
-    // Ceil end to the next hour boundary **unless** already on a boundary
-    const endCeil = new Date(end);
-    if (end.getMinutes()) endCeil.setHours(endCeil.getHours() + 1, 0, 0, 0);
-
-    while (cursor < endCeil) {
-        // Each loop is a full 1‑hour slot [hh:00 → hh+1:00)
-        arr[cursor.getHours()]++;
-        cursor.setHours(cursor.getHours() + 1);
-    }
-}
 export const knowledgeToolBaker = (collections) => {
     if (!collections || collections.length < 1) return null;
     const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
@@ -284,8 +266,362 @@ export const buildJSONSchema = (def) => {
             break;
         case "null":
             break;
-        default: console.warn(`Unknown dataType: ${def.dataType}`,"def",JSON.stringify(def, null, 2));
+        default: console.warn(`Unknown dataType: ${def.dataType}`, "def", JSON.stringify(def, null, 2));
             break;
     }
     return schema;
+}
+export const defaultAnalysisMetrics = {
+    "dataType": "object",
+    "isRequired": true,
+    "key": "conversationExtractedData",
+    "description": "Structured conversation data including user info, interaction details, and outcomes",
+    "additionalProperties": false,
+    "properties": {
+        "who": {
+            "dataType": "object",
+            "isRequired": true,
+            "key": "who",
+            "description": "Information about the user",
+            "additionalProperties": true,
+            "properties": {
+                "standard": {
+                    "dataType": "object",
+                    "isRequired": true,
+                    "key": "standard",
+                    "description": "Standard user information fields",
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "name",
+                            "description": "Full name of the user",
+                            "additionalProperties": false
+                        },
+                        "contact": {
+                            "dataType": "object",
+                            "isRequired": true,
+                            "key": "contact",
+                            "description": "Contact details of the user",
+                            "additionalProperties": false,
+                            "properties": {
+                                "email": {
+                                    "dataType": "string",
+                                    "dataFormat": "email",
+                                    "isRequired": true,
+                                    "key": "email",
+                                    "description": "Email address of the user",
+                                    "additionalProperties": false
+                                },
+                                "phone": {
+                                    "dataType": "string",
+                                    "isRequired": true,
+                                    "key": "phone",
+                                    "description": "Phone number of the user",
+                                    "additionalProperties": false
+                                }
+                            }
+                        },
+                        "location": {
+                            "dataType": "object",
+                            "isRequired": true,
+                            "key": "location",
+                            "description": "Geographic location of the user",
+                            "additionalProperties": false,
+                            "properties": {
+                                "city": {
+                                    "dataType": "string",
+                                    "isRequired": true,
+                                    "key": "city",
+                                    "description": "City where the user is located",
+                                    "additionalProperties": false
+                                },
+                                "state": {
+                                    "dataType": "string",
+                                    "isRequired": true,
+                                    "key": "state",
+                                    "description": "State/region where the user is located",
+                                    "additionalProperties": false
+                                },
+                                "country": {
+                                    "dataType": "string",
+                                    "isRequired": true,
+                                    "key": "country",
+                                    "description": "Country where the user is located",
+                                    "additionalProperties": false
+                                }
+                            }
+                        },
+                        "age": {
+                            "dataType": "number",
+                            "isRequired": true,
+                            "key": "age",
+                            "description": "Age of the user",
+                            "additionalProperties": false
+                        },
+                        "gender": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "gender",
+                            "description": "Gender of the user",
+                            "enums": [
+                                "male",
+                                "female",
+                                "other"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "custom": {
+                    "dataType": "object",
+                    "isRequired": false,
+                    "key": "custom",
+                    "description": "Custom user data fields defined by the organisation",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "why": {
+            "dataType": "object",
+            "isRequired": true,
+            "key": "why",
+            "description": "Purpose or intent of the user's interaction",
+            "additionalProperties": true,
+            "properties": {
+                "standard": {
+                    "dataType": "object",
+                    "isRequired": true,
+                    "key": "standard",
+                    "description": "Standard intent data",
+                    "additionalProperties": false,
+                    "properties": {
+                        "primaryIntent": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "primaryIntent",
+                            "description": "Primary intent or purpose of the interaction",
+                            "additionalProperties": false
+                        },
+                        "secondaryIntents": {
+                            "dataType": "array",
+                            "isRequired": false,
+                            "key": "secondaryIntents",
+                            "description": "Additional intents or purposes",
+                            "items": {
+                                "dataType": "string",
+                                "isRequired": true,
+                                "key": "secondaryIntentItem",
+                                "description": "A secondary intent",
+                                "additionalProperties": false
+                            },
+                            "additionalProperties": false
+                        },
+                        "urgencyLevel": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "urgencyLevel",
+                            "description": "Urgency of the request",
+                            "enums": [
+                                "low",
+                                "medium",
+                                "high"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "custom": {
+                    "dataType": "object",
+                    "isRequired": false,
+                    "key": "custom",
+                    "description": "Custom intent-related fields",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "what": {
+            "dataType": "object",
+            "isRequired": true,
+            "key": "what",
+            "description": "Content and context of the messages",
+            "additionalProperties": true,
+            "properties": {
+                "standard": {
+                    "dataType": "object",
+                    "isRequired": true,
+                    "key": "standard",
+                    "description": "Standard message content fields",
+                    "additionalProperties": false,
+                    "properties": {
+                        "conversationSummary": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "conversationSummary",
+                            "description": "Summary of the conversation",
+                            "additionalProperties": false
+                        },
+                        "topicsDiscussed": {
+                            "dataType": "array",
+                            "isRequired": false,
+                            "key": "topicsDiscussed",
+                            "description": "Topics covered in the conversation",
+                            "items": {
+                                "dataType": "string",
+                                "isRequired": true,
+                                "key": "topicItem",
+                                "description": "A single discussed topic",
+                                "additionalProperties": false
+                            },
+                            "additionalProperties": false
+                        },
+                        "contentTypes": {
+                            "dataType": "array",
+                            "isRequired": false,
+                            "key": "contentTypes",
+                            "description": "Types of content shared",
+                            "items": {
+                                "dataType": "string",
+                                "isRequired": true,
+                                "key": "contentTypeItem",
+                                "description": "A content type (e.g., text, image)",
+                                "additionalProperties": false
+                            },
+                            "additionalProperties": false
+                        },
+                        "language": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "language",
+                            "description": "Language used in the conversation",
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "custom": {
+                    "dataType": "object",
+                    "isRequired": false,
+                    "key": "custom",
+                    "description": "Custom message data",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "how": {
+            "dataType": "object",
+            "isRequired": true,
+            "key": "how",
+            "description": "User behaviour during the interaction",
+            "additionalProperties": true,
+            "properties": {
+                "standard": {
+                    "dataType": "object",
+                    "isRequired": true,
+                    "key": "standard",
+                    "description": "Standard behavioural metrics",
+                    "additionalProperties": false,
+                    "properties": {
+                        "engagementScore": {
+                            "dataType": "number",
+                            "isRequired": true,
+                            "key": "engagementScore",
+                            "description": "Score indicating user engagement level",
+                            "additionalProperties": false
+                        },
+                        "participation": {
+                            "dataType": "object",
+                            "isRequired": true,
+                            "key": "participation",
+                            "description": "Participation metrics",
+                            "additionalProperties": false,
+                            "properties": {
+                                "messageCount": {
+                                    "dataType": "number",
+                                    "isRequired": true,
+                                    "key": "messageCount",
+                                    "description": "Total number of messages sent",
+                                    "additionalProperties": false
+                                },
+                                "avgResponseTime": {
+                                    "dataType": "number",
+                                    "isRequired": true,
+                                    "key": "avgResponseTime",
+                                    "description": "Average time taken to respond (in seconds)",
+                                    "additionalProperties": false
+                                }
+                            }
+                        },
+                        "sentimentScore": {
+                            "dataType": "number",
+                            "isRequired": true,
+                            "key": "sentimentScore",
+                            "description": "Sentiment score from -1 to 1",
+                            "additionalProperties": false
+                        },
+                        "communicationStyle": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "communicationStyle",
+                            "description": "Style of communication",
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "custom": {
+                    "dataType": "object",
+                    "isRequired": false,
+                    "key": "custom",
+                    "description": "Custom behavioural data",
+                    "additionalProperties": true
+                }
+            }
+        },
+        "outcome": {
+            "dataType": "object",
+            "isRequired": true,
+            "key": "outcome",
+            "description": "Result of the interaction",
+            "additionalProperties": true,
+            "properties": {
+                "standard": {
+                    "dataType": "object",
+                    "isRequired": true,
+                    "key": "standard",
+                    "description": "Standard outcome fields",
+                    "additionalProperties": false,
+                    "properties": {
+                        "status": {
+                            "dataType": "string",
+                            "isRequired": true,
+                            "key": "status",
+                            "description": "Status of the interaction",
+                            "additionalProperties": false
+                        },
+                        "followUpRequired": {
+                            "dataType": "boolean",
+                            "isRequired": true,
+                            "key": "followUpRequired",
+                            "description": "Whether a follow-up is needed",
+                            "additionalProperties": false
+                        },
+                        "valueGenerated": {
+                            "dataType": "number",
+                            "isRequired": true,
+                            "key": "valueGenerated",
+                            "description": "Value generated from the interaction",
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "custom": {
+                    "dataType": "object",
+                    "isRequired": false,
+                    "key": "custom",
+                    "description": "Custom outcome fields",
+                    "additionalProperties": true
+                }
+            }
+        }
+    }
 }
