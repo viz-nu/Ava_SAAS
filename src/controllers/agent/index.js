@@ -6,9 +6,10 @@ import { Channel } from '../../models/Channels.js';
 import { Collection } from '../../models/Collection.js';
 import { agentSchema } from '../../Schema/index.js';
 import { openai } from '../../utils/openai.js';
+import { defaultAnalysisMetrics } from '../../utils/tools.js';
 export const createAgent = errorWrapper(async (req, res) => {
     await agentSchema.validate(req.body, { abortEarly: false });
-    let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, analysisMetrics } = req.body
+    let { appearance, personalInfo, actions = [], channels = [], collections = [], isPublic, analysisMetrics = defaultAnalysisMetrics } = req.body
     const business = await Business.findById(req.user.business);
     if (!business) return { statusCode: 404, message: "Business not found", data: null }
     for (const id of channels) {

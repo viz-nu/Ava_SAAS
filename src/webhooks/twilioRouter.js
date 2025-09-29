@@ -50,7 +50,6 @@ twilioRouter.post(
             if (conversation) {
                 conversation.metadata.status = CallStatus;
                 conversation.metadata.callDetails = req.body;
-                if (CallStatus === "completed") await conversation.updateAnalytics();
             }
         }
         if (RecordingStatus) conversation.metadata.callDetails = { ...conversation.metadata.callDetails, recording: { ...req.body } };

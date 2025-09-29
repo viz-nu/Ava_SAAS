@@ -134,8 +134,4 @@ type Query {
     disconnectReason: String
   ): [Conversation] @requireScope(scope: "conversation:read") @requireBusinessAccess
 }
-
-type Mutation {
-  updateConversationAnalysis(conversationIds: [ID!]!): [Conversation] @requireScope(scope: "conversation:update") @requireBusinessAccess
-}
 `;
