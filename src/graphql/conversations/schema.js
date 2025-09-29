@@ -56,6 +56,7 @@ type Metadata {
   sockets: Sockets
   """Current conversation status"""
   status: ConversationStatusEnum
+  browserUrl: String
 }
 
 """WebSocket connection information"""
