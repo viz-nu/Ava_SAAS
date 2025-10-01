@@ -5,11 +5,10 @@ import { Collection } from "../../models/Collection.js";
 import { Data } from "../../models/Data.js";
 import { User } from "../../models/User.js";
 import { collectionSchema, updateSchema } from "../../Schema/index.js";
-// import { urlProcessingQueue } from "../../utils/bull.js";
 import { processFile } from "../../utils/fileHelper.js";
-// import { adminNamespace, io } from "../../utils/io.js";
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
+import { sendMessageToRoom } from "../../utils/socketIoClient.js";
 // Create Collection
 export const createCollection = errorWrapper(async (req, res) => {
     await collectionSchema.validate(req.body);
@@ -26,7 +25,7 @@ export const createCollection = errorWrapper(async (req, res) => {
         try {
             for (const content of collection.contents) {
                 const { source, metaData, _id } = content;
-                // adminNamespace.to(receiver).emit("trigger", { action: "collection-status", data: { collectionId: collection._id, status: "loading" } });
+                sendMessageToRoom(receiver.toString(), "collection-status", { collectionId: collection._id, status: "loading" }, "admin");
                 switch (source) {
                     case "website":
                         console.log("website process started");

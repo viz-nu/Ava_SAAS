@@ -6,7 +6,7 @@ import { digest } from "./setup.js";
 import { URL } from "url";
 import officeParser from "officeparser";
 import { Collection } from "../models/Collection.js";
-// import { adminNamespace, io } from "./io.js";
+import { sendMessageToRoom } from "./socketIoClient.js";
 const mimeToExt = {
     // Documents & Text Files
     "application/pdf": "pdf",
@@ -106,7 +106,7 @@ export const processFile = async (collectionId, url, receiver, _id) => {
                 const loader = new PDFLoader(tempFilePath);
                 const docs = await loader.load();
                 content = docs.map(doc => doc.pageContent).join("\n");
-                // for await (const doc of docs) await digest(doc.pageContent, url, collectionId)
+                for await (const doc of docs) await digest(doc.pageContent, url, collectionId)
                 break;
             case "txt":
             case "json":
@@ -140,7 +140,7 @@ export const processFile = async (collectionId, url, receiver, _id) => {
             }
         );
         fs.unlinkSync(tempFilePath);
-        // adminNamespace.to(receiver.toString()).emit("trigger", { action: "adding-collection", data: { total: 1, progress: 1, collectionId: collectionId } })
+        sendMessageToRoom(receiver.toString(), "adding-collection", { total: 1, progress: 1, collectionId: collectionId }, "admin");
         return { success: true, data: null }
     } catch (error) {
         console.error(error);
