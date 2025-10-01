@@ -28,41 +28,12 @@ export const WhatsAppBotResponseSchema = z.object({
   ).max(3, "WhatsApp allows maximum 3 buttons")
     .nullable() // allow missing buttons for plain text
 });
-async function processUserMessage(message, userMessage, bot, agentDetails) {
+async function processUserMessage(message, userMessage, bot, agentDetails, channelDetails) {
   const toolsJson = agentDetails.actions?.map(ele => tool(createToolWrapper(ele))) || [];
   if (agentDetails.collections.length > 0) toolsJson.push(tool(knowledgeToolBaker(agentDetails.collections)));
-  const extraPrompt = `
-  If max turns are exceeded, provide a concise summary or polite closing message.
-
-  Always return a JSON object that follows this schema:
-  {
-    "message": string,        // The main reply text to send
-    "buttons": [              // Optional array of interactive buttons
-      {
-        "id": string,         // Unique identifier for the button
-        "text": string        // The button label shown to the user
-      }
-    ] OR null if there are no buttons
-  }
-
-  Rules:
-  - If there are no buttons, set "buttons" to null (not an empty array).
-  - Keep the message short and conversational.
-  - Buttons should be relevant actions based on the user's query.
-  - Do NOT include any fields other than "message" and "buttons".
-  - Respond in a helpful and professional tone.
-  "Always return valid JSON ONLY as per schema. No text outside JSON."
-  Example response:
-  {
-    "message": "What would you like to do next?",
-      "buttons": [
-        { "id": "order_status", "text": "Check Order Status" },
-        { "id": "new_order", "text": "Place a New Order" }
-      ]
-  }`;
   const agent = new Agent({
     name: agentDetails.personalInfo.name,
-    instructions: agentDetails.personalInfo.systemPrompt + extraPrompt,
+    instructions: agentDetails.personalInfo.systemPrompt + channelDetails.systemPrompt,
     model: agentDetails.personalInfo.model,
     toolChoice: 'auto',
     temperature: agentDetails.personalInfo.temperature,
@@ -82,7 +53,7 @@ async function processUserMessage(message, userMessage, bot, agentDetails) {
         return entries;
       }));
     } else {
-      conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp" });
+      conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp", channelFullDetails: channelDetails._id, contact: { waId: message.contact.waId, name: message.contact.name } });
     }
     state.push({ role: "user", content: [{ type: "input_text", text: userMessageData.text }] });
   }
@@ -286,10 +257,10 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
                   break;
                 case "interactive":
                   if (message.content.interactive.reply.id.startsWith('approve_')) {
-                    await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: true } }, bot, agentDetails);
+                    await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: true } }, bot, agentDetails, channelDetails);
                     continue;
                   } else if (message.content.interactive.reply.id.startsWith('reject_')) {
-                    await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: false } }, bot, agentDetails);
+                    await processUserMessage(message, { userMessageType: "tool_approval", userMessageData: { buttonId: message.content.interactive.reply.id, approved: false } }, bot, agentDetails, channelDetails);
                     continue;
                   }
                   userMessageText = `User clicked button: ${message.content.interactive.reply.title}`;
@@ -299,7 +270,7 @@ whatsappRouter.post('/:phone_number_id', async (req, res) => {
                   console.log(`📩 ${message.subType} message from ${message.contact.name || message.from}`);
                   break;
               }
-              await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessageText } }, bot, agentDetails);
+              await processUserMessage(message, { userMessageType: "text", userMessageData: { text: userMessageText } }, bot, agentDetails, channelDetails);
               break;
             default:
               console.log("unknown message type:", message.type)
