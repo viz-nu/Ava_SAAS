@@ -6,7 +6,7 @@ export const processYT = async (collectionId, urls, receiver, _id) => {
     let total = urls.length, completed = 0, topics = []
     try {
         for (const { url, data } of urls) {
-            const loader = YoutubeLoader.createFromUrl(url, { language: data?.lang || "en", addVideoInfo: true, });
+            const loader = YoutubeLoader.createFromUrl(url);
             const docs = await loader.load();
             let text = docs.map(ele => ele.pageContent).join('');
             try {
