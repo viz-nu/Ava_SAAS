@@ -6,8 +6,10 @@ export const processYT = async (collectionId, urls, receiver, _id) => {
     let total = urls.length, completed = 0, topics = []
     try {
         for (const { url, data } of urls) {
+            console.log("url:",url);
             const transcript = await YoutubeTranscript.fetchTranscript(url);
             const text = transcript.map(ele => ele.text).join(' ');
+            console.log("text:",text);
             try {
                 topics = await digest(text, url, collectionId, {}, topics, "text");
                 await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url }, }, $addToSet: { topics: topics }, $set: { "contents.$.status": "active" } });
