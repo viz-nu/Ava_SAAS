@@ -1,4 +1,22 @@
-import { YoutubeLoader } from "@langchain/community/document_loaders/web/youtube";
+import { YoutubeTranscript } from 'youtube-transcript';
+function extractVideoId(url) {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=)([^&\s]+)/,
+        /(?:youtu\.be\/)([^&\s?]+)/,
+        /(?:youtube\.com\/embed\/)([^&\s?]+)/,
+        /(?:youtube\.com\/v\/)([^&\s?]+)/,
+        /(?:youtube\.com\/shorts\/)([^&\s?]+)/
+    ];
+
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+
+    return null;
+}
 import { digest } from "./setup.js";
 import { Collection } from "../models/Collection.js";
 import { sendMessageToRoom } from "./socketIoClient.js";
@@ -6,9 +24,12 @@ export const processYT = async (collectionId, urls, receiver, _id) => {
     let total = urls.length, completed = 0, topics = []
     try {
         for (const { url, data } of urls) {
-            const loader = YoutubeLoader.createFromUrl(url);
-            const docs = await loader.load();
-            let text = docs.map(ele => ele.pageContent).join('');
+            // const loader = YoutubeLoader.createFromUrl(url);
+            // const docs = await loader.load();
+            // let text = docs.map(ele => ele.pageContent).join('');
+            const videoId = extractVideoId(url);
+            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+            let text = transcript.map(ele => ele.text).join('');
             try {
                 topics = await digest(text, url, collectionId, {}, topics, "text");
                 await Collection.updateOne({ _id: collectionId, "contents._id": _id }, { $push: { "contents.$.metaData.detailedReport": { success: true, url: url }, }, $addToSet: { topics: topics }, $set: { "contents.$.status": "active" } });
@@ -28,5 +49,4 @@ export const processYT = async (collectionId, urls, receiver, _id) => {
         return { success: false }
     }
 }
-
 
