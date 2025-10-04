@@ -92,20 +92,25 @@ export const twilioResolvers = {
             return await service.makeOutboundCall({ to, from: channel.config.phoneNumber });
         },
         makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
-            console.log("happening");
-            const channel = await Channel.findById(channelId).select({ type: 1, config: 1, business: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
-            const agentDetails = await AgentModel.findById(agentId, "personalInfo")
-            if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
-            if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.VoiceAgentSessionConfig.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
-            if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
-            const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
-            const model = agentDetails.personalInfo.VoiceAgentSessionConfig.model;
-            const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
-            const callDetails = await service.makeAIOutboundCall({ to, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), agentId, conversationId: conversation._id.toString(), model });
-            conversation.voiceCallIdentifierNumberSID = callDetails.sid;
-            conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
-            await conversation.save();
-            return conversation._id.toString();
+            try {
+                const channel = await Channel.findById(channelId).select({ type: 1, config: 1, business: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
+                const agentDetails = await AgentModel.findById(agentId, "personalInfo")
+                if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
+                if (!['gpt-4o-realtime-preview', 'gpt-4o-mini-realtime-preview', 'gpt-4o-realtime-preview-2025-06-03', 'gpt-4o-realtime-preview-2024-12-17', 'gpt-4o-realtime-preview-2024-10-01', 'gpt-4o-mini-realtime-preview-2024-12-17'].includes(agentDetails.personalInfo.VoiceAgentSessionConfig.model)) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
+                if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
+                const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+                const model = agentDetails.personalInfo.VoiceAgentSessionConfig.model;
+                const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
+                const callDetails = await service.makeAIOutboundCall({ to, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), agentId, conversationId: conversation._id.toString(), model });
+                conversation.voiceCallIdentifierNumberSID = callDetails.sid;
+                conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
+                await conversation.save();
+                return conversation._id.toString();
+            } catch (error) {
+                console.error("Error making Twilio AI outbound call:", error);
+                throw new GraphQLError("Error making Twilio AI outbound call", { extensions: { code: "TWILIO_AI_OUTBOUND_CALL_ERROR" } });
+            }
+
         },
         sendTwilioSms: async (_, { integrationId, to, from, body, mediaUrl, statusCallback = `${process.env.SERVER_URL}webhook/twilio/sms/status` }) => {
             const integration = await Integration.findById(integrationId).select({ config: 1, secrets: 1 }).lean();
