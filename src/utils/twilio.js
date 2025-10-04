@@ -78,15 +78,20 @@ export class TwilioService {
         return call.toJSON ? call.toJSON() : call;
     }
     async makeAIOutboundCall({ to, from, url, webhookUrl, agentId, conversationId, model }) {
-        const VoiceResponse = twilio.twiml.VoiceResponse;
-        const response = new VoiceResponse();
-        const connect = response.connect();
-        const stream = connect.stream({ url });
-        stream.parameter({ name: 'conversationId', value: conversationId });
-        stream.parameter({ name: 'agentId', value: agentId });
-        stream.parameter({ name: 'model', value: model });
-        const twiml = response.toString();
-        return await this.client.calls.create({ to, from, twiml, record: true, statusCallback: webhookUrl, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
+        try {
+            const VoiceResponse = twilio.twiml.VoiceResponse;
+            const response = new VoiceResponse();
+            const connect = response.connect();
+            const stream = connect.stream({ url });
+            stream.parameter({ name: 'conversationId', value: conversationId });
+            stream.parameter({ name: 'agentId', value: agentId });
+            stream.parameter({ name: 'model', value: model });
+            const twiml = response.toString();
+            return await this.client.calls.create({ to, from, twiml, record: true, statusCallback: webhookUrl, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
+        } catch (error) {
+            console.error("Error making Twilio AI outbound call:", error);
+            throw new Error("Error making Twilio AI outbound call");
+        }
     }
     async listCalls(options) {
         return await this.client.calls.list(options);
