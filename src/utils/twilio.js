@@ -87,6 +87,8 @@ export class TwilioService {
             stream.parameter({ name: 'agentId', value: agentId });
             stream.parameter({ name: 'model', value: model });
             const twiml = response.toString();
+            console.log("ready to make call", { conversationId, agentId, model });
+
             return await this.client.calls.create({ to, from, twiml, record: true, statusCallback: webhookUrl, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
         } catch (error) {
             console.error("Error making Twilio AI outbound call:", error);
