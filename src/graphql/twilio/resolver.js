@@ -92,6 +92,7 @@ export const twilioResolvers = {
             return await service.makeOutboundCall({ to, from: channel.config.phoneNumber });
         },
         makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
+            console.log("happening");
             const channel = await Channel.findById(channelId).select({ type: 1, config: 1, business: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
             const agentDetails = await AgentModel.findById(agentId, "personalInfo")
             if (!agentDetails) new GraphQLError("invalid Agent model", { extensions: { code: "INVALID_AGENT_ID" } })
