@@ -14,6 +14,9 @@ enum ConversationStatusEnum {
   disconnected
   completed
   busy
+no-answer
+in-progress
+ringing
   }
 
 """Available communication channels for conversations"""
