@@ -14,8 +14,7 @@ enum ConversationStatusEnum {
   disconnected
   completed
   busy
-no-answer
-in-progress
+
 ringing
   }
 
@@ -139,3 +138,7 @@ type Query {
   ): [Conversation] @requireScope(scope: "conversation:read") @requireBusinessAccess
 }
 `;
+
+
+// no-answer
+// in-progress
