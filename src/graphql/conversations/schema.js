@@ -14,7 +14,8 @@ enum ConversationStatusEnum {
   disconnected
   completed
   busy
-
+noAnswer
+inProgress
 ringing
   }
 

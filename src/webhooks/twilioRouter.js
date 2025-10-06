@@ -48,7 +48,20 @@ twilioRouter.post(
         const { CallStatus = false, RecordingStatus = false } = req.body;
         if (CallStatus) {
             if (conversation) {
-                conversation.metadata.status = CallStatus;
+                switch (CallStatus) {
+                    case "no-answer":
+                        conversation.metadata.status = "noAnswer";
+                        break;
+                    case "in-progress":
+                        conversation.metadata.status = "inProgress";
+                        break;
+                    case "completed":
+                        conversation.metadata.status = "completed";
+                        break;
+                    default:
+                        conversation.metadata.status = CallStatus;
+                        break;
+                }
                 conversation.metadata.callDetails = req.body;
             }
         }
