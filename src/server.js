@@ -89,9 +89,7 @@ export const createApp = async () => {
                     conversationId ? Conversation.findById(conversationId) : null,
                     messageId ? Message.findById(messageId) : null
                 ]);
-
                 if (!agentDetails) return res.status(404).json({ error: 'Agent not found' });
-
                 // ✅ Setup response streaming
                 res.setHeader('Content-Type', 'application/json');
                 res.setHeader('Transfer-Encoding', 'chunked');
@@ -129,7 +127,6 @@ export const createApp = async () => {
                     // Clear old interruptions and state in DB
                     await Conversation.findByIdAndUpdate(conversationId, { $set: { "metadata.pendingInterruptions": [], state: "" } });
                 }
-
                 if (!state) {
                     // ✅ Build context from last 8 messages (user + assistant)
                     const messages = await Message.find({ conversationId: conversation._id })
@@ -148,7 +145,6 @@ export const createApp = async () => {
                     contextMessages.push({ role: "user", content: [{ type: "input_text", text: userMessage }] });
                     state = contextMessages;
                 }
-
                 // ✅ Start agent run with streaming
                 let hasInterruptions = false;
                 let collectedText = "";
@@ -255,7 +251,6 @@ export const createApp = async () => {
 
                     if (!res.writableEnded) res.end();
                 }
-
             } catch (error) {
                 console.error('Agent error:', error);
                 if (!res.writableEnded) {
