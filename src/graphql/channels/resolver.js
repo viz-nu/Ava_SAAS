@@ -49,7 +49,7 @@ export const channelResolvers = {
                     try {
                         const botInfo = await bot.telegram.getMe(); // Fetch bot details 
                         channel.config = { ...botInfo, url: `https://t.me/${botInfo.username}` }
-                        channel.webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
+                        channel.webhookUrl = `https://chat.avakado.ai/webhook/telegram/${botInfo.id}`;
                     } catch (error) {
                         console.log(error);
                         return new GraphQLError("Invalid Telegram token", { extensions: { code: 'INVALID_INPUT' } });
@@ -73,7 +73,7 @@ export const channelResolvers = {
                     try {
                         const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
                         channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }
-                        channel.webhookUrl = `${SERVER_URL}webhook/whatsapp/${phone_number_id}`
+                        channel.webhookUrl =`https://chat.avakado.ai/webhook/whatsapp/${phone_number_id}`//`${SERVER_URL}webhook/whatsapp/${phone_number_id}`
                         channel.config = { phone_number_id, waba_id, business_id }
                     } catch (error) {
                         if (error.response) {
@@ -138,7 +138,7 @@ export const channelResolvers = {
                         provider: integration.metaData.type,
                         phoneNumber,
                         webSocketsUrl: `wss://sockets.avakado.ai/media-stream`,
-                        voiceUpdatesWebhookUrl: `${process.env.SERVER_URL}webhook/twilio/call/status?conversationId=`
+                        voiceUpdatesWebhookUrl: `https://chat.avakado.ai/webhook/twilio/call/status?conversationId=`
                     }
                     await channel.save()
                     await channel.updateStatus("phone channel configured")
@@ -248,7 +248,7 @@ export const channelResolvers = {
                         const bot = new Telegraf(telegramToken);
                         try {
                             const botInfo = await bot.telegram.getMe();
-                            const webhookUrl = `${process.env.SERVER_URL}webhook/telegram/${botInfo.id}`;
+                            const webhookUrl = `https://chat.avakado.ai/webhook/telegram/${botInfo.id}`;
 
                             // Set webhook to new URL
                             await bot.telegram.setWebhook(webhookUrl);
@@ -280,7 +280,7 @@ export const channelResolvers = {
                                 verificationToken: randomBytes(9).toString("hex")
                             };
 
-                            const webhookUrl = `${process.env.SERVER_URL}webhook/whatsapp/${channel._id}`;
+                            const webhookUrl = `https://chat.avakado.ai/webhook/whatsapp/${phone_number_id}`;
                             channel.webhookUrl = webhookUrl;
                             channel.config = { phone_number_id, waba_id, business_id };
                             channel.status = "fetched new access token";
