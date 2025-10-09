@@ -85,8 +85,10 @@ export class TwilioService {
             const stream = connect.stream({ url });
             stream.parameter({ name: 'conversationId', value: conversationId });
             stream.parameter({ name: 'agentId', value: agentId });
-            stream.parameter({ name: 'model', value: "gemini-live-2.5-flash-preview" }); // hardcoding model and provider for now
-            stream.parameter({ name: 'provider', value: "gemini" });
+            stream.parameter({ name: 'provider', value: "openai" });
+            stream.parameter({ name: 'model', value: model });
+            // stream.parameter({ name: 'model', value: "gemini-live-2.5-flash-preview" }); // hardcoding model and provider for now
+            // stream.parameter({ name: 'provider', value: "gemini" });
             const twiml = response.toString();
             // console.log("ready to make call", { conversationId, agentId, model });
             return await this.client.calls.create({ to, from, twiml, record: true, statusCallback: webhookUrl, statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'], statusCallbackMethod: 'POST' });
