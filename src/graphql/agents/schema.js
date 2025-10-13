@@ -110,6 +110,9 @@ export const agentTypeDefs = `#graphql
         @param isFeatured - Filter by featured status
         @param id - Optional ID to fetch a specific agent """
     agents(limit: Int isPublic: Boolean isFeatured: Boolean id: ID): [Agent] @requireScope(scope: "agent:read") @requireBusinessAccess
+    """ Get an ephemeral token for an agent
+        @param id - ID of agent to get the token for """
+    ephemeralToken(id: ID!): JSON @requireScope(scope: "agent:read") @requireBusinessAccess
   }
 
   type Mutation {
