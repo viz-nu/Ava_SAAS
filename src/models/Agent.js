@@ -85,21 +85,55 @@ const AudioSchema = new Schema(
 );
 
 // --- ASSISTANT CONFIG ---
-const AssistantConfigSchema = new Schema(
-    {
-        model: { type: String, enum: OpenAiRealtimeModels, default: 'gpt-4o-mini-realtime-preview' },
-        voice: { type: String, enum: OpenAiVoices, default: "alloy" },
-        type: { type: String, default: 'realtime' },
-        output_modalities: [{ type: String, enum: ModalitiesEnum }],
-        audio: { type: AudioSchema },
-        max_output_tokens: { type: Number },
-        truncation: { type: String, enum: ["auto", "retention_ratio"], default: "auto" },
-        retention_ratio: { type: Number, default: 0.5 },
-        post_instructions_token_limit: { type: Number }
-    },
-    { _id: false }
-);
+// const AssistantConfigSchema = new Schema(
+//     {
+//         model: { type: String, enum: OpenAiRealtimeModels, default: 'gpt-4o-mini-realtime-preview' },
+//         provider: { type: String, enum: AiProviderEnum, default: "openai" },
+//         voice: { type: String, enum: OpenAiVoices, default: "alloy" },
+//         type: { type: String, default: 'realtime' },
+//         output_modalities: [{ type: String, enum: ModalitiesEnum }],
+//         audio: { type: AudioSchema },
+//         max_output_tokens: { type: Number },
+//         truncation: { type: String, enum: ["auto", "retention_ratio"], default: "auto" },
+//         retention_ratio: { type: Number, default: 0.5 },
+//         post_instructions_token_limit: { type: Number }
+//     },
+//     { _id: false }
+// );
+// assistant config schema is based on the model provider
+// if the model provider is openai, then the assistant config schema is based on the openai realtime models, voice
+// if the model provider is google, then the assistant config schema is based on the google realtime models, voice
+// if the model provider is anthropic, then the assistant config schema is based on the anthropic realtime models, voice
 
+//  get the differentiators for the assistant config schema based on the model provider
+// elevenlabs: {
+//     models: ['eleven_monolingual_v1', 'eleven_multilingual_v1', 'eleven_multilingual_v2', 'eleven_turbo_v2'],
+//     voices: ['rachel', 'clyde', 'domi', 'dave', 'fin', 'sarah', 'antoni', 'thomas']
+// },
+// azure: {
+//     models: ['en-US-JennyNeural', 'en-US-GuyNeural', 'en-US-AriaNeural'],
+//     voices: ['en-US-JennyNeural', 'en-US-GuyNeural', 'en-US-AriaNeural', 'en-US-DavisNeural']
+// },
+// deepgram: {
+//     models: ['aura-asteria-en', 'aura-luna-en', 'aura-stella-en', 'aura-athena-en'],
+//     voices: ['aura-asteria-en', 'aura-luna-en', 'aura-stella-en', 'aura-athena-en', 'aura-orion-en']
+// },
+const VoiceProviderConfig = {
+    openai: {
+        models: ['gpt-realtime', 'gpt-realtime-mini'],
+        voices: ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse', 'marin', 'cedar']
+    },
+    gemini: {
+        models: ['gemini-2.5-flash-native-audio-latest'],
+        voices: ['Zephyr', 'Puck', 'Charon', 'Kore', 'Fenrir', 'Leda', 'Orus', 'Aoede', 'Callirrhoe', 'Autonoe', 'Enceladus', 'Iapetus', 'Umbriel', 'Algieba', 'Despina', 'Erinome', 'Algenib', 'Rasalgethi', 'Laomedeia', 'Achernar', 'Alnilam', 'Schedar', 'Gacrux', 'Pulcherrima', 'Achird', 'Zubenelgenubi', 'Vindemiatrix', 'Sadachbia', 'Sadaltager', 'Sulafat']
+    }
+};
+
+const AssistantConfigSchema = new Schema({
+    provider: { type: String, enum: Object.keys(VoiceProviderConfig), default: 'openai' },
+    model: { type: String, validate: { validator: function (value) { return VoiceProviderConfig[this.provider]?.models.includes(value); }, message: props => `Invalid model for provider` } },
+    voice: { type: String, validate: { validator: function (value) { return VoiceProviderConfig[this.provider]?.voices.includes(value); }, message: props => `Invalid voice for provider` } }
+}, { _id: false });
 // --- AGENT SCHEMA ---
 const AgentSchema = new Schema({
     appearance: {
