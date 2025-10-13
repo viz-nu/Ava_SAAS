@@ -7,6 +7,7 @@ import { openai } from '../../utils/openai.js';
 import { Channel } from '../../models/Channels.js';
 import { Business } from '../../models/Business.js';
 import { User } from '../../models/User.js';
+import axios from 'axios';
 export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, isPublic, isFeatured, id }, context, info) => {
@@ -24,6 +25,27 @@ export const agentResolvers = {
             await Collection.populate(agents, { path: 'collections', select: nested.collections });
             await Action.populate(agents, { path: 'actions', select: nested.actions });
             return agents;
+        }
+        ,
+        ephemeralToken: async (_, { id }, context, info) => {
+            const filter = {};
+            filter.business = context.user.business;
+            filter._id = id;
+            const agentDetails = await AgentModel.findOne(filter).select({ personalInfo: 1 });
+            const { model, provider, voice } = agentDetails.personalInfo.VoiceAgentSessionConfig;
+            if (provider !== "openai") throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
+            const { data } = await axios.post(
+                "https://api.openai.com/v1/realtime/client_secrets",
+                { session: { type: "realtime", model: model, audio: { output: { voice: voice, } }, }, },
+                {
+                    headers: {
+                        Authorization: `Bearer ${process.env.OPEN_API_KEY}`,
+                        "Content-Type": "application/json",
+                    }
+                },
+            );
+            console.log("secretData:", JSON.stringify(data, null, 2));
+            return data
         }
     },
     Mutation: {
