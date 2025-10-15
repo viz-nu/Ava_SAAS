@@ -15,6 +15,7 @@
     "@apollo/server": "^5.0.0",
     "@as-integrations/express5": "^1.1.2",
     "@danielxceron/youtube-transcript": "^1.2.3",
+    "@google/genai": "^1.25.0",
     "@graphql-tools/merge": "^9.1.1",
     "@langchain/community": "^0.3.33",
     "@langchain/core": "^0.3.42",

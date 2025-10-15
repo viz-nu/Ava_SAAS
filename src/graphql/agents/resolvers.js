@@ -8,6 +8,7 @@ import { Channel } from '../../models/Channels.js';
 import { Business } from '../../models/Business.js';
 import { User } from '../../models/User.js';
 import axios from 'axios';
+import { GoogleGenAI } from "@google/genai";
 export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, isPublic, isFeatured, id }, context, info) => {
@@ -57,14 +58,28 @@ export const agentResolvers = {
                         }
                     case "gemini":
                         {
-                            // const { data } = await axios.post(
-                            //     "https://generativelanguage.googleapis.com/v1alpha/models/" +
-                            //     `${sessionConfig.model}:connect?key=${process.env.GEMINI_API_KEY}`,
-                            //     { config: { audioConfig: { voiceConfig: { voice: sessionConfig.voice }, model: sessionConfig.model }, }, },
-                            //     { headers: { "Content-Type": "application/json", } }
-                            // );
-                            // return data
-                            return {}
+                            const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                            const token = await client.authTokens.create({
+                                config: {
+                                    uses: 1,
+                                    expireTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+                                    liveConnectConstraints: {
+                                        model: sessionConfig.model,
+                                        config: {
+                                            audioConfig: {
+                                                voiceConfig: {
+                                                    voice: sessionConfig.voice
+                                                }
+                                            },
+                                            responseModalities: ['AUDIO']
+                                        }
+                                    },
+                                    httpOptions: {
+                                        apiVersion: 'v1alpha'
+                                    }
+                                }
+                            });
+                            return token
                         }
                     default:
                         throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
