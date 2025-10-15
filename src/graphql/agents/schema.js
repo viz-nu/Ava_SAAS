@@ -102,7 +102,10 @@ export const agentTypeDefs = `#graphql
     isPublic: Boolean
     isFeatured: Boolean
   }
-
+enum AgentProviderEnum {
+  openai
+  gemini
+}
   type Query {
     """ Get all agents for the user's business
         @param limit - Maximum number of agents to return
@@ -112,7 +115,7 @@ export const agentTypeDefs = `#graphql
     agents(limit: Int isPublic: Boolean isFeatured: Boolean id: ID): [Agent] @requireScope(scope: "agent:read") @requireBusinessAccess
     """ Get an ephemeral token for an agent
         @param id - ID of agent to get the token for """
-    ephemeralToken(id: ID,model: String, voice: String, provider: String): JSON @requireScope(scope: "agent:read") @requireBusinessAccess
+    ephemeralToken(id: ID,model: String, voice: String, provider: AgentProviderEnum): JSON @requireScope(scope: "agent:read") @requireBusinessAccess
   }
 
   type Mutation {
