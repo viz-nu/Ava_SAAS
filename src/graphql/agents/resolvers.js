@@ -27,25 +27,54 @@ export const agentResolvers = {
             return agents;
         }
         ,
-        ephemeralToken: async (_, { id }, context, info) => {
-            const filter = {};
-            filter.business = context.user.business;
-            filter._id = id;
-            const agentDetails = await AgentModel.findOne(filter).select({ personalInfo: 1 });
-            const { model, provider, voice } = agentDetails.personalInfo.VoiceAgentSessionConfig;
-            if (provider !== "openai") throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
-            const { data } = await axios.post(
-                "https://api.openai.com/v1/realtime/client_secrets",
-                { session: { type: "realtime", model: model, audio: { output: { voice: voice, } }, }, },
-                {
-                    headers: {
-                        Authorization: `Bearer ${process.env.OPEN_API_KEY}`,
-                        "Content-Type": "application/json",
-                    }
-                },
-            );
-            console.log("secretData:", JSON.stringify(data, null, 2));
-            return data
+        ephemeralToken: async (_, { id, model, voice, provider }, context, info) => {
+            try {
+                let sessionConfig = {};
+                if (model && voice && provider) sessionConfig = { model, voice, provider };
+                else if (id) {
+                    const filter = { business: context.user.business, _id: id };
+                    const agentDetails = await AgentModel.findOne(filter).select({ personalInfo: 1 });
+                    if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "NOT_FOUND" } });
+                    const { model: dbModel, provider: dbProvider, voice: dbVoice, } = agentDetails.personalInfo.VoiceAgentSessionConfig;
+                    sessionConfig = { model: dbModel, provider: dbProvider, voice: dbVoice };
+                } else {
+                    throw new GraphQLError("Either (model, voice, provider) or id must be provided.", { extensions: { code: "BAD_REQUEST" } });
+                }
+                switch (sessionConfig.provider) {
+                    case "openai":
+                        {
+                            const { data } = await axios.post(
+                                "https://api.openai.com/v1/realtime/client_secrets",
+                                { session: { type: "realtime", model: sessionConfig.model, audio: { output: { voice: sessionConfig.voice } }, }, },
+                                {
+                                    headers: {
+                                        Authorization: `Bearer ${process.env.OPEN_API_KEY}`,
+                                        "Content-Type": "application/json",
+                                    }
+                                },
+                            );
+                            return data
+                        }
+                    case "gemini":
+                        {
+                            // const { data } = await axios.post(
+                            //     "https://generativelanguage.googleapis.com/v1alpha/models/" +
+                            //     `${sessionConfig.model}:connect?key=${process.env.GEMINI_API_KEY}`,
+                            //     { config: { audioConfig: { voiceConfig: { voice: sessionConfig.voice }, model: sessionConfig.model }, }, },
+                            //     { headers: { "Content-Type": "application/json", } }
+                            // );
+                            // return data
+                            return {}
+                        }
+                    default:
+                        throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
+                }
+
+
+            } catch (error) {
+                console.error("Session Creation Error:", error.message);
+                throw new GraphQLError(error.message || "Failed to create session", { extensions: { code: "SESSION_CREATION_FAILED" } });
+            }
         }
     },
     Mutation: {
