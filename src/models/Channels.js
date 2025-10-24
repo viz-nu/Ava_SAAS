@@ -114,10 +114,10 @@ Channel.discriminator('web', new Schema({ config: WebConfig, secrets: WebSecrets
 /* ───────────────────────────── Phone Call Channel ─────────────────────── */
 const PhoneConfig = new Schema(
     {
-        provider: { type: String, enum: ['twilio', 'plivo'] },
+        provider: { type: String, enum: ['twilio', 'plivo', 'exotel'] },
         integration: { type: Schema.Types.ObjectId, ref: 'Integration' },
         phoneNumber: String,
-        voiceUpdatesWebhookUrl: { type: String, default: `${process.env.SERVER_URL}webhook/twilio/call/status?conversationId=` },
+        voiceUpdatesWebhookUrl: { type: String, default: function () { return `https://chat.avakado.ai/webhook/${this.provider}/call/status?conversationId=`; } },
         webSocketsUrl: { type: String, default: `wss://sockets.avakado.ai/media-stream` },
         fallbackUrl: String,
     },
