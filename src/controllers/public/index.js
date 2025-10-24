@@ -2,7 +2,7 @@ import axios from "axios";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const demoCall = errorWrapper(async (req, res) => {
     const { phoneNumber, PreContext = "" } = req.body;
-    const channelId = "68cfc59094a23b31516a9db9", agentId = "68da93cd0c3694119ebdc4ac"
+    const channelId = "68e7982be023303bcc4371e1", agentId = "68da93cd0c3694119ebdc4ac"
     try {
         await axios.post(`https://app.avakado.ai/graphql/`, {
             query: `mutation Mutation($channelId: ID!, $to: String!, $agentId: ID!, $preContext: String) {

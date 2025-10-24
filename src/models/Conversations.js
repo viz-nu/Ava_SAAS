@@ -53,6 +53,13 @@ const ConversationSchema = new Schema({
         userLocation: Schema.Types.Mixed,
         callDetails: Schema.Types.Mixed,
         sequenceOfEvents: [Schema.Types.Mixed],
+        CreditsUsage: {
+            conversationCredits: { type: Number, default: 0 },
+            analysisCredits: { type: Number, default: 0 },
+            // knowledgeCredits:Number,
+            miscellaneousCredits: { type: Number, default: 0 },
+            totalCredits: { type: Number, default: 0 },
+        }
     }
 }, {
     timestamps: true
