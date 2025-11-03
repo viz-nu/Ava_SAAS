@@ -34,6 +34,12 @@ const BusinessSchema = new Schema({
     docData: Schema.Types.Mixed,
     // members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
+    credits: {
+        value: { type: Number, default: 1250 },
+        spendRatio: { type: Number, default: 2.2 },
+        balance: { type: Number, default: 1250 },
+        lastUpdated: { type: Date, default: new Date() }
+    },
     analytics: {
         lastUpdated: Date,
         engagementOverview: {
@@ -127,7 +133,4 @@ BusinessSchema.methods.addEngagementAnalytics = function (agentId, createdAt, up
 BusinessSchema.methods.addTokenUsage = function (type, data) {
 
 }
-
-
- 
 export const Business = model('Businesses', BusinessSchema, "Businesses");
