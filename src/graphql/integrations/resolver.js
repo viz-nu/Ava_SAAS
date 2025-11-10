@@ -23,7 +23,7 @@ export const IntegrationResolvers = {
         }
     },
     Mutation: {
-        createIntegration: async (_, { code, domain, type, name, purpose, AccountSid, state }, context, info) => {
+        createIntegration: async (_, { code, domain, type, name, purpose, AccountSid, state, exotelConfig }, context, info) => {
             let integration
             switch (type) {
                 case "zoho":
@@ -81,7 +81,24 @@ export const IntegrationResolvers = {
                         isActive: true,
                         createdBy: context.user._id
                     })
-                    break
+                    break;
+                case "whatsapp":
+                    break;
+                case "exotel":
+                    const { apiKey, apiSecret, accountSid } = exotelConfig
+                    integration = await Integration.create({
+                        business: context.user.business,
+                        metaData: {
+                            name: name || 'Exotel',
+                            description: 'Exotel SMS and Voice',
+                            icon: 'https://images.saasworthy.com/exotel_4675_logo_1586751614_tppiq.jpg',
+                            color: '#000000',
+                            purpose: purpose || 'voice and sms',
+                            type
+                        },
+                        config: { accountSid: accountSid }, secrets: { tokenType: "Basic Auth", apiKey: apiKey, apiSecret: apiSecret, }
+                    })
+                    break;
                 default:
                     break;
             }
@@ -120,7 +137,6 @@ export const IntegrationResolvers = {
             }
             await Integration.findByIdAndDelete(integrationId);
             return true;
-        },
-
+        }
     }
 }
