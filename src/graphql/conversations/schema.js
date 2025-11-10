@@ -1,5 +1,6 @@
 export const conversationTypeDefs =
   `#graphql
+  type ConversationStatusEnum String  
 """Available communication channels for conversations"""
 enum ChannelStatusEnum {
   """Email communication"""
