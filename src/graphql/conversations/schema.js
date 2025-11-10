@@ -1,6 +1,17 @@
 export const conversationTypeDefs =
   `#graphql
-  type ConversationStatusEnum String  
+  enum ConversationStatusEnum {
+    initiated
+    active
+    interrupted
+    inactive
+    disconnected
+    noAnswer
+    busy
+    failed
+    completed
+    inProgress
+  }
 """Available communication channels for conversations"""
 enum ChannelStatusEnum {
   """Email communication"""
@@ -40,7 +51,7 @@ type Metadata {
   """Socket connection details"""
   sockets: Sockets
   """Current conversation status"""
-  status: String
+  status: ConversationStatusEnum
   browserUrl: String
 }
 
@@ -110,7 +121,7 @@ type Query {
   @param disconnectReason - Filter by disconnect reason"""
   conversations(
     limit: Int
-    status: String
+    status: ConversationStatusEnum
     id: ID
     agentId: ID
     channel: ChannelStatusEnum
