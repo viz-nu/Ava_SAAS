@@ -1,24 +1,7 @@
 export const conversationTypeDefs =
   `#graphql
 """Status of a conversation between user and agent"""
-enum ConversationStatusEnum {
-  """Initial state when conversation starts"""
-  initiated
-  """Conversation is ongoing"""
-  active  
-  """Conversation temporarily paused/interrupted"""
-  interrupted
-  """No recent activity"""
-  inactive
-  """Connection terminated"""
-  disconnected
-  completed
-  busy
-  failed
-  noAnswer
-  inProgress
-  ringing
-  }
+
 
 """Available communication channels for conversations"""
 enum ChannelStatusEnum {
@@ -59,7 +42,7 @@ type Metadata {
   """Socket connection details"""
   sockets: Sockets
   """Current conversation status"""
-  status: ConversationStatusEnum
+  status: String
   browserUrl: String
 }
 
@@ -129,7 +112,7 @@ type Query {
   @param disconnectReason - Filter by disconnect reason"""
   conversations(
     limit: Int
-    status: ConversationStatusEnum
+    status: String
     id: ID
     agentId: ID
     channel: ChannelStatusEnum
