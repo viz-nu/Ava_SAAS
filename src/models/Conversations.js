@@ -14,6 +14,7 @@ const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
     channelFullDetails: { type: Schema.Types.ObjectId, ref: "Channel" },
+    campaign: { type: Schema.Types.ObjectId, ref: "Campaign" },
     voiceCallIdentifierNumberSID: String,
     telegramChatId: String,
     whatsappChatId: String,
