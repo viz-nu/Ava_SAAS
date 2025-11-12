@@ -23,10 +23,13 @@ export const IntegrationResolvers = {
         }
     },
     Mutation: {
-        createIntegration: async (_, { code, domain, type, name, purpose, AccountSid, state, exotelConfig }, context, info) => {
-            let integration
+        // 
+        // 
+        createIntegration: async (_, { type, name, purpose, config }, context, info) => {  // code, domain, AccountSid, state,
+            let integration, accountDetails
             switch (type) {
-                case "zoho":
+                case "zoho": {
+                    const { code, domain } = config;
                     const zohoCRM = new ZohoCRMIntegration();
                     const { success, data } = await zohoCRM.getTokens(code, domain);
                     if (!success) return new GraphQLError('invalid code or domin', { extensions: { code: 'INVALID_INPUT' } });
@@ -55,10 +58,12 @@ export const IntegrationResolvers = {
                         createdBy: context.user._id
                     });
                     break;
-                case "twilio":
+                }
+                case "twilio": {
+                    const { AccountSid, state } = config;
                     if (!AccountSid) return new GraphQLError('AccountSid is required for Twilio integration', { extensions: { code: 'INVALID_INPUT' } });
                     const service = new TwilioService(AccountSid, TWILIO_AUTH_TOKEN);
-                    let accountDetails = JSON.parse(JSON.stringify(await service.getAccountDetails()));
+                    accountDetails = JSON.parse(JSON.stringify(await service.getAccountDetails()));
                     integration = await Integration.create({
                         business: context.user.business,
                         metaData: {
@@ -74,31 +79,46 @@ export const IntegrationResolvers = {
                             state: state,
                         },
                         secrets: {
-                            tokenType: "Barer",
+                            tokenType: "Bearer",
                             accessToken: TWILIO_AUTH_TOKEN,
                         },
-                        accountDetails: accountDetails,
+                        accountDetails,
                         isActive: true,
                         createdBy: context.user._id
                     })
                     break;
-                case "whatsapp":
-                    break;
+                }
                 case "exotel":
-                    const { apiKey, apiSecret, accountSid } = exotelConfig
-                    integration = await Integration.create({
-                        business: context.user.business,
-                        metaData: {
-                            name: name || 'Exotel',
-                            description: 'Exotel SMS and Voice',
-                            icon: 'https://images.saasworthy.com/exotel_4675_logo_1586751614_tppiq.jpg',
-                            color: '#000000',
-                            purpose: purpose || 'voice and sms',
-                            type
-                        },
-                        config: { accountSid: accountSid }, secrets: { tokenType: "Basic Auth", apiKey: apiKey, apiSecret: apiSecret, }
-                    })
+                    {
+                        const { apiKey, apiToken, AccountSid, subdomain, region = "Singapore" } = config
+                        const exotel = new ExotelService(apiKey, apiToken, AccountSid, subdomain, region)
+                        accountDetails = await exotel.getAccountDetails()
+                        integration = await Integration.create({
+                            business: context.user.business,
+                            metaData: {
+                                name: name || 'exotel',
+                                description: 'Exotel SMS and Voice',
+                                icon: 'https://images.saasworthy.com/exotel_4675_logo_1586751614_tppiq.jpg',
+                                color: '#000000',
+                                purpose: purpose || 'voice and sms',
+                                type
+                            },
+                            config: { AccountSid, domain: subdomain, region },
+                            secrets: { tokenType: "Basic", accessToken: accountDetails.AuthToken, apiKey: apiKey, apiToken: apiToken },
+                            accountDetails,
+                            isActive: true,
+                            createdBy: context.user._id
+                        })
+                        break;
+                    }
+                case "whatsapp": {
+                    const { whatsappCode, phone_number_id, waba_id, business_id } = config
+                    const API_VERSION = 'v23.0';
+                    if (!whatsappCode || !phone_number_id || !waba_id || !business_id || whatsappCode.trim === "") return new GraphQLError("whatsappCode/phone_number_id/waba_id/business_id not found", { extensions: { code: 'INVALID_INPUT' } });
+                    
+
                     break;
+                }
                 default:
                     break;
             }

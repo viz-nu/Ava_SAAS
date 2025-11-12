@@ -4,6 +4,7 @@ enum IntegrationTypeEnum {
     zoho
     """Twilio SMS and Voice integration"""
     twilio
+    exotel
 }
 
 """Configuration details for the integration"""
@@ -72,18 +73,11 @@ type Mutation {
     Exchanges authorization code for access tokens and stores integration details
     """
     createIntegration(
-        """Authorization code from OAuth callback"""
-        code: String
-        """Zoho domain region (com, eu, in, com_au, jp, ca)"""
-        domain: String
         name: String!
         purpose:String
-        """Type of integration (zoho, twilio)"""
+        """Type of integration (zoho, twilio, exotel)"""
         type: IntegrationTypeEnum!
-        """Twilio Account SID (required for Twilio integration)"""
-        AccountSid: String
-        """State of the integration"""
-        state: String 
+        config: JSON
     ): Integration @requireScope(scope: "integration:create") @requireBusinessAccess
     deAuthorizeIntegration(
         """ID of the integration to deauthorize"""

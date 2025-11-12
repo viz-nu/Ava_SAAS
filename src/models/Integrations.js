@@ -8,12 +8,14 @@ const IntegrationSchema = new Schema({
         icon: String,
         color: String,
         purpose: Schema.Types.Mixed,
-        type: { type: String, enum: ['zoho', 'twilio'], required: true },
+        type: { type: String, enum: ['zoho', 'twilio', 'exotel'], required: true },
     },
     secrets: {
         tokenType: String,
         accessToken: String,
         refreshToken: String,
+        apiKey: String,
+        apiToken: String,
     },
     config: {
         AccountSid: String,
@@ -22,6 +24,7 @@ const IntegrationSchema = new Schema({
         domain: String,
         scope: String,
         expiresAt: Date,
+        region:String
     },
     accountDetails: Schema.Types.Mixed,
     isActive: { type: Boolean, default: true },
