@@ -91,7 +91,7 @@ export const twilioResolvers = {
             const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
             return await service.makeOutboundCall({ to, from: channel.config.phoneNumber });
         },
-        makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext }) => {
+        makeTwilioAIOutboundCall: async (_, { channelId, to, agentId, PreContext,campaignId }) => {
             try {
                 const channel = await Channel.findById(channelId).select({ type: 1, config: 1, business: 1 }).populate({ path: "config.integration", select: { config: 1, secrets: 1 } }).lean();
                 const agentDetails = await AgentModel.findById(agentId, "personalInfo")
@@ -99,7 +99,7 @@ export const twilioResolvers = {
                 if (!channel) new GraphQLError("invalid channelId", { extensions: { code: "INVALID_CHANNEL_ID" } })
                 const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
                 const { model, provider } = agentDetails.personalInfo.VoiceAgentSessionConfig;
-                const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
+                const conversation = await Conversation.create({campaign:campaignId, business: channel.business, channel: channel.type, channelFullDetails: channelId, agent: agentId, PreContext, contact: { phone: to }, metadata: { status: "initiated" } });
                 const callDetails = await service.makeAIOutboundCall({ to, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), agentId, conversationId: conversation._id.toString(), model, provider });
                 conversation.voiceCallIdentifierNumberSID = callDetails.sid;
                 conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };

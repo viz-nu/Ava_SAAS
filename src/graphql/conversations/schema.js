@@ -41,7 +41,7 @@ type Reactions {
 }
 
 """Metadata about the conversation"""
-type Metadata {
+type ConversationMetadata {
   """Total number of messages exchanged"""
   totalMessages: Int
   """User reactions to messages"""
@@ -82,8 +82,9 @@ type Conversation {
   """Data extracted from conversation"""
   extractedData: JSON
   transcripts:JSON
+  contact:JSON
   """Conversation metadata"""
-  metadata: Metadata
+  metadata: ConversationMetadata
   """When conversation started"""
   createdAt: DateTime
   """When conversation was last updated"""
@@ -107,6 +108,16 @@ input ReactionsInput {
   """Number of negative reactions"""
   dislike: Int
 }
+type ConversationPaginationMetaData {
+  page: Int
+  limit: Int
+  totalPages: Int
+  totalDocuments: Int
+}
+type ConversationPagination {
+  data: [Conversation]
+  metaData: ConversationPaginationMetaData
+}
 
 type Query {
   """Get conversations matching specified filters
@@ -121,18 +132,17 @@ type Query {
   @param disconnectReason - Filter by disconnect reason"""
   conversations(
     limit: Int
+    page: Int
     status: ConversationStatusEnum
     id: ID
+    campaignIds:[ID]
+    channelIds:[ID]
     agentId: ID
     channel: ChannelStatusEnum
     from: DateTime
     to: DateTime
     userLocation: JSON
     disconnectReason: String
-  ): [Conversation] @requireScope(scope: "conversation:read") @requireBusinessAccess
+  ): ConversationPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
 }
 `;
-
-
-// no-answer
-// in-progress
