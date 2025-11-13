@@ -5,7 +5,7 @@ export class ExotelService {
         this.apiKey = apiKey;
         this.apiToken = apiToken;
         this.accountSid = accountSid;
-        this.subdomain = subdomain;
+        this.subdomain = "@" + subdomain;
         this.region = region;
     }
     async getAccountDetails() {
