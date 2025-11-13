@@ -23,8 +23,6 @@ export const IntegrationResolvers = {
         }
     },
     Mutation: {
-        // 
-        // 
         createIntegration: async (_, { type, name, purpose, config }, context, info) => {  // code, domain, AccountSid, state,
             let integration, accountDetails
             switch (type) {
@@ -88,35 +86,29 @@ export const IntegrationResolvers = {
                     })
                     break;
                 }
-                case "exotel":
-                    {
-                        const { apiKey, apiToken, AccountSid, subdomain, region = "Singapore" } = config
-                        const exotel = new ExotelService(apiKey, apiToken, AccountSid, subdomain, region)
-                        accountDetails = await exotel.getAccountDetails()
-                        integration = await Integration.create({
-                            business: context.user.business,
-                            metaData: {
-                                name: name || 'exotel',
-                                description: 'Exotel SMS and Voice',
-                                icon: 'https://images.saasworthy.com/exotel_4675_logo_1586751614_tppiq.jpg',
-                                color: '#000000',
-                                purpose: purpose || 'voice and sms',
-                                type
-                            },
-                            config: { AccountSid, domain: subdomain, region },
-                            secrets: { tokenType: "Basic", accessToken: accountDetails.AuthToken, apiKey: apiKey, apiToken: apiToken },
-                            accountDetails,
-                            isActive: true,
-                            createdBy: context.user._id
-                        })
-                        break;
-                    }
+                case "exotel": {
+                    const { apiKey, apiToken, AccountSid, subdomain, region = "Singapore" } = config
+                    const exotel = new ExotelService(apiKey, apiToken, AccountSid, subdomain, region)
+                    accountDetails = await exotel.getAccountDetails()
+                    integration = await Integration.create({
+                        business: context.user.business,
+                        metaData: {
+                            name: name || 'exotel',
+                            description: 'Exotel SMS and Voice',
+                            icon: 'https://images.saasworthy.com/exotel_4675_logo_1586751614_tppiq.jpg',
+                            color: '#000000',
+                            purpose: purpose || 'voice and sms',
+                            type
+                        },
+                        config: { AccountSid, domain: subdomain, region },
+                        secrets: { tokenType: "Basic", accessToken: accountDetails.AuthToken, apiKey: apiKey, apiToken: apiToken },
+                        accountDetails,
+                        isActive: true,
+                        createdBy: context.user._id
+                    })
+                    break;
+                }
                 case "whatsapp": {
-                    const { whatsappCode, phone_number_id, waba_id, business_id } = config
-                    const API_VERSION = 'v23.0';
-                    if (!whatsappCode || !phone_number_id || !waba_id || !business_id || whatsappCode.trim === "") return new GraphQLError("whatsappCode/phone_number_id/waba_id/business_id not found", { extensions: { code: 'INVALID_INPUT' } });
-                    
-
                     break;
                 }
                 default:

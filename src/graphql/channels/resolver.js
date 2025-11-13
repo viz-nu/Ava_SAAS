@@ -213,7 +213,6 @@ export const channelResolvers = {
             }
             return channel;
         },
-
         async updateChannel(_, { id, input }, context) {
             const channel = await Channel.findById(id);
             if (!channel) throw new Error('Channel not found');
@@ -323,7 +322,6 @@ export const channelResolvers = {
             }
             return await channel.save();
         },
-
         async deleteChannel(_, { id }, context) {
             const channel = await Channel.findOne({ _id: id, business: context.user.business });
             switch (channel.type) {
@@ -374,5 +372,4 @@ export const channelResolvers = {
             }
         },
     },
-
 };
