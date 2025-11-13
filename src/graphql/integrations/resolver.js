@@ -90,7 +90,7 @@ export const IntegrationResolvers = {
                 case "exotel": {
                     const { apiKey, apiToken, AccountSid, subdomain, region = "Singapore" } = config
                     const exotel = new ExotelService(apiKey, apiToken, AccountSid, subdomain, region)
-                    accountDetails = await exotel.getAccountDetails()
+                    let accountDetails = await exotel.getAccountDetails()
                     integration = await Integration.create({
                         business: context.user.business,
                         metaData: {
