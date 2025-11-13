@@ -8,6 +8,7 @@ import { Business } from "../../models/Business.js";
 import { User } from "../../models/User.js";
 import { Channel } from "../../models/Channels.js";
 import { AgentModel } from "../../models/Agent.js";
+import { ExotelService } from "../../utils/exotel.js";
 const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
