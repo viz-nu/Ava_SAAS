@@ -130,15 +130,32 @@ export const channelResolvers = {
                 case "web":
                     break;
                 case "phone":
-                    const { integrationId, phoneNumber } = config;
-                    const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1 });
+                    const { integrationId, phoneNumber, PhoneNumberSid = "", exotelVoiceAppletId, inboundSetup = false } = config;
+                    const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1, config: 1, secrets: 1 });
                     if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
-                    channel.config = {
-                        integration: integration._id,
-                        provider: integration.metaData.type,
-                        phoneNumber,
-                        webSocketsUrl: `wss://sockets.avakado.ai/media-stream`,
-                        voiceUpdatesWebhookUrl: `https://chat.avakado.ai/webhook/twilio/call/status?conversationId=`
+                    channel.config = { integration: integration._id, provider: integration.metaData.type, phoneNumber, PhoneNumberSid }
+                    switch (integration.metaData.type) {
+                        case "exotel":
+                            channel.config.exotelVoiceAppletId = exotelVoiceAppletId
+                            if (inboundSetup) {
+                                const exotel = new ExotelService(integration.secrets.apiKey, integration.secrets.apiToken, integration.config.AccountSid, integration.config.domain, integration.config.region)
+                                const inboundPhoneNumber = await exotel.assignPhoneNumberToFlow(PhoneNumberSid, {
+                                    VoiceUrl: `http://my.exotel.com/${integration.config.AccountSid}/exoml/start_voice/${exotelVoiceAppletId}`,
+                                    SMSUrl: `http://my.exotel.com/${integration.config.AccountSid}/exoml/start_sms/${exotelVoiceAppletId}`,
+                                })
+                                console.log("updated inbound phone number", inboundPhoneNumber)
+                            }
+                            break;
+                        case "twilio":
+                            if (inboundSetup) {
+                                const twilio = new TwilioService(integration.secrets.AccountSid, integration.secrets.AuthToken)
+                                const inboundPhoneNumber = await twilio.updatePhoneNumber(PhoneNumberSid, {
+                                    VoiceUrl: `https://sockets.avakado.ai/twilio-redirect`,
+                                    SMSUrl: `https://sockets.avakado.ai/twilio-redirect`,
+                                })
+                                console.log("updated inbound phone number", inboundPhoneNumber)
+                            }
+                            break;
                     }
                     await channel.save()
                     await channel.updateStatus("phone channel configured")
