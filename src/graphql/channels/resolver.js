@@ -73,7 +73,7 @@ export const channelResolvers = {
                     try {
                         const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
                         channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }
-                        channel.webhookUrl =`https://chat.avakado.ai/webhook/whatsapp/${phone_number_id}`//`${SERVER_URL}webhook/whatsapp/${phone_number_id}`
+                        channel.webhookUrl = `https://chat.avakado.ai/webhook/whatsapp/${phone_number_id}`//`${SERVER_URL}webhook/whatsapp/${phone_number_id}`
                         channel.config = { phone_number_id, waba_id, business_id }
                     } catch (error) {
                         if (error.response) {
@@ -131,6 +131,7 @@ export const channelResolvers = {
                     break;
                 case "phone":
                     const { integrationId, phoneNumber, PhoneNumberSid = "", exotelVoiceAppletId, inboundSetup = false } = config;
+                    console.log({ _id: integrationId, business: context.user.business })
                     const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1, config: 1, secrets: 1 });
                     if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
                     channel.config = { integration: integration._id, provider: integration.metaData.type, phoneNumber, PhoneNumberSid }
