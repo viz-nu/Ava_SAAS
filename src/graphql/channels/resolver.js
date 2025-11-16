@@ -152,8 +152,8 @@ export const channelResolvers = {
                             if (inboundSetup) {
                                 const twilio = new TwilioService(integration.config.AccountSid, integration.secrets.AuthToken)
                                 const inboundPhoneNumber = await twilio.updatePhoneNumber(PhoneNumberSid, {
-                                    VoiceUrl: `https://sockets.avakado.ai/twilio-redirect`,
-                                    SMSUrl: `https://sockets.avakado.ai/twilio-redirect`,
+                                    voiceUrl: `https://sockets.avakado.ai/twilio-redirect`,
+                                    smsUrl: `https://sockets.avakado.ai/twilio-redirect`,
                                 })
                                 console.log("updated inbound phone number", inboundPhoneNumber)
                             }
