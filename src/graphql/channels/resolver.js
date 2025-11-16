@@ -9,6 +9,8 @@ import { randomBytes } from "crypto"
 import { Integration } from '../../models/Integrations.js';
 import { GraphQLError } from 'graphql';
 import { AgentModel } from '../../models/Agent.js';
+import { ExotelService } from '../../services/ExotelService.js';
+import { TwilioService } from '../../services/TwilioService.js';
 const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID, TWILIO_AUTH_TOKEN } = process.env;
 export const channelResolvers = {
     Query: {
