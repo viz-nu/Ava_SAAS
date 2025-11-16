@@ -133,7 +133,6 @@ export const channelResolvers = {
                     break;
                 case "phone":
                     const { integrationId, phoneNumber, PhoneNumberSid = "", exotelVoiceAppletId, inboundSetup = false } = config;
-                    console.log({ _id: integrationId, business: context.user.business })
                     const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1, config: 1, secrets: 1 });
                     if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
                     channel.config = { integration: integration._id, provider: integration.metaData.type, phoneNumber, PhoneNumberSid }
@@ -151,7 +150,7 @@ export const channelResolvers = {
                             break;
                         case "twilio":
                             if (inboundSetup) {
-                                const twilio = new TwilioService(integration.secrets.AccountSid, integration.secrets.AuthToken)
+                                const twilio = new TwilioService(integration.config.AccountSid, integration.secrets.AuthToken)
                                 const inboundPhoneNumber = await twilio.updatePhoneNumber(PhoneNumberSid, {
                                     VoiceUrl: `https://sockets.avakado.ai/twilio-redirect`,
                                     SMSUrl: `https://sockets.avakado.ai/twilio-redirect`,
