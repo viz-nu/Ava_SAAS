@@ -270,7 +270,7 @@ export class ExotelService {
             return data;
         } catch (error) {
             const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
-            throw new Error(`Failed to create campaign: ${message}`);
+            throw new Error(`Failed to create campaign: ${JSON.stringify(message)}`);
         }
     }
 
