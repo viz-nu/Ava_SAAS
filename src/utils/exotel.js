@@ -103,11 +103,8 @@ export class ExotelService {
             throw new Error(`Failed to delete phone number: ${message}`);
         }
     }
-    async outboundCallToFlow({ number, CallerId, webhookUrl, conversationId, model, provider, VoiceAppletId }) {
+    async outboundCallToFlow({ number, CallerId, webhookUrl, VoiceAppletId, customField }) {
         try {
-            //webhookUrl = https://chat.avakado.ai/webhook/exotel/call/status?conversationId=${customField.conversationId}
-            const customField = { conversationId, model }
-            if (provider == "openai") customField["sample-rate"] = 24000; // anthropic, google, azure, deepgram, elevenlabs,gemini
             const formData = new URLSearchParams();
             formData.append('CallerId', CallerId);
             formData.append('From', number);
@@ -272,7 +269,7 @@ export class ExotelService {
             throttle: 60,
             custom_field: JSON.stringify(customField),
         }
-        
+
         // POST https://<your_api_key>:<your_api_token><subdomain>/v2/accounts/<your_sid>/campaigns
         //         The following are the POST parameters:
 
