@@ -157,7 +157,7 @@ export const jobResolvers = {
                     const { AccountSid, domain, region } = channel.config.integration.config;
                     const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
                     const customField = { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model, webSocketsUrl: encodeURIComponent(channel.config.webSocketsUrl) }
-                    callDetails = await exotelService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), VoiceAppletId: channel.config.exotelVoiceAppletId, customField});
+                    callDetails = await exotelService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), VoiceAppletId: channel.config.exotelVoiceAppletId, customField });
                     break;
                 case 'twilio':
                     const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
@@ -170,6 +170,15 @@ export const jobResolvers = {
             conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
             await conversation.save();
             return conversation;
+        },
+        exotelCampaignSetup: async (_, { contacts, channelId }, context, info) => {
+            const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
+            if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
+            const { apiKey, apiToken } = channel.config.integration.secrets;
+            const { AccountSid, domain, region } = channel.config.integration.config;
+            const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
+            const campaign = await exotelService.createCampaign(channel.config.exotelVoiceAppletId, channel.config.exotelCallerId, contacts, null);
+            return campaign;
         }
     }
 }
