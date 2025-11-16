@@ -156,7 +156,6 @@ export const jobResolvers = {
                     const { apiKey, apiToken } = channel.config.integration.secrets;
                     const { AccountSid, domain, region } = channel.config.integration.config;
                     const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
-                    console.log({ apiKey, apiToken, AccountSid, domain, region });
                     const customField = { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model, webSocketsUrl: encodeURIComponent(channel.config.webSocketsUrl) }
                     callDetails = await exotelService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), VoiceAppletId: channel.config.exotelVoiceAppletId, customField});
                     break;
