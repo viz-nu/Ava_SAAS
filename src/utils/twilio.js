@@ -35,6 +35,7 @@ export class TwilioService {
                 return [];
             }
         }));
+        console.log(JSON.stringify(numbers.flat(), null, 2));
         return numbers.flat()
     }
     async buyPhoneNumber(phoneNumber, friendlyName, smsUrl, voiceUrl) {
