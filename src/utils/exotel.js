@@ -116,7 +116,7 @@ export class ExotelService {
         } catch (error) {
             const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
             console.error("Error making outbound call to flow:", error);
-            throw new Error(`Failed to outbound call to flow: ${message}`);
+            throw new Error(`Failed to outbound call to flow: ${JSON.stringify(message)}`);
         }
     }
     /**
