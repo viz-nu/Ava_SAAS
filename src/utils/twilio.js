@@ -35,14 +35,15 @@ export class TwilioService {
                 return [];
             }
         }));
-        console.log(JSON.stringify(numbers.flat(), null, 2));
         return numbers.flat()
     }
     async buyPhoneNumber(phoneNumber, friendlyName, smsUrl, voiceUrl) {
         return await this.client.incomingPhoneNumbers.create({ phoneNumber, friendlyName, smsUrl, voiceUrl });
     }
     async listOwnedPhoneNumbers(limit = 20) {
-        return await this.client.incomingPhoneNumbers.list({ limit });
+        const ownedNumbers = await this.client.incomingPhoneNumbers.list({ limit });
+        console.log(JSON.stringify(ownedNumbers, null, 2));
+        return ownedNumbers;
     }
     async updatePhoneNumber(sid, params) {
         return await this.client.incomingPhoneNumbers(sid).update(params);
