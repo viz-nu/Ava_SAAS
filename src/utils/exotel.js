@@ -115,7 +115,6 @@ export class ExotelService {
             return data.Call;   // { Sid: 'f162cf479cce037eab49dd5d4fda19ba', ParentCallSid: null, DateCreated: '2025-11-10 16:56:32', DateUpdated: '2025-11-10 16:56:32', AccountSid: 'onewindowoverseaseducation1', To: '04045210835', From: '09959964639', PhoneNumberSid: '04045210835', Status: 'in-progress', StartTime: '2025-11-10 16:56:32', EndTime: null, Duration: null, Price: null, Direction: 'outbound-api', AnsweredBy: null, ForwardedFrom: null, CallerName: null, Uri: '/v1/Accounts/onewindowoverseaseducation1/Calls/f162cf479cce037eab49dd5d4fda19ba.json', RecordingUrl: null }
         } catch (error) {
             const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
-            console.error("Error making outbound call to flow:", error);
             throw new Error(`Failed to outbound call to flow: ${JSON.stringify(message)}`);
         }
     }

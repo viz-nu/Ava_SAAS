@@ -156,7 +156,7 @@ export const jobResolvers = {
                     const { apiKey, apiToken } = channel.config.integration.secrets;
                     const { accountSid, domain, region } = channel.config.integration.config;
                     const exotelService = new ExotelService(apiKey, apiToken, accountSid, domain, region);
-                    const customField = { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model, webSocketsUrl: channel.config.webSocketsUrl }
+                    const customField = { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model, webSocketsUrl: encodeURIComponent(channel.config.webSocketsUrl) }
                     callDetails = await exotelService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), VoiceAppletId: channel.config.exotelVoiceAppletId, customField });
                     break;
                 case 'twilio':
