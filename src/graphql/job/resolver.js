@@ -8,7 +8,11 @@ import { User } from "../../models/User.js";
 import { Channel } from '../../models/Channels.js';
 import { AgentModel } from "../../models/Agent.js";
 import { generateTokens } from "../../utils/tokens.js";
+import { Conversation } from "../../models/Conversations.js";
 import axios from "axios";
+import { ExotelService } from "../../utils/exotel.js";
+import { TwilioService } from "../../utils/twilio.js";
+const { DOMAIN, TWILIO_AUTH_TOKEN } = process.env;
 export const jobResolvers = {
     Query: {
         fetchJobs: async (_, { campaignId, status, priority, jobType, id, schedule_type, schedule_run_at, limit = 10, page = 1 }, context, info) => {
@@ -88,7 +92,7 @@ export const jobResolvers = {
                 });
                 receiver.job = job._id
             }
-            await newCampaign.save(); 
+            await newCampaign.save();
             await axios.post(`${process.env.BULL_URL}api/queues/triggerSync`, { action: "createJob", data: null });
             return newCampaign;
         },
@@ -139,6 +143,33 @@ export const jobResolvers = {
             await Channel.populate(job, { path: 'payload.channel', select: nested.payload.channel });
             await AgentModel.populate(job, { path: 'payload.agent', select: nested.payload.agent });
             return job;
+        },
+        makeAnOutboundCall: async (_, { number, channelId, PreContext }, context, info) => {
+            const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
+            if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
+            const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
+            if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "AGENT_NOT_FOUND" } });
+            const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channel._id, agent: agentDetails._id, PreContext, contact: { phone: number }, metadata: { status: "initiated" } });
+            let callDetails = null;
+            switch (channel.config.provider) {
+                case 'exotel':
+                    const { apiKey, apiToken } = channel.config.integration.secrets;
+                    const { accountSid, domain, region } = channel.config.integration.config;
+                    const exotelService = new ExotelService(apiKey, apiToken, accountSid, domain, region);
+                    const customField = { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model, webSocketsUrl: channel.config.webSocketsUrl }
+                    callDetails = await exotelService.outboundCallToFlow({ number, CallerId: channel.config.exotelCallerId, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), VoiceAppletId: channel.config.exotelVoiceAppletId, customField });
+                    break;
+                case 'twilio':
+                    const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
+                    callDetails = await service.makeAIOutboundCall({ to: number, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), conversationId: conversation._id.toString(), model: agentDetails.personalInfo.VoiceAgentSessionConfig.model });
+                    break;
+                default:
+                    throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
+            }
+            conversation.voiceCallIdentifierNumberSID = callDetails.Sid;
+            conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
+            await conversation.save();
+            return conversation;
         }
     }
 }
