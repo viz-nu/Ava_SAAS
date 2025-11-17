@@ -171,13 +171,13 @@ export const jobResolvers = {
             await conversation.save();
             return conversation;
         },
-        exotelCampaignSetup: async (_, { contacts, channelId }, context, info) => {
+        exotelCampaignSetup: async (_, { contacts, channelId, schedule }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const { apiKey, apiToken } = channel.config.integration.secrets;
             const { AccountSid, domain, region } = channel.config.integration.config;
             const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
-            const campaign = await exotelService.createCampaign(channel.config.exotelVoiceAppletId, channel.config.exotelCallerId, contacts, null);
+            const campaign = await exotelService.createCampaign(channel.config.exotelVoiceAppletId, channel.config.exotelCallerId, contacts, { "send_at": new Date(schedule.startAt).toISOString() || new Date().toISOString(), "end_at": new Date(schedule.endAt).toISOString() || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
             return campaign;
         }
     }
