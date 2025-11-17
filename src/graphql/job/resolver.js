@@ -177,6 +177,7 @@ export const jobResolvers = {
             const { apiKey, apiToken } = channel.config.integration.secrets;
             const { AccountSid, domain, region } = channel.config.integration.config;
             const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
+            console.log(schedule);
             const campaign = await exotelService.createCampaign(channel.config.exotelVoiceAppletId, channel.config.exotelCallerId, contacts, { "send_at": new Date(schedule.startAt).toISOString() || new Date().toISOString(), "end_at": new Date(schedule.endAt).toISOString() || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
             return campaign;
         }
