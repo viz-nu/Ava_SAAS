@@ -164,6 +164,6 @@ type Mutation {
     updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
     deleteJob(id: ID): Boolean
     makeAnOutboundCall(number: String, channelId: ID!, PreContext: String): Conversation
-    exotelCampaignSetup(contacts: JSON, channelId: ID!): JSON
+    exotelCampaignSetup(contacts: JSON, channelId: ID! schedule:JSON): JSON
 }
 `
