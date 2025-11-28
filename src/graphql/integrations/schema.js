@@ -5,6 +5,8 @@ enum IntegrationTypeEnum {
     """Twilio SMS and Voice integration"""
     twilio
     exotel
+    tataTele
+    whatsapp
 }
 
 """Configuration details for the integration"""
