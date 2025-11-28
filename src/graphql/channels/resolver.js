@@ -132,7 +132,7 @@ export const channelResolvers = {
                 case "web":
                     break;
                 case "phone":
-                    const { integrationId, phoneNumber, PhoneNumberSid = "", exotelVoiceAppletId, exotelCallerId, inboundSetup = false } = config;
+                    const { integrationId, phoneNumber = "", PhoneNumberSid = "", exotelVoiceAppletId, exotelCallerId, inboundSetup = false } = config;
                     const integration = await Integration.findOne({ _id: integrationId, business: context.user.business },).select({ _id: 1, "metaData.type": 1, config: 1, secrets: 1 });
                     if (!integration) return new GraphQLError("Integration not found", { extensions: { code: 'INVALID_INPUT' } });
                     channel.config = { integration: integration._id, provider: integration.metaData.type, phoneNumber, PhoneNumberSid }

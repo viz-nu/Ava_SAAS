@@ -114,7 +114,7 @@ Channel.discriminator('web', new Schema({ config: WebConfig, secrets: WebSecrets
 /* ───────────────────────────── Phone Call Channel ─────────────────────── */
 const PhoneConfig = new Schema(
     {
-        provider: { type: String, enum: ['twilio', 'plivo', 'exotel'] },
+        provider: { type: String, enum: ['twilio', 'plivo', 'exotel', 'tataTele'] },
         integration: { type: Schema.Types.ObjectId, ref: 'Integration' },
         phoneNumber: String,
         inboundSetup: { type: Boolean, default: false },
