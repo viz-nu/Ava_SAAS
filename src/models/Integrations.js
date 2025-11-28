@@ -8,7 +8,7 @@ const IntegrationSchema = new Schema({
         icon: String,
         color: String,
         purpose: Schema.Types.Mixed,
-        type: { type: String, enum: ['zoho', 'twilio', 'exotel'], required: true },
+        type: { type: String, enum: ['zoho', 'twilio', 'exotel','tataTele','whatsapp'], required: true },
     },
     secrets: {
         tokenType: String,
