@@ -109,6 +109,24 @@ export const IntegrationResolvers = {
                     })
                     break;
                 }
+                case "tataTele": {
+                    const { apiKey, apiToken } = config
+                    integration = await Integration.create({
+                        business: context.user.business,
+                        metaData: {
+                            name: name || 'tataTele',
+                            description: 'Tata Tele SMS and Voice',
+                            icon: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Tata_Teleservices_new_logo.png',
+                            color: '#000000',
+                            purpose: purpose || 'voice and sms',
+                            type
+                        },
+                        secrets: { apiKey: apiKey, apiToken: apiToken },
+                        isActive: true,
+                        createdBy: context.user._id
+                    })
+                    break;
+                }
                 case "whatsapp": {
                     break;
                 }

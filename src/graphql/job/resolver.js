@@ -12,6 +12,7 @@ import { Conversation } from "../../models/Conversations.js";
 import axios from "axios";
 import { ExotelService } from "../../utils/exotel.js";
 import { TwilioService } from "../../utils/twilio.js";
+import { TataTeleService } from "../../utils/tataTele.js";
 const { DOMAIN, TWILIO_AUTH_TOKEN } = process.env;
 export const jobResolvers = {
     Query: {
@@ -162,6 +163,10 @@ export const jobResolvers = {
                 case 'twilio':
                     const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
                     callDetails = await service.makeAIOutboundCall({ to: number, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), conversationId: conversation._id.toString(), model: agentDetails.personalInfo.VoiceAgentSessionConfig.model });
+                    break;
+                case 'tataTele':
+                    const tataTeleService = new TataTeleService(channel.config.integration.secrets.apiKey);
+                    callDetails = await tataTeleService.outboundCallToFlow({ number, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } });
                     break;
                 default:
                     throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
