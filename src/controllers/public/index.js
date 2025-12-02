@@ -1,7 +1,7 @@
 import axios from "axios";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const demoCall = errorWrapper(async (req, res) => {
-    const { phoneNumber, PreContext = "" } = req.body;
+    let { phoneNumber, PreContext = "" } = req.body;
     if(!phoneNumber) return { statusCode: 400, message: "Phone number is required", data: "Phone number is required" }
     let channelId 
      if(phoneNumber.startsWith("+91")) {
