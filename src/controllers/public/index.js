@@ -2,7 +2,14 @@ import axios from "axios";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const demoCall = errorWrapper(async (req, res) => {
     const { phoneNumber, PreContext = "" } = req.body;
-    const channelId = "69299acfc5b3e1f390a10d59"
+    if(!phoneNumber) return { statusCode: 400, message: "Phone number is required", data: "Phone number is required" }
+    let channelId 
+     if(phoneNumber.startsWith("+91")) {
+        phoneNumber = phoneNumber.replace("+91", "");
+        channelId = "69299acfc5b3e1f390a10d59";
+    } else {
+        channelId = "6928772d478f606c70fbb2ad";
+    }
     try {
         await axios.post(`https://app.avakado.ai/graphql/`, {
             query: `mutation MakeAnOutboundCall($channelId: ID!, $number: String, $preContext: String) {
