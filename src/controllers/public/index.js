@@ -13,7 +13,9 @@ export const demoCall = errorWrapper(async (req, res) => {
     try {
         await axios.post(`https://app.avakado.ai/graphql/`, {
             query: `mutation MakeAnOutboundCall($channelId: ID!, $number: String, $preContext: String) {
-            makeAnOutboundCall(channelId: $channelId, number: $number, PreContext: $preContext) 
+            makeAnOutboundCall(channelId: $channelId, number: $number, PreContext: $preContext) {
+            _id
+            }
         }`,
             variables: {
                 "channelId": channelId,
