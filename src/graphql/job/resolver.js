@@ -166,7 +166,7 @@ export const jobResolvers = {
                     break;
                 case 'tataTele':
                     const tataTeleService = new TataTeleService(channel.config.integration.secrets.apiKey);
-                    callDetails = await tataTeleService.outboundCallToFlow({ number, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } });
+                    callDetails = await tataTeleService.outboundCallToFlow({ number, CallerId: channel.config.exotelCallerId, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } });
                     break;
                 default:
                     throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
@@ -175,6 +175,24 @@ export const jobResolvers = {
             conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
             await conversation.save();
             return conversation;
+        },
+        testTataTele: async (_, { channelId, action, data }, context, info) => {
+            const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
+            if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
+            const tataTeleService = new TataTeleService(channel.config.integration.secrets.apiKey, channel.config.integration.secrets.apiToken);
+            switch (action) {
+                case "activeCalls":
+                    const activeCalls = await tataTeleService.activeCalls();
+                    return activeCalls;
+                case "existingPhoneNumbers":
+                    const existingPhoneNumbers = await tataTeleService.existingPhoneNumbers();
+                    return existingPhoneNumbers;
+                case "updatePhoneNumber":
+                    const updatedPhoneNumber = await tataTeleService.updatePhoneNumber(channel.config.phoneNumber, data);
+                    return updatedPhoneNumber;
+                default:
+                    throw new GraphQLError("Invalid test", { extensions: { code: "INVALID_TEST" } });
+            }
         },
         exotelCampaignSetup: async (_, { contacts, channelId, schedule }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
