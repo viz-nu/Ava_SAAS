@@ -2,16 +2,15 @@ import axios from "axios";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const demoCall = errorWrapper(async (req, res) => {
     const { phoneNumber, PreContext = "" } = req.body;
-    const channelId = "68e7982be023303bcc4371e1", agentId = "68da93cd0c3694119ebdc4ac"
+    const channelId = "69299acfc5b3e1f390a10d59"
     try {
         await axios.post(`https://app.avakado.ai/graphql/`, {
-            query: `mutation Mutation($channelId: ID!, $to: String!, $agentId: ID!, $preContext: String) {
-            makeTwilioAIOutboundCall(channelId: $channelId, to: $to, agentId: $agentId, PreContext: $preContext) 
+            query: `mutation MakeAnOutboundCall($channelId: ID!, $number: String, $preContext: String) {
+            makeAnOutboundCall(channelId: $channelId, number: $number, PreContext: $preContext) 
         }`,
             variables: {
                 "channelId": channelId,
-                "to": phoneNumber,
-                "agentId": agentId,
+                "number": phoneNumber,
                 "preContext": PreContext
             }
         },
