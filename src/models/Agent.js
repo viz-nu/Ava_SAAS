@@ -132,7 +132,13 @@ const VoiceProviderConfig = {
 const AssistantConfigSchema = new Schema({
     provider: { type: String, enum: Object.keys(VoiceProviderConfig), default: 'openai' },
     model: { type: String, validate: { validator: function (value) { return VoiceProviderConfig[this.provider]?.models.includes(value); }, message: props => `Invalid model for provider` } },
-    voice: { type: String, validate: { validator: function (value) { return VoiceProviderConfig[this.provider]?.voices.includes(value); }, message: props => `Invalid voice for provider` } }
+    voice: { type: String, validate: { validator: function (value) { return VoiceProviderConfig[this.provider]?.voices.includes(value); }, message: props => `Invalid voice for provider` } },
+    advancedConfig: {
+        startOfSpeechSensitivity: { type: String, enum: ['START_SENSITIVITY_LOW', 'START_SENSITIVITY_HIGH'], default: 'START_SENSITIVITY_HIGH' },
+        endOfSpeechSensitivity: { type: String, enum: ['END_SENSITIVITY_LOW', 'END_SENSITIVITY_HIGH'], default: 'END_SENSITIVITY_LOW' },
+        prefixPaddingMs: { type: Number, default: 300 },
+        silenceDurationMs: { type: Number, default: 800 }
+    },
 }, { _id: false });
 // --- AGENT SCHEMA ---
 const AgentSchema = new Schema({
