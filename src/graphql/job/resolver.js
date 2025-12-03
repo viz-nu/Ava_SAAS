@@ -148,6 +148,7 @@ export const jobResolvers = {
         makeAnOutboundCall: async (_, { number, channelId, PreContext = "" }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
+            console.log("channel", JSON.stringify(channel, null, 2));
             const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
             if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "AGENT_NOT_FOUND" } });
             const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channel._id, agent: agentDetails._id, PreContext, contact: { phone: number }, metadata: { status: "initiated" } });
