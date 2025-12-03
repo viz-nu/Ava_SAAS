@@ -2,9 +2,9 @@ import axios from "axios";
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 export const demoCall = errorWrapper(async (req, res) => {
     let { phoneNumber, PreContext = "" } = req.body;
-    if(!phoneNumber) return { statusCode: 400, message: "Phone number is required", data: "Phone number is required" }
-    let channelId 
-     if(phoneNumber.startsWith("+91")) {
+    if (!phoneNumber) return { statusCode: 400, message: "Phone number is required", data: "Phone number is required" }
+    let channelId
+    if (phoneNumber.startsWith("+91")) {
         phoneNumber = phoneNumber.replace("+91", "");
         channelId = "69299acfc5b3e1f390a10d59";
     } else {
@@ -13,22 +13,22 @@ export const demoCall = errorWrapper(async (req, res) => {
     try {
         await axios.post(`https://app.avakado.ai/graphql/`, {
             query: `mutation MakeAnOutboundCall($channelId: ID!, $number: String, $preContext: String) {
-            makeAnOutboundCall(channelId: $channelId, number: $number, PreContext: $preContext) {
-            _id
-            }
-        }`,
+                makeAnOutboundCall(channelId: $channelId, number: $number, preContext: $preContext) {
+                    _id
+                }
+            }`,
             variables: {
                 "channelId": channelId,
                 "number": phoneNumber,
                 "preContext": PreContext
             }
-        },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.avakadoAccessKey}`,
-                    'Content-Type': 'application/json'
-                }
-            })
+        }, {
+            headers: {
+                Authorization: `Bearer ${process.env.avakadoAccessKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
         console.log("Call initiated successfully")
         return { statusCode: 200, message: "Demo call", data: "Demo call" }
     } catch (error) {
