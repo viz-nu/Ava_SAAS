@@ -77,18 +77,6 @@ export const createApp = async () => {
         app.get('/', (_, res) => res.status(200).send('Server running'));
         // weighted routes
         app.get("/email/confirmation", cors(corsOptions), emailConformation);
-        app.post('/fetch-from-db', openCors, async (req, res) => {
-            try {
-                const { query, collections } = req.body;
-                if (!query.trim()) return res.json({ success: false, message: 'empty query', data: null });
-                if (collections.length < 1) return res.json({ success: false, message: 'empty collection', data: null });
-                const { answer } = await getContextMain(collections, query);
-                return res.json({ success: true, message: 'summary of what is in the knowledge base', data: answer });
-            } catch (error) {
-                console.error(error);
-                return res.status(500).json({ success: false, error: error.message, message: 'Internal server error' });
-            }
-        })
         app.put("/reaction", openCors, async (req, res) => {
             const { messageId, reaction } = req.body;
             // Validation for messageId and reaction
