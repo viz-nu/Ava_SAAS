@@ -22,7 +22,6 @@ import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendEmail, sendMail } from "./utils/sendEmail.js";
 import { createToolWrapper, generateMeetingUrl, knowledgeToolBaker } from "./utils/tools.js";
 import { DateTime } from "luxon";
-import { Lead } from "./models/Lead.js";
 import { Agent, run, RunState, tool } from '@openai/agents';
 import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
@@ -146,7 +145,7 @@ export const createApp = async () => {
             <p><strong>Purpose:</strong><br>${purpose}</p>
         `;
                 Promise.all([
-                    await Lead.create({ name, purpose, contactDetails: { email: email || null, phone: phone || null } }),
+                    // await Lead.create({ name, purpose, contactDetails: { email: email || null, phone: phone || null } }),
                     await sendMail({ to: "ankit@onewindow.co anurag@onewindow.co vishnu.teja101.vt@gmail.com", subject, text, html })
                 ]);
                 return res.json({ success: true, message: 'we will get back to you soon', data: null });
