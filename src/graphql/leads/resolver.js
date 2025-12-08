@@ -13,7 +13,7 @@ export const leadResolvers = {
             if (id !== undefined) filter._id = id;
             if (templateId !== undefined) filter.template = templateId;
             if (isActive !== undefined) filter.isActive = isActive;
-            const leadsTemplates = await LeadTemplate.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate({ path: 'business', select: nested.business }).populate({ path: 'createdBy', select: nested.createdBy });
+            const leadsTemplates = await LeadTemplate.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             return leadsTemplates;
         },
         fetchLeads: async (_, { limit = 10, page = 1, templateId, id, status }, context, info) => {
@@ -24,7 +24,7 @@ export const leadResolvers = {
             if (id !== undefined) filter._id = id;
             if (templateId !== undefined) filter.template = templateId;
             if (status !== undefined) filter.status = status;
-            const leads = await Lead.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate({ path: 'business', select: nested.business }).populate({ path: 'createdBy', select: nested.createdBy });
+            const leads = await Lead.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             return leads;
         }
     },
@@ -36,7 +36,7 @@ export const leadResolvers = {
             if (!name || !fields || !Array.isArray(fields) || fields.length === 0) throw new GraphQLError("Name and fields array (with at least one field) are required", { extensions: { code: "BAD_USER_INPUT" } });
             for (const field of fields) if (!field.name || !field.type || !field.label) throw new GraphQLError("Each field must have name, type, and label", { extensions: { code: "BAD_USER_INPUT" } });
             if (await LeadTemplate.findOne({ name, business: context.user.business })) throw new GraphQLError("Template name already exists", { extensions: { code: "BAD_USER_INPUT" } });
-            const newLeadTemplate = await LeadTemplate.create({ name, description, fields, isActive: isActive !== undefined ? isActive : true, business: context.user.business, createdBy: context.user._id }).populate({ path: 'business', select: nested.business }).populate({ path: 'createdBy', select: nested.createdBy });
+            const newLeadTemplate = await LeadTemplate.create({ name, description, fields, isActive: isActive !== undefined ? isActive : true, business: context.user.business, createdBy: context.user._id });
             return newLeadTemplate;
         },
         updateLeadTemplate: async (_, { id, LeadTemplateInput }, context, info) => {
@@ -51,7 +51,7 @@ export const leadResolvers = {
                 updateData.fields = fields;
             }
             if (isActive !== undefined) updateData.isActive = isActive;
-            const updatedLeadTemplate = await LeadTemplate.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate({ path: 'business', select: nested.business }).populate({ path: 'createdBy', select: nested.createdBy });
+            const updatedLeadTemplate = await LeadTemplate.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
             if (!updatedLeadTemplate) throw new GraphQLError("Template not found", { extensions: { code: "BAD_USER_INPUT" } });
             return updatedLeadTemplate;
         },
@@ -67,10 +67,7 @@ export const leadResolvers = {
             const { validatedData } = await validateLeadDataCore(templateId, data);
 
             // Use validated data instead of raw data
-            const newLead = await Lead.create({ template: templateId, data: validatedData, status: status || 'new', notes, business: context.user.business, createdBy: context.user._id })
-                .populate({ path: 'business', select: nested.business })
-                .populate({ path: 'createdBy', select: nested.createdBy })
-                .populate({ path: 'template', select: nested.template });
+            const newLead = await Lead.create({ template: templateId, data: validatedData, status: status || 'new', notes, business: context.user.business, createdBy: context.user._id });
             return newLead;
         },
         bulkCreateLeads: async (_, { dataList }, context, info) => {
@@ -81,7 +78,7 @@ export const leadResolvers = {
                 const { validatedData } = await validateLeadDataCore(templateId, data);
                 validatedDataList.push({ template: templateId, data: validatedData, status: status || 'new', notes, business: context.user.business, createdBy: context.user._id });
             }
-            const newLeads = await Lead.insertMany(validatedDataList).populate({ path: 'business', select: nested.business }).populate({ path: 'createdBy', select: nested.createdBy }).populate({ path: 'template', select: nested.template });
+            const newLeads = await Lead.insertMany(validatedDataList);
             return newLeads;
         },
         updateLead: async (_, { id, LeadCreateInput }, context, info) => {
@@ -91,7 +88,7 @@ export const leadResolvers = {
             if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "BAD_USER_INPUT" } });
             const { data, status, notes } = LeadCreateInput;
             const { validatedData } = await validateLeadDataCore(lead.template, data);
-            const updatedLead = await Lead.findByIdAndUpdate(id, { data: validatedData, status: status || 'new', notes }, { new: true, runValidators: true }).populate({ path: 'business', select: nested.business }).populate({ path: 'createdBy', select: nested.createdBy }).populate({ path: 'template', select: nested.template });
+            const updatedLead = await Lead.findByIdAndUpdate(id, { data: validatedData, status: status || 'new', notes }, { new: true, runValidators: true });
             if (!updatedLead) throw new GraphQLError("Lead not found", { extensions: { code: "BAD_USER_INPUT" } });
             return updatedLead;
         },
