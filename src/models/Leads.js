@@ -14,7 +14,7 @@ const LeadSchema = new Schema({
 const leadTemplateFieldTypeEnum = ["string", "number", "email", "phone", "date", "boolean", "url", "text"];
 const fieldSchema = new Schema({
     name: { type: String, required: true, trim: true },
-    type: { type: leadTemplateFieldTypeEnum, required: true },
+    type: { type: String, enum: leadTemplateFieldTypeEnum, required: true },
     required: { type: Boolean, default: false },
     defaultValue: { type: Schema.Types.Mixed, default: null },
     validation: { minLength: Number, maxLength: Number, min: Number, max: Number, pattern: String },
