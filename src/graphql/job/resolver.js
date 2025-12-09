@@ -145,7 +145,7 @@ export const jobResolvers = {
             await AgentModel.populate(job, { path: 'payload.agent', select: nested.payload.agent });
             return job;
         },
-        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId=null }, context, info) => {
+        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
@@ -167,6 +167,7 @@ export const jobResolvers = {
                 case 'tataTele':
                     const tataTeleService = new TataTeleService(channel.config.integration.secrets.apiKey);
                     callDetails = await tataTeleService.outboundCallToFlow({ number, CallerId: channel.config.exotelCallerId, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } });
+                    console.log("tataTele callDetails:", JSON.stringify(callDetails, null, 2));
                     break;
                 default:
                     throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
