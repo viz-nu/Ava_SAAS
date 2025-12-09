@@ -41,7 +41,7 @@ export class TataTeleService {
             const { data } = await axios.post(`${this.domain}/v1/click_to_call_support`, {
                 customer_number: number,
                 caller_id: CallerId,
-                async: 1,
+                // async: 1,
                 api_key: this.apiKey,
                 ...customField,
                 tsp: "tataTele"
