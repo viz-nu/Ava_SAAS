@@ -145,7 +145,7 @@ export const jobResolvers = {
             await AgentModel.populate(job, { path: 'payload.agent', select: nested.payload.agent });
             return job;
         },
-        makeAnOutboundCall: async (_, { number, channelId, PreContext = "" }, context, info) => {
+        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId=null }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
@@ -172,6 +172,7 @@ export const jobResolvers = {
                     throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
             }
             conversation.voiceCallIdentifierNumberSID = callDetails.Sid;
+            conversation.campaign = campaignId;
             conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
             await conversation.save();
             return conversation;

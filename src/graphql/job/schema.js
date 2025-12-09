@@ -163,7 +163,7 @@ type Mutation {
     createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job
     updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
     deleteJob(id: ID): Boolean
-    makeAnOutboundCall(number: String, channelId: ID!, PreContext: String): Conversation
+    makeAnOutboundCall(number: String channelId: ID! PreContext: String campaignId: ID): Conversation
     exotelCampaignSetup(contacts: JSON, channelId: ID! schedule:JSON): JSON
     testTataTele(channelId: ID! action: String! data: JSON): JSON
 }
