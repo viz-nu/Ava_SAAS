@@ -159,12 +159,11 @@ type Query {
     fetchCampaigns( id: ID, limit: Int page: Int ): [Campaign]
 }
 type Mutation {
-    createCampaign(name: String, agentId: ID, receivers: [receiverInput], schedule: scheduleCampaignInput, cps: Int communicationChannels: [ID] instructions:String): Campaign
+    createCampaign(name: String receivers: [JSON] nodes: [JSON] edges: [JSON]): Campaign
     createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job
     updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
     deleteJob(id: ID): Boolean
     makeAnOutboundCall(number: String channelId: ID! PreContext: String campaignId: ID): Conversation
     exotelCampaignSetup(contacts: JSON, channelId: ID! schedule:JSON): JSON
     testTataTele(channelId: ID! action: String! data: JSON): JSON
-}
-`
+}`
