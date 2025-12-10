@@ -159,7 +159,7 @@ type Query {
     fetchCampaigns( id: ID, limit: Int page: Int ): [Campaign]
 }
 type Mutation {
-    createCampaign(name: String receivers: [JSON] nodes: [JSON] edges: [JSON]): Campaign
+    createCampaign(name: String communicationChannels: [ID] leads: [ID] nodes: [JSON] edges: [JSON]): Campaign
     createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job
     updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
     deleteJob(id: ID): Boolean
