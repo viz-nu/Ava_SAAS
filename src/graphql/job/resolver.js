@@ -13,6 +13,7 @@ import axios from "axios";
 import { ExotelService } from "../../utils/exotel.js";
 import { TwilioService } from "../../utils/twilio.js";
 import { TataTeleService } from "../../utils/tataTele.js";
+import { fireAndForgetAxios } from "../../utils/fireAndForget.js";
 const { DOMAIN, TWILIO_AUTH_TOKEN } = process.env;
 export const jobResolvers = {
     Query: {
@@ -48,53 +49,16 @@ export const jobResolvers = {
         }
     },
     Mutation: {
-        createCampaign: async (_, { name, agentId, receivers, schedule, cps, communicationChannels, instructions }, context, info) => {
+        createCampaign: async (_, { name, communicationChannels, leads, nodes, edges }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            if (new Date(schedule.startAt) > new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)) throw new GraphQLError("Schedule run at date should not be greater than 14 days from now")
-            if (new Date(schedule.startAt) < new Date(Date.now() + 60 * 1000)) throw new GraphQLError("Schedule run at date should not be less than 1 minute from now")
-            const newCampaign = await Campaign.create({ communicationChannels, name, agent: agentId, receivers, schedule, cps, business: context.user.business, createdBy: context.user._id });
+            const { newAccessToken } = await generateTokens(context.user._id)
+            const newCampaign = await Campaign.create({ communicationChannels, name, leads, business: context.user.business, createdBy: context.user._id, execution: { nodes: nodes.map(node => ({ ...node, nodeConfig: { ...node.nodeConfig, accessKey: newAccessToken } })), edges } });
             await Business.populate(newCampaign, { path: 'business', select: nested.business });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
-            // create jobs for each receiver
-            const { newAccessToken } = await generateTokens(context.user._id)
-            for (const [index, receiver] of Object.entries(newCampaign.receivers)) {
-                const runAt = new Date(newCampaign.schedule.startAt.getTime() + (index * 1000 / cps))
-                const job = await Job.create({
-                    name: newCampaign.name + " - " + receiver.personalInfo.name || "Anonymous",
-                    description: "Outbound call to " + receiver.personalInfo.name || "Anonymous" + " from " + newCampaign.name,
-                    business: context.user.business,
-                    createdBy: context.user._id,
-                    jobType: "outboundCall",
-                    payload: {
-                        to: receiver.personalInfo.contactDetails.phone,
-                        agent: newCampaign.agent,
-                        cps: newCampaign.cps,
-                        channel: newCampaign.communicationChannels[0],
-                        accessToken: newAccessToken,
-                        PreContext: `${instructions}\n${receiver.instructions}\n${JSON.stringify(receiver.personalInfo)}\npreferredLanguage:${receiver.preferredLanguage}`
-                    },
-                    schedule: {
-                        run_at: runAt,
-                        type: "once",
-                        timezone: new Date().getTimezoneOffset(),
-                    },
-                    tags: [newCampaign.name, receiver.personalInfo.name || "Anonymous", receiver.personalInfo.email || "AnonymousEmail"],
-                    priority: 1,
-                    log: [{
-                        level: "info",
-                        message: "Job created from campaign",
-                        data: {
-                            campaign: newCampaign._id,
-                            receiver: receiver.personalInfo
-                        }
-                    }]
-                });
-                receiver.job = job._id
-            }
             await newCampaign.save();
-            await axios.post(`${process.env.BULL_URL}api/queues/triggerSync`, { action: "createJob", data: null });
+            fireAndForgetAxios("POST", `https://chat.avakado.ai/aux/trigger/${newCampaign._id}`, {}, { headers: { "Content-Type": "application/json" } });
             return newCampaign;
         },
         createJob: async (_, { name, description, payload, schedule, tags, priority }, context, info) => {
