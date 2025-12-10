@@ -26,8 +26,7 @@ export const agentResolvers = {
             await Collection.populate(agents, { path: 'collections', select: nested.collections });
             await Action.populate(agents, { path: 'actions', select: nested.actions });
             return agents;
-        }
-        ,
+        },
         ephemeralToken: async (_, { id, model, voice, provider }, context, info) => {
             try {
                 let sessionConfig = {};
