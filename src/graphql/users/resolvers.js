@@ -11,6 +11,7 @@ import {
 } from '../../utils/scopeManager.js';
 import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
+import { generateTokens } from '../../utils/tokens.js';
 
 export const userResolvers = {
     Query: {
@@ -54,6 +55,10 @@ export const userResolvers = {
         deleteUser: async (_, { id }, context) => {
             const result = await User.findByIdAndDelete(id);
             return !!result;
+        },
+        generateUserAccessToken: async (_, { expiresIn = '30d'}, context) => {
+            const { newAccessToken } = await generateTokens(context.user._id, expiresIn)
+            return newAccessToken;
         },
 
         //     updateUserScopes: async (_, { userId, scopeUpdate }, context) => {

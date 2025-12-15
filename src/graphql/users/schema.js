@@ -99,6 +99,9 @@ export const userTypeDefs = `#graphql
     """Delete a user"""
     deleteUser(id: ID!): Boolean @requireScope(scope: "admin:users") @requireResourceOwnership(model: "User", idField: "id",creatorIndependent:true)
 
+    """Generate a new access token for a user"""
+    generateUserAccessToken(expiresIn: String): String
+
   #   # Verify user email
   #   verifyUser(userId: ID!): User @requireScope(scope: "admin:users") @requireResourceOwnership(model: "User", idField: "userId")
 
