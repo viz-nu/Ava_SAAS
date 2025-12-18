@@ -35,8 +35,8 @@ const BusinessSchema = new Schema({
     // members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
     credits: {
-        value: { type: Number, default: 1250 },
-        spendRatio: { type: Number, default: 2.2 },
+        // active plan details
+        spendRatio: { type: Number, default: 1022 },// can be 1022 or 1578
         balance: { type: Number, default: 1250 },
         lastUpdated: { type: Date, default: new Date() }
     },
