@@ -112,6 +112,7 @@ export const jobResolvers = {
         makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
+            console.log("business:", context.user.business);
             console.log("channel.business.credits.balance:", channel.business.credits);
             if (channel.business.credits.balance <= 100) throw new GraphQLError("Insufficient credits", { extensions: { code: "INSUFFICIENT_CREDITS" } });
             const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
