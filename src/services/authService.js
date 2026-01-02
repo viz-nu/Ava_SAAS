@@ -73,6 +73,10 @@ class AuthService {
     async register(user, ipAddress, userAgent) {
         const { name, email, password, BusinessName, logoURL } = user;
         if (!name || !email || !password || !BusinessName) throw new GraphQLError('Missing required fields', { extensions: { code: 'BAD_REQUEST' } });
+        // check if email , business name already exists 
+        let [b, u] = await Promise.all([Business.findOne({ name: BusinessName }), User.findOne({ email })])
+        if (b) throw new GraphQLError('Business already exists', { extensions: { code: 'BAD_REQUEST' } });
+        if (u) throw new GraphQLError('email already exists', { extensions: { code: 'BAD_REQUEST' } });
         const [newOrganization, newUser] = await Promise.all([Business.create({ name: BusinessName, logoURL: logoURL }), User.create({ name: name, email: email, password: bcrypt.hashSync(password, 12), role: "admin", isVerified: false, emailToken: (Math.random() + 1).toString(16).substring(2) })])
         const doc = await createFolder(newOrganization._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO)
         newOrganization.docData = { folder: doc.id, name: doc.attributes.name, parent: doc.attributes.parent_id, download_url: doc.attributes.download_url, modified_by_zuid: doc.attributes.modified_by_zuid }
