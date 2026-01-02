@@ -98,9 +98,10 @@ class AuthService {
             userDoc.business = business._id;
             await Promise.all([business.save({ session }), userDoc.save({ session }), Log.create([{ user: userDoc._id, business: business._id, level: "info", event: "email verification", category: "AUTHENTICATION", status: "SUCCESS", message: "Email verification sent", service: "auth", meta: { ipAddress, userAgent } }], { session })]);
             await session.commitTransaction();
-            this.sendRegistrationEmails(userDoc, business).catch(error => { console.error(error); });
+            this.sendRegistrationEmails(userDoc, business);
+
         } catch (error) {
-            await session.abortTransaction();
+            if (session.inTransaction()) await session.abortTransaction();
             throw error;
         } finally {
             session.endSession();
