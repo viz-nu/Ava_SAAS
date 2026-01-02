@@ -1,4 +1,6 @@
 import { model, Schema } from 'mongoose';
+import { Subscription } from './Subscriptions.js';
+import { Payment } from './Payments.js';
 
 const AgentEngagementSchema = new Schema({
     agent: { type: Schema.Types.ObjectId, ref: "Agent" },
@@ -35,8 +37,12 @@ const BusinessSchema = new Schema({
     // members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
     credits: {
-        // active plan details
-        spendRatio: { type: Number, default: 1022 },// can be 1022 or 1578
+        activePlan: { type: Schema.Types.ObjectId, ref: "Payments" },
+        IsCreditSharingEnabled: { type: Boolean, default: false },
+        llmCredits: { type: Number, default: 0, min: 0 },
+        knowledgeCredits: { type: Number, default: 0, min: 0 },
+        miscellaneousCredits: { type: Number, default: 0, min: 0 },
+        spendRatio: { type: Number, enum: [1080, 1666, 1583], default: 1080 },
         balance: { type: Number, default: 1250 },
         lastUpdated: { type: Date, default: new Date() }
     },
@@ -130,7 +136,44 @@ BusinessSchema.methods.addEngagementAnalytics = function (agentId, createdAt, up
     agentStat.totalConversations++;
     agentStat.dailyConversationCounts[dateStr] = (agentStat.dailyConversationCounts[dateStr] || 0) + 1;
 };
-BusinessSchema.methods.addTokenUsage = function (type, data) {
-
+BusinessSchema.pre('save', async function (next) {
+    if (this.isNew) {
+        const freeSubscription = await Subscription.findById("695041ea48766e61bd258313");
+        const payment = await Payment.create({
+            business: this._id,
+            createdBy: this.createdBy,
+            subscription: freeSubscription._id,
+            gateway: 'other',
+            type: 'one_time',
+            amount: {
+                value: freeSubscription.price.amount,
+                currency: freeSubscription.price.currency
+            },
+            metadata: {
+                expiresAt: new Date(Date.now() + freeSubscription.validity * 24 * 60 * 60 * 1000), // 7 days
+                status: 'created'
+            }
+        });
+        this.credits = {
+            activePlan: payment._id,
+            llmCredits: freeSubscription.credits.llm,
+            knowledgeCredits: freeSubscription.credits.knowledge,
+            miscellaneousCredits: freeSubscription.credits.miscellaneous,
+            spendRatio: freeSubscription.spendRatio,
+            balance: freeSubscription.credits.llm + freeSubscription.credits.knowledge + freeSubscription.credits.miscellaneous,
+            lastUpdated: new Date(),
+        }
+    }
+    next();
+});
+BusinessSchema.methods.UpdateCredits = async function (credits) {
+    const { llmCredits, knowledgeCredits, miscellaneousCredits, spendRatio } = credits;
+    this.credits.llmCredits += llmCredits;
+    this.credits.knowledgeCredits += knowledgeCredits;
+    this.credits.miscellaneousCredits += miscellaneousCredits;
+    this.credits.spendRatio = spendRatio;
+    this.credits.balance += llmCredits + knowledgeCredits + miscellaneousCredits;
+    this.credits.lastUpdated = new Date();
+    await this.save();
 }
 export const Business = model('Businesses', BusinessSchema, "Businesses");
