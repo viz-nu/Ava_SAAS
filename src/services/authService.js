@@ -8,7 +8,6 @@ import { GraphQLError } from 'graphql';
 import { Log } from "../models/Log.js";
 import { Business } from "../models/Business.js";
 import { createFolder } from "../utils/CRMintegrations.js";
-import { EmailService } from "./emailService.js";
 import { fireAndForgetAxios } from "../utils/fireAndForget.js";
 class AuthService {
     generateTokens(userId, expiresIn = '30d') {
