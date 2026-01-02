@@ -69,9 +69,12 @@ export const userResolvers = {
         register: async (_, { input }, context) => {
             const ipAddress = context.req?.ip || context.req?.connection?.remoteAddress;
             const userAgent = context.req?.get('user-agent');
-            const result = await AuthService.register(input, ipAddress, userAgent)
-            if (!result.success) throw new GraphQLError(result.message, { extensions: { code: result.code } });
-            return { success: true, message: "Registration successful, Verify and Login" };
+            try {
+                await AuthService.register(input, ipAddress, userAgent)
+                return { success: true, message: "Registration successful, Verify and Login" };
+            } catch (error) {
+                throw new GraphQLError(error.message, { extensions: { code: error.extensions?.code } });
+            }
         },
         // forgotPassword: async (_, { email }, context) => {}
         //     updateUserScopes: async (_, { userId, scopeUpdate }, context) => {
