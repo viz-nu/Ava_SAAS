@@ -1,6 +1,6 @@
 import { errorWrapper } from "../../middleware/errorWrapper.js";
 import { User } from "../../models/User.js";
-import { generateTokens } from "../../utils/tokens.js";
+import AuthService from "../../services/authService.js";
 import bcrypt from "bcryptjs";
 export const Login = errorWrapper(async (req, res) => {
     const { email, password } = req.body;
@@ -8,7 +8,7 @@ export const Login = errorWrapper(async (req, res) => {
     if (!user || !user._id) return { statusCode: 401, message: "Invalid email" }
     if (!bcrypt.compareSync(password, user.password)) return { statusCode: 401, message: "Invalid password" }
     // if (!user.isVerified) return { statusCode: 403, message: "Email not confirmed. Please verify your email." }
-    const { newAccessToken, newRefreshToken } = await generateTokens(user._id)
+    const { newAccessToken, newRefreshToken } = AuthService.generateTokens(user._id, '30d')
     res.cookie("AVA_RT", newRefreshToken, {
         secure: true,
         httpOnly: true,
@@ -24,7 +24,7 @@ export const superAdminLogin = errorWrapper(async (req, res) => {
     const user = await User.findOne({ email: email })
     if (!user) return { statusCode: 401, message: "Invalid email" }
     if (user.role !== "superAdmin") return { statusCode: 401, message: "Invalid Access Requested" }
-    const { newAccessToken, newRefreshToken } = await generateTokens(user._id)
+    const { newAccessToken, newRefreshToken } =  AuthService.generateTokens(user._id, '30d')
     res.cookie("AVA_RT", newRefreshToken, {
         secure: true,
         httpOnly: true,

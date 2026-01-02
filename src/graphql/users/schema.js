@@ -12,6 +12,14 @@ export const userTypeDefs = `#graphql
     manager
   }
 
+  """Input type for business registration"""
+  input BusinessRegistrationInput {
+    name: String!
+    email: String!
+    password: String!
+    BusinessName: String!
+    logoURL: String
+  }
   """Input type for creating new users"""
   input UserInput {
     """User's full name"""
@@ -36,6 +44,26 @@ export const userTypeDefs = `#graphql
     role: UserRole
     """Updated permission scopes"""
     scopes: [String]
+  }
+
+  """Input type for user login"""
+  input LoginInput {
+    """User's email address"""
+    email: String!
+    """User's password"""
+    password: String!
+  }
+
+  """Response type for login"""
+  type LoginResponse {
+    """Access token for authentication"""
+    accessToken: String!
+    """User's role"""
+    role: String!
+    """User's permission scopes"""
+    scopes: [String]!
+    """User information"""
+    user: User
   }
 
   # input ScopeUpdateInput {
@@ -101,6 +129,13 @@ export const userTypeDefs = `#graphql
 
     """Generate a new access token for a user"""
     generateUserAccessToken(expiresIn: String): String
+
+    """Login with email and password"""
+    login(input: LoginInput!): JSON
+
+    """Register"""
+    register(input: BusinessRegistrationInput!): JSON
+
 
   #   # Verify user email
   #   verifyUser(userId: ID!): User @requireScope(scope: "admin:users") @requireResourceOwnership(model: "User", idField: "userId")

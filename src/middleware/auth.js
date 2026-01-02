@@ -1,34 +1,19 @@
-import { User } from "../models/User.js";
-import { verifyTokens } from "../utils/tokens.js";
+import AuthService from "../services/authService.js";
 export const authMiddleware = async (req, res, next) => {
-    try {
-        if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
-        const token = req.headers.authorization.split(" ")[1];
-        if (!token || token.trim() === "" || token === 'null' || token === 'undefined') return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
+    if (!req.headers.authorization) return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
+    const token = req.headers.authorization.split(" ")[1];
+    if (!token || token.trim() === "" || token === 'null' || token === 'undefined') return res.status(401).json({ success: false, message: 'Access Token Missing', data: null });
 
-        const { success, message, decoded, accessToken, refreshToken } = await verifyTokens(token, req.cookies.AVA_RT)
-        if (!success) return res.status(401).json({ success: false, message: 'Token Verification Failed', data: message });
-
-        let user = await User.findOne({ _id: decoded.id }).select("-password");
-        if (!user) return res.status(401).json({ success: false, message: `Invalid Tokens`, data: null });
-
-        req.decoded = decoded;
-        req.user = user;
-
-        if (accessToken && refreshToken) {
-            res.cookie("AVA_RT", refreshToken, {
-                secure: true,
-                httpOnly: true,
-                sameSite: "None",
-                domain: ".avakado.ai",
-                maxAge: 30 * 24 * 60 * 60 * 1000
-            })
-            req.AccessToken = accessToken;
-        }
-        return next();
-    } catch (error) {
-        return res.status(500).json({ success: false, message: 'Internal server error', data: null });
+    const { success, message, data } = AuthService.verifyTokens(token, req.cookies.AVA_RT)
+    if (!success) return res.status(401).json({ success, message, data: null });
+    const { decoded, accessToken, refreshToken } = data;
+    const { data: user } = await AuthService.verifyDecodedToken(decoded);
+    req.user = user;
+    if (accessToken && refreshToken) {
+        res.cookie("AVA_RT", refreshToken, { secure: true, httpOnly: true, sameSite: "None", domain: ".avakado.ai", maxAge: 30 * 24 * 60 * 60 * 1000 })
+        req.AccessToken = accessToken;
     }
+    return next();
 }
 
 export const conditionalAuth = (conditionFn, middleware) => {
@@ -234,44 +219,19 @@ export const requireResourceOwnership = (resourceModel, resourceIdField = 'id', 
 // Rate limiting middleware for scope-based actions
 export const scopeRateLimit = (scope, maxRequests = 100, windowMs = 15 * 60 * 1000) => {
     const requests = new Map();
-
     return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({ success: false, message: 'Authentication required', data: null });
-        }
-
-        if (!req.user.hasScope(scope)) {
-            return res.status(403).json({
-                success: false,
-                message: `Insufficient permissions. Required scope: ${scope}`,
-                data: null
-            });
-        }
-
+        if (!req.user) return res.status(401).json({ success: false, message: 'Authentication required', data: null });
+        if (!req.user.hasScope(scope)) return res.status(403).json({ success: false, message: `Insufficient permissions. Required scope: ${scope}`, data: null });
         const key = `${req.user._id}:${scope}`;
         const now = Date.now();
         const windowStart = now - windowMs;
-
-        if (!requests.has(key)) {
-            requests.set(key, []);
-        }
-
+        if (!requests.has(key)) requests.set(key, []);
         const userRequests = requests.get(key);
-
         // Remove old requests outside the window
         const validRequests = userRequests.filter(timestamp => timestamp > windowStart);
-
-        if (validRequests.length >= maxRequests) {
-            return res.status(429).json({
-                success: false,
-                message: 'Rate limit exceeded for this scope',
-                data: null
-            });
-        }
-
+        if (validRequests.length >= maxRequests) return res.status(429).json({ success: false, message: 'Rate limit exceeded for this scope', data: null });
         validRequests.push(now);
         requests.set(key, validRequests);
-
         next();
     };
 };
@@ -295,10 +255,10 @@ export const authForGraphQL = async (req, res) => {
         if (!authHeader) throw new Error('Access Token Missing');
         const token = authHeader.split(" ")[1];
         if (!token || token.trim() === "" || token === 'null' || token === 'undefined') throw new Error('Access Token Missing');
-        const { success, message, decoded, accessToken, refreshToken } = await verifyTokens(token, req.cookies?.AVA_RT);
+        const { success, message, data } = AuthService.verifyTokens(token, req.cookies?.AVA_RT);
+        const { decoded, accessToken, refreshToken } = data;
         if (!success) throw new Error(`Token Verification Failed: ${message}`);
-        const user = await User.findById(decoded.id).select("-password");
-        if (!user) throw new Error('Invalid Tokens');
+        const { data: user } = await AuthService.verifyDecodedToken(decoded);
         // Set refresh token in cookie if provided
         if (accessToken && refreshToken) res.cookie("AVA_RT", refreshToken, { secure: true, httpOnly: true, sameSite: "None", domain: ".avakado.ai", maxAge: 30 * 24 * 60 * 60 * 1000 });
         return { req, res, user, isAuthenticated: true, accessToken };
