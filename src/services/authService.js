@@ -74,6 +74,7 @@ class AuthService {
 
     async register(user, ipAddress, userAgent) {
         const session = await mongoose.startSession();
+
         try {
             session.startTransaction();
             const { name, email, password, BusinessName, logoURL } = user;
@@ -97,8 +98,7 @@ class AuthService {
             userDoc.business = business._id;
             await Promise.all([business.save({ session }), userDoc.save({ session }), Log.create([{ user: userDoc._id, business: business._id, level: "info", event: "email verification", category: "AUTHENTICATION", status: "SUCCESS", message: "Email verification sent", service: "auth", meta: { ipAddress, userAgent } }], { session })]);
             await session.commitTransaction();
-            this.sendRegistrationEmails(userDoc, business);
-            return { success: true, message: "Registration successful. Verification email sent." };
+            this.sendRegistrationEmails(userDoc, business).catch(error => { console.error(error); });
         } catch (error) {
             await session.abortTransaction();
             throw error;
