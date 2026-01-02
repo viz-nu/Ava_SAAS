@@ -250,25 +250,25 @@ export class ExotelService {
                 // lists: incase of contact list,
                 caller_id: CallerId, // exophone sid
                 url: `http://my.exotel.com/${this.accountSid}/exoml/start_voice/${VoiceAppletId}`,
-                campaign_type: "dynamic",
+                campaign_type: "static",
                 name: `Campaign ${new Date().toISOString()}`,
                 mode: "auto",
                 retries: {
                     number_of_retries: 3,
                     interval_mins: 2,
-                    mechanism: "Exponential",
+                    mechanism: "Linear",
                     on_status: ["busy", "no-answer", "failed"]
                 },
                 schedule,
                 // call_status_callback: `${process.env.EXOTEL_CALLBACK_URL}/call/status`,
                 // call_schedule_callback: `${process.env.EXOTEL_CALLBACK_URL}/call/schedule`,
                 // status_callback: `${process.env.EXOTEL_CALLBACK_URL}/campaign/status`,
-                throttle: 60,
-                custom_field: JSON.stringify({ isCampaign:true }),
+                // throttle: 60,
+                custom_field: JSON.stringify({ isCampaign: true }),
             }]
         }
         try {
-            const { data } = await axios.post(`https://${this.apiKey}:${this.apiToken}${this.subdomain}/v2/accounts/${this.accountSid}/campaigns.json`, body);
+            const { data } = await axios.post(`https://${this.apiKey}:${this.apiToken}${this.subdomain}/v2/accounts/${this.accountSid}/campaigns`, body);
             return data;
         } catch (error) {
             const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
