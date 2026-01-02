@@ -118,7 +118,6 @@ class AuthService {
             console.error(error);
             await session.abortTransaction();
             session.endSession();
-            throw new GraphQLError('Internal server error', { extensions: { code: 'BAD_Server' } });
         }
     }
     refreshAccessToken(user) { }
