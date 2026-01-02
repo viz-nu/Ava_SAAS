@@ -4,6 +4,7 @@ import 'dotenv/config'
 import { User } from "../models/User.js";
 const { ACCESS_SECRET, REFRESH_SECRET } = process.env
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { GraphQLError } from 'graphql';
 import { Log } from "../models/Log.js";
 import { Business } from "../models/Business.js";
@@ -80,7 +81,7 @@ class AuthService {
             const [existingBusiness, existingUser] = await Promise.all([Business.findOne({ name: BusinessName }).session(session), User.findOne({ email }).session(session)]);
             if (existingBusiness) throw new GraphQLError("Business already exists", { extensions: { code: "BUSINESS_ALREADY_EXISTS" } });
             if (existingUser) throw new GraphQLError("Email already exists", { extensions: { code: "EMAIL_ALREADY_EXISTS" } });
-            const emailToken = crypto.randomBytes(20).toString("hex");
+            const emailToken = crypto.randomBytes(7).toString("hex");
             const [newBusiness, newUser] = await Promise.all([Business.create([{ name: BusinessName, logoURL }], { session }), User.create([{ name, email, password: await bcrypt.hash(password, 12), role: "admin", isVerified: false, emailToken }], { session })]);
             const business = newBusiness[0];
             const userDoc = newUser[0];
