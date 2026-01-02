@@ -7,14 +7,14 @@ import { Business } from "../../models/Business.js";
 import { User } from "../../models/User.js";
 import { Channel } from '../../models/Channels.js';
 import { AgentModel } from "../../models/Agent.js";
-import { generateTokens } from "../../utils/tokens.js";
 import { Conversation } from "../../models/Conversations.js";
 import axios from "axios";
 import { ExotelService } from "../../utils/exotel.js";
 import { TwilioService } from "../../utils/twilio.js";
 import { TataTeleService } from "../../utils/tataTele.js";
 import { fireAndForgetAxios } from "../../utils/fireAndForget.js";
-const { DOMAIN, TWILIO_AUTH_TOKEN } = process.env;
+import AuthService from "../../services/authService.js";
+const { TWILIO_AUTH_TOKEN } = process.env;
 export const jobResolvers = {
     Query: {
         fetchJobs: async (_, { campaignId, status, priority, jobType, id, schedule_type, schedule_run_at, limit = 10, page = 1 }, context, info) => {
@@ -52,7 +52,7 @@ export const jobResolvers = {
         createCampaign: async (_, { name, communicationChannels, leads, nodes, edges }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const { newAccessToken } = await generateTokens(context.user._id)
+            const { newAccessToken } = AuthService.generateTokens(context.user._id, '30d')
             const newCampaign = await Campaign.create({ communicationChannels, name, leads, business: context.user.business, createdBy: context.user._id, execution: { nodes: nodes.map(node => ({ ...node, nodeConfig: { ...node.nodeConfig, accessKey: newAccessToken } })), edges } });
             await Business.populate(newCampaign, { path: 'business', select: nested.business });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
@@ -73,7 +73,7 @@ export const jobResolvers = {
                 existingJob = await Job.findOne({ $and: [{ 'payload.channel': payload.channel }, { 'schedule.run_at': new Date(schedule.run_at) }] });
             }
             schedule.run_at = new Date(schedule.run_at);
-            const { newAccessToken } = await generateTokens(context.user._id)
+            const { newAccessToken } = AuthService.generateTokens(context.user._id, '30d')
             payload.accessToken = newAccessToken
             const newJob = await Job.create({ name, description, payload, schedule, tags, priority, business: context.user.business, createdBy: context.user._id, jobType: "outboundCall", log: [{ level: "info", message: "Job created" }] });
             await axios.post(`${process.env.BULL_URL}api/queues/triggerSync`, { action: "createJob", data: null });
@@ -169,8 +169,7 @@ export const jobResolvers = {
             const { apiKey, apiToken } = channel.config.integration.secrets;
             const { AccountSid, domain, region } = channel.config.integration.config;
             const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
-            console.log(schedule);
-            const campaign = await exotelService.createCampaign(channel.config.exotelVoiceAppletId, channel.config.exotelCallerId, contacts, { "send_at": new Date(schedule.startAt).toISOString() || new Date().toISOString(), "end_at": new Date(schedule.endAt).toISOString() || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+            const campaign = await exotelService.createCampaign(channel.config.exotelVoiceAppletId, channel.config.phoneNumber, contacts, { "send_at": new Date(schedule.startAt).toISOString() || new Date().toISOString(), "end_at": new Date(schedule.endAt).toISOString() || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
             return campaign;
         }
     }

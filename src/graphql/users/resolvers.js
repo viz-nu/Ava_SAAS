@@ -11,8 +11,7 @@ import {
 } from '../../utils/scopeManager.js';
 import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
-import { generateTokens } from '../../utils/tokens.js';
-
+import AuthService from '../../services/authService.js';
 export const userResolvers = {
     Query: {
         me: async (_, filters, context, info) => {
@@ -45,7 +44,6 @@ export const userResolvers = {
             const newUser = await User.create({ name: user.name, email: user.email, password: hashedPassword, role: user.role, business: businessId, scopes: user.scopes || getDefaultScopesForRole(user.role), isVerified: false });
             return newUser;
         },
-
         updateUser: async (_, { id, user }, context) => {
             const updateData = { ...user };
             // If role is being changed, update scopes accordingly
@@ -56,11 +54,25 @@ export const userResolvers = {
             const result = await User.findByIdAndDelete(id);
             return !!result;
         },
-        generateUserAccessToken: async (_, { expiresIn = '30d'}, context) => {
-            const { newAccessToken } = await generateTokens(context.user._id, expiresIn)
+        generateUserAccessToken: async (_, { expiresIn = '30d' }, context) => {
+            const { newAccessToken } = AuthService.generateTokens(context.user._id, expiresIn)
             return newAccessToken;
         },
-
+        login: async (_, { input }, context) => {
+            const { email, password } = input;
+            const ipAddress = context.req?.ip || context.req?.connection?.remoteAddress;
+            const userAgent = context.req?.get('user-agent');
+            const { accessToken, refreshToken, user } = await AuthService.login(email, password, ipAddress, userAgent)
+            if (context.res) context.res.cookie("AVA_RT", refreshToken, { secure: true, httpOnly: true, sameSite: "None", domain: ".avakado.ai", expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365) });
+            return { accessToken, role: user.role, scopes: user.scopes || [], user };
+        },
+        register: async (_, { input }, context) => {
+            const ipAddress = context.req?.ip || context.req?.connection?.remoteAddress;
+            const userAgent = context.req?.get('user-agent');
+            await AuthService.register(input, ipAddress, userAgent)
+            return { success: true, message: "Registration successful, Verify and Login" };
+        },
+        // forgotPassword: async (_, { email }, context) => {}
         //     updateUserScopes: async (_, { userId, scopeUpdate }, context) => {
         //         const user = await User.findById(userId);
         //         if (!user) {

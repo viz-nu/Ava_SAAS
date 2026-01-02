@@ -128,13 +128,61 @@ export const registerApollo = async (app, httpServer) => {
     plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), ApolloServerPluginLandingPageProductionDefault({ embed: true })],
   });
   await apolloServer.start();
+
+  // List of operations that should skip authentication (public operations)
+  const publicOperations = [
+    'IntrospectionQuery',
+    'login',
+    'register',
+    'forgotPassword'
+  ];
+
+  // Helper function to extract operation name from GraphQL query
+  const extractOperationName = (req) => {
+    // First check operationName directly (this is the most reliable)
+    if (req.body?.operationName) return req.body.operationName;
+
+    // If not found, try to parse from query string
+    const query = req.body?.query;
+    if (typeof query === 'string') {
+      // Match named operation patterns like: mutation Login, query SomeQuery, etc.
+      const namedOperationMatch = query.match(/(?:mutation|query|subscription)\s+(\w+)/);
+      if (namedOperationMatch && namedOperationMatch[1]) {
+        return namedOperationMatch[1];
+      }
+      // For anonymous operations, extract the first field name
+      // Handles patterns like: mutation { login(...) } or query { me }
+      const anonymousOperationMatch = query.match(/(?:mutation|query|subscription)\s*\{\s*(\w+)\s*\(?/);
+      if (anonymousOperationMatch && anonymousOperationMatch[1]) {
+        return anonymousOperationMatch[1];
+      }
+    }
+    // For batched queries
+    if (Array.isArray(req.body)) {
+      for (const item of req.body) {
+        if (item.operationName) return item.operationName;
+        if (item.query) {
+          const namedOpMatch = item.query.match(/(?:mutation|query|subscription)\s+(\w+)/);
+          if (namedOpMatch && namedOpMatch[1]) return namedOpMatch[1];
+          const anonOpMatch = item.query.match(/(?:mutation|query|subscription)\s*\{\s*(\w+)\s*\(?/);
+          if (anonOpMatch && anonOpMatch[1]) return anonOpMatch[1];
+        }
+      }
+    }
+    return null;
+  };
+
   app.use(
     '/graphql',
     cors(corsOptions),
     expressMiddleware(apolloServer, {
       context: async ({ req, res }) => {
         try {
-          if (req.method === 'POST' && req.body?.operationName === 'IntrospectionQuery') return {}
+          const operationName = extractOperationName(req);
+          if (operationName && publicOperations.includes(operationName)) {
+            console.log(`Allowing public operation: ${operationName}`);
+            return { user: null, isAuthenticated: false, isPublicOperation: true };
+          }
           const authResult = await authForGraphQL(req, res);
           return authResult;
         } catch (error) {
