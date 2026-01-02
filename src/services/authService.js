@@ -100,7 +100,7 @@ class AuthService {
             return { success: true, message: "Registration successful. Verification email sent." };
         } catch (error) {
             await session.abortTransaction();
-            throw error;
+            throw new GraphQLError(error.message, { extensions: { code: error.extensions?.code } });
         } finally {
             session.endSession();
         }

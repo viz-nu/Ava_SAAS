@@ -73,8 +73,7 @@ export const userResolvers = {
             try {
                 return await AuthService.register(input, ipAddress, userAgent);
             } catch (error) {
-                if (error instanceof GraphQLError) throw error;
-                throw new GraphQLError("Registration failed", { extensions: { code: "INTERNAL_SERVER_ERROR" } });
+                if (error instanceof GraphQLError) throw new GraphQLError(error.message, { extensions: { code: error.extensions?.code } });
             }
         },
         // forgotPassword: async (_, { email }, context) => {}
