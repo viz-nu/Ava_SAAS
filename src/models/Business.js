@@ -145,10 +145,7 @@ BusinessSchema.pre('save', async function (next) {
             subscription: freeSubscription._id,
             gateway: 'other',
             type: 'one_time',
-            amount: {
-                value: freeSubscription.price.amount,
-                currency: freeSubscription.price.currency
-            },
+            amount: freeSubscription.amount,
             metadata: {
                 expiresAt: new Date(Date.now() + freeSubscription.validity * 24 * 60 * 60 * 1000), // 7 days
                 status: 'created'
