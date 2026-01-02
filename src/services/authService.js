@@ -71,7 +71,7 @@ class AuthService {
         return { accessToken: newAccessToken, refreshToken: newRefreshToken, user: userResponse };
     }
 
-    static async register(user, ipAddress, userAgent) {
+    async register(user, ipAddress, userAgent) {
         const session = await mongoose.startSession();
         try {
             session.startTransaction();
