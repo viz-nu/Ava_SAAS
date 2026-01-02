@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import 'dotenv/config'
 import { User } from "../models/User.js";
 const { ACCESS_SECRET, REFRESH_SECRET } = process.env
@@ -71,21 +72,30 @@ class AuthService {
         return { accessToken: newAccessToken, refreshToken: newRefreshToken, user: userResponse };
     }
     async register(user, ipAddress, userAgent) {
-        const { name, email, password, BusinessName, logoURL } = user;
-        if (!name || !email || !password || !BusinessName) throw new GraphQLError('Missing required fields', { extensions: { code: 'BAD_REQUEST' } });
-        // check if email , business name already exists 
-        let [b, u] = await Promise.all([Business.findOne({ name: BusinessName }), User.findOne({ email })])
-        if (b) throw new GraphQLError('Business already exists', { extensions: { code: 'BAD_REQUEST' } });
-        if (u) throw new GraphQLError('email already exists', { extensions: { code: 'BAD_REQUEST' } });
-        const [newOrganization, newUser] = await Promise.all([Business.create({ name: BusinessName, logoURL: logoURL }), User.create({ name: name, email: email, password: bcrypt.hashSync(password, 12), role: "admin", isVerified: false, emailToken: (Math.random() + 1).toString(16).substring(2) })])
-        const doc = await createFolder(newOrganization._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO)
-        newOrganization.docData = { folder: doc.id, name: doc.attributes.name, parent: doc.attributes.parent_id, download_url: doc.attributes.download_url, modified_by_zuid: doc.attributes.modified_by_zuid }
-        newOrganization.createdBy = newUser._id
-        newUser.business = newOrganization._id
-        await Log.create({ user: newUser._id, business: newOrganization._id, level: 'info', event: 'email verification', category: 'AUTHENTICATION', status: 'SUCCESS', message: 'Email verification sent', service: 'auth', meta: { ipAddress, userAgent } });
-        await Promise.all([newUser.save(), newOrganization.save()])
-        fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, { mode: "SYSTEM", config: { to: email }, body: { template: "emailVerification", data: { subject: "[AVA] Click this link to confirm your email address", url: `${process.env.WEBHOOKS_URL}aux/verification?service=email&code=${newUser.emailToken}&email=${email}`, name } } }, { headers: { "Content-Type": "application/json" } })
-        fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, { mode: "SYSTEM", config: { to: email }, body: { template: "welcome", data: { subject: "[AVA] Welcome to AVA", dashboardURL: `${process.env.SERVER_URL}dashboard`, supportEmail: "support@avakado.ai", name } } }, { headers: { "Content-Type": "application/json" } })
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            const { name, email, password, BusinessName, logoURL } = user;
+            if (!name || !email || !password || !BusinessName) throw new GraphQLError('Missing required fields', { extensions: { code: 'BAD_REQUEST' } });
+            let [b, u] = await Promise.all([Business.findOne({ name: BusinessName }).lean(), User.findOne({ email }).lean()])
+            if (b) throw new GraphQLError('Business already exists', { extensions: { code: 'BAD_REQUEST' } });
+            if (u) throw new GraphQLError('email already exists', { extensions: { code: 'BAD_REQUEST' } });
+            const [newOrganization, newUser] = await Promise.all([Business.create({ name: BusinessName, logoURL: logoURL }), User.create({ name: name, email: email, password: await bcrypt.hash(password, 12), role: "admin", isVerified: false, emailToken: (Math.random() + 1).toString(16).substring(2) })])
+            const doc = await createFolder(newOrganization._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO)
+            newOrganization.docData = { folder: doc.id, name: doc.attributes.name, parent: doc.attributes.parent_id, download_url: doc.attributes.download_url, modified_by_zuid: doc.attributes.modified_by_zuid }
+            newOrganization.createdBy = newUser._id
+            newUser.business = newOrganization._id
+            await Promise.all([newUser.save(), newOrganization.save(), Log.create({ user: newUser._id, business: newOrganization._id, level: 'info', event: 'email verification', category: 'AUTHENTICATION', status: 'SUCCESS', message: 'Email verification sent', service: 'auth', meta: { ipAddress, userAgent } })])
+            await session.commitTransaction();
+            session.endSession();
+            fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, { mode: "SYSTEM", config: { to: email }, body: { template: "emailVerification", data: { subject: "[AVA] Click this link to confirm your email address", url: `${process.env.WEBHOOKS_URL}aux/verification?service=email&code=${newUser.emailToken}&email=${email}`, name } } }, { headers: { "Content-Type": "application/json" } })
+            fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, { mode: "SYSTEM", config: { to: email }, body: { template: "welcome", data: { subject: "[AVA] Welcome to AVA", dashboardURL: `${process.env.SERVER_URL}dashboard`, supportEmail: "support@avakado.ai", name } } }, { headers: { "Content-Type": "application/json" } })
+            return { success: true, message: "Registration successful. Verification email sent." };
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw new GraphQLError('Internal server error', { extensions: { code: 'BAD_Server' } });
+        }
     }
     refreshAccessToken(user) { }
     logout(user) { }
