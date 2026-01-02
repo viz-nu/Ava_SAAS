@@ -73,7 +73,7 @@ export const userResolvers = {
             try {
                 return await AuthService.register(input, ipAddress, userAgent);
             } catch (error) {
-                if (error instanceof GraphQLError) throw error;
+                if (error?.extensions?.code) throw error;
                 throw new GraphQLError("Registration failed", { extensions: { code: "INTERNAL_SERVER_ERROR" } });
             }
         },
