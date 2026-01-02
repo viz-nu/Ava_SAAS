@@ -87,10 +87,35 @@ class AuthService {
             await Promise.all([newUser.save(), newOrganization.save(), Log.create({ user: newUser._id, business: newOrganization._id, level: 'info', event: 'email verification', category: 'AUTHENTICATION', status: 'SUCCESS', message: 'Email verification sent', service: 'auth', meta: { ipAddress, userAgent } })])
             await session.commitTransaction();
             session.endSession();
-            fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, { mode: "SYSTEM", config: { to: email }, body: { template: "emailVerification", data: { subject: "[AVA] Click this link to confirm your email address", url: `${process.env.WEBHOOKS_URL}aux/verification?service=email&code=${newUser.emailToken}&email=${email}`, name } } }, { headers: { "Content-Type": "application/json" } })
-            fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, { mode: "SYSTEM", config: { to: email }, body: { template: "welcome", data: { subject: "[AVA] Welcome to AVA", dashboardURL: `${process.env.SERVER_URL}dashboard`, supportEmail: "support@avakado.ai", name } } }, { headers: { "Content-Type": "application/json" } })
+            fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`,
+                {
+                    mode: "SYSTEM",
+                    config: { to: email },
+                    body: {
+                        template: "emailVerification",
+                        data: {
+                            subject: "[AVA] Click this link to confirm your email address",
+                            url: `${process.env.WEBHOOKS_URL}aux/verification?service=email&code=${newUser.emailToken}&email=${email}`,
+                            name
+                        }
+                    }
+                }, { headers: { "Content-Type": "application/json" } })
+            fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, {
+                mode: "SYSTEM",
+                config: { to: email },
+                body: {
+                    template: "welcome",
+                    data: {
+                        subject: "[AVA] Welcome to AVA",
+                        dashboardURL: `${process.env.SERVER_URL}dashboard`,
+                        supportEmail: "support@avakado.ai",
+                        name
+                    }
+                }
+            }, { headers: { "Content-Type": "application/json" } })
             return { success: true, message: "Registration successful. Verification email sent." };
         } catch (error) {
+            console.error(error);
             await session.abortTransaction();
             session.endSession();
             throw new GraphQLError('Internal server error', { extensions: { code: 'BAD_Server' } });
