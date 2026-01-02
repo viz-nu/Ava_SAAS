@@ -76,10 +76,10 @@ class AuthService {
         try {
             session.startTransaction();
             const { name, email, password, BusinessName, logoURL } = user;
-            if (!name || !email || !password || !BusinessName) throw new GraphQLError("Missing required fields", { extensions: { code: "BAD_REQUEST" } });
+            if (!name || !email || !password || !BusinessName) throw new GraphQLError("Missing required fields", { extensions: { code: "MISSING_FIELDS" } });
             const [existingBusiness, existingUser] = await Promise.all([Business.findOne({ name: BusinessName }).session(session), User.findOne({ email }).session(session)]);
-            if (existingBusiness) throw new GraphQLError("Business already exists", { extensions: { code: "BAD_REQUEST" } });
-            if (existingUser) throw new GraphQLError("Email already exists", { extensions: { code: "BAD_REQUEST" } });
+            if (existingBusiness) throw new GraphQLError("Business already exists", { extensions: { code: "BUSINESS_ALREADY_EXISTS" } });
+            if (existingUser) throw new GraphQLError("Email already exists", { extensions: { code: "EMAIL_ALREADY_EXISTS" } });
             const emailToken = crypto.randomBytes(20).toString("hex");
             const [newBusiness, newUser] = await Promise.all([Business.create([{ name: BusinessName, logoURL }], { session }), User.create([{ name, email, password: await bcrypt.hash(password, 12), role: "admin", isVerified: false, emailToken }], { session })]);
             const business = newBusiness[0];
