@@ -1,12 +1,6 @@
 
 import { GraphQLError } from "graphql";
-import { registerSchema } from "../Schema/index.js";
-import { errorWrapper } from "./errorWrapper.js";
 import { LeadTemplate } from "../models/Leads.js";
-export const validateRegistration = errorWrapper(async (req, res, next) => {
-    await registerSchema.validate(req.body, { abortEarly: false });
-    next();
-});
 export const validateLeadDataCore = async (templateId, data) => {
     // Fetch template
     const template = await LeadTemplate.findById(templateId);
