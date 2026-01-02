@@ -108,7 +108,7 @@ class AuthService {
         }
     }
 
-    static sendRegistrationEmails(user) {
+    sendRegistrationEmails(user) {
         fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, {
             mode: "SYSTEM",
             config: { to: user.email },
