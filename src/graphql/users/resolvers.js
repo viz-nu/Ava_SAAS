@@ -12,6 +12,7 @@ import {
 import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
 import AuthService from '../../services/authService.js';
+import { GraphQLError } from 'graphql';
 export const userResolvers = {
     Query: {
         me: async (_, filters, context, info) => {
@@ -70,10 +71,10 @@ export const userResolvers = {
             const ipAddress = context.req?.ip || context.req?.connection?.remoteAddress;
             const userAgent = context.req?.get('user-agent');
             try {
-                await AuthService.register(input, ipAddress, userAgent)
-                return { success: true, message: "Registration successful, Verify and Login" };
+                return await AuthService.register(input, ipAddress, userAgent);
             } catch (error) {
-                throw new GraphQLError(error.message, { extensions: { code: error.extensions?.code } });
+                if (error instanceof GraphQLError) throw error;
+                throw new GraphQLError("Registration failed", { extensions: { code: "INTERNAL_SERVER_ERROR" } });
             }
         },
         // forgotPassword: async (_, { email }, context) => {}
