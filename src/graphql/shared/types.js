@@ -54,8 +54,8 @@ export const sharedTypeDefs = `#graphql
     contact: Contact
     """User who created the business"""
     createdBy: User
-    """Additional document data"""
-    docData: JSON
+    """credits data"""
+    credits: JSON
     """Creation timestamp"""
     createdAt: DateTime
     """Last update timestamp"""
