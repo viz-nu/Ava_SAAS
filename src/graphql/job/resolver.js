@@ -134,6 +134,7 @@ export const jobResolvers = {
                 case 'tataTele':
                     const tataTeleService = new TataTeleService(channel.config.integration.secrets.apiKey);
                     callDetails = await tataTeleService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } });
+                    console.log("tataTele callDetails input:", JSON.stringify({ number, CallerId: channel.config.phoneNumber, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } }, null, 2));
                     console.log("tataTele callDetails:", JSON.stringify(callDetails, null, 2));
                     break;
                 default:
