@@ -131,7 +131,7 @@ export const userTypeDefs = `#graphql
     generateUserAccessToken(expiresIn: String): String
 
     """Login with email and password"""
-    login(input: LoginInput!): JSON
+    login(input: LoginInput!): LoginResponse
 
     """Register"""
     register(input: BusinessRegistrationInput!): JSON
