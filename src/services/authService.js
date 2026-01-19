@@ -121,20 +121,6 @@ class AuthService {
                 }
             }
         });
-
-        fireAndForgetAxios("POST", `${process.env.WEBHOOKS_URL}aux/trigger-email`, {
-            mode: "SYSTEM",
-            config: { to: user.email },
-            body: {
-                template: "welcome",
-                data: {
-                    subject: "[AVA] Welcome to AVA",
-                    dashboardUrl: `${process.env.SERVER_URL}dashboard`,
-                    supportEmail: "support@avakado.ai",
-                    name: user.name
-                }
-            }
-        });
     }
 
 
