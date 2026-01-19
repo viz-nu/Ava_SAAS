@@ -61,10 +61,3 @@ type Mutation {
     cancelSubscription(id: ID!): Boolean @requireScope(scope: "subscription:upgrade")
 }
 `;
-// subscriptionUpdate(subscriptionId: ID!, gateway: String!, paymentType: String): Payment @requireScope(scope: "subscription:upgrade")
-// subscriptionDelete(subscriptionId: ID!): Boolean @requireScope(scope: "subscription:upgrade")
-// subscriptionPause(subscriptionId: ID!): Boolean @requireScope(scope: "subscription:upgrade")
-// subscriptionResume(subscriptionId: ID!): Boolean @requireScope(scope: "subscription:upgrade")
-// subscriptionCancel(subscriptionId: ID!): Boolean @requireScope(scope: "subscription:upgrade")
-// subscriptionFetch(subscriptionId: ID!): Subscription @requireScope(scope: "subscription:upgrade")
-// subscriptionFetchInvoices(subscriptionId: ID!): [Invoice] @requireScope(scope: "subscription:upgrade")
