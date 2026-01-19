@@ -34,8 +34,9 @@ export class RazorPayService {
     static async refundPayment(payment_id, amount = null) {
         return await this.client.payments.refund(payment_id, amount ? { amount: amount * 100 } : {});
     }
-    static async createSubscription({ plan_id, total_count = 120, quantity = 1, notes = {}, addons = null, offer_id = null }) {
-        return await this.client.subscriptions.create({ total_count, plan_id, quantity, customer_notify: true, addons, offer_id, notes });
+    static async createSubscription({ plan_id, total_count = 120, quantity = 1, notes = {}, addons = null, offer_id = null, startDate = new Date() }) {
+        const subscription = await this.client.subscriptions.create({ total_count, plan_id, quantity, customer_notify: true, addons, offer_id, notes, start_at: new Date(startDate).setHours(0, 0, 0, 0).getTime() / 1000 });
+        return subscription;
     }
     static async fetchSubscriptionById(subscription_id) {
         return await this.client.subscriptions.fetch(subscription_id);
