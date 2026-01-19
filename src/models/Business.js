@@ -1,7 +1,5 @@
 import { model, Schema } from 'mongoose';
 import { Subscription } from './Subscriptions.js';
-import { Payment } from './Payments.js';
-
 const AgentEngagementSchema = new Schema({
     agent: { type: Schema.Types.ObjectId, ref: "Agent" },
     channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
@@ -32,18 +30,20 @@ const BusinessSchema = new Schema({
         phone: String,
         website: String
     },
+    freeTrailClaimed: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
     docData: Schema.Types.Mixed,
     // members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
     credits: {
-        activePlan: { type: Schema.Types.ObjectId, ref: "Payments" },
+        activePlan: { type: Schema.Types.ObjectId, ref: "Subscriptions" },
         IsCreditSharingEnabled: { type: Boolean, default: false },
+        IsPlanInActive: { type: Boolean, default: true },
         llmCredits: { type: Number, default: 0, min: 0 },
         knowledgeCredits: { type: Number, default: 0, min: 0 },
         miscellaneousCredits: { type: Number, default: 0, min: 0 },
         spendRatio: { type: Number, enum: [1080, 1666, 1583], default: 1080 },
-        balance: { type: Number, default: 1250 },
+        balance: { type: Number, default: 0 },
         lastUpdated: { type: Date, default: new Date() }
     },
     analytics: {
@@ -136,41 +136,94 @@ BusinessSchema.methods.addEngagementAnalytics = function (agentId, createdAt, up
     agentStat.totalConversations++;
     agentStat.dailyConversationCounts[dateStr] = (agentStat.dailyConversationCounts[dateStr] || 0) + 1;
 };
-BusinessSchema.pre('save', async function (next) {
-    if (this.isNew) {
-        const freeSubscription = await Subscription.findById("695041ea48766e61bd258313");
-        const payment = await Payment.create({
-            business: this._id,
-            createdBy: this.createdBy,
-            subscription: freeSubscription._id,
-            gateway: 'other',
-            type: 'one_time',
-            amount: freeSubscription.amount,
-            metadata: {
-                expiresAt: new Date(Date.now() + freeSubscription.validity * 24 * 60 * 60 * 1000), // 7 days
-                status: 'created'
+BusinessSchema.methods.checkSubscriptionStatus = async function () {
+    const subscription = await Subscription.findById(this.credits.activePlan);
+    if (!subscription) return "inactive";
+    if (subscription.metadata.expiresAt < new Date()) return "inactive";
+    if (subscription.metadata.status !== "active") return "inactive";
+    return "active";
+    if (!plan) throw new Error("Plan not found");
+    if (plan.type === "FREE") {
+        return "free";
+    }
+    return "active";
+}
+BusinessSchema.methods.UpdateCredits = async function (options = {}) {
+    const { operation = 'set', spendRatio, autoSave = true, activePlan, isPlanInActive = true } = options;
+    // Ensure credits object exists
+    if (!this.credits) this.credits = { llmCredits: 0, knowledgeCredits: 0, miscellaneousCredits: 0, balance: 0, spendRatio: 1080 };
+    // Initialize current values
+    const current = { llmCredits: this.credits.llmCredits || 0, knowledgeCredits: this.credits.knowledgeCredits || 0, miscellaneousCredits: this.credits.miscellaneousCredits || 0 };
+    // Process each credit type based on operation
+    const creditTypes = ['llmCredits', 'knowledgeCredits', 'miscellaneousCredits'];
+    let hasChanges = false;
+    creditTypes.forEach(creditType => {
+        const value = options[creditType];
+        if (value === undefined || value === null) return;
+        const numericValue = Number(value);
+        if (isNaN(numericValue)) return;
+        let newValue;
+        switch (operation) {
+            case 'add':
+                newValue = current[creditType] + numericValue;
+                break;
+            case 'remove':
+            case 'subtract':
+                newValue = Math.max(0, current[creditType] - numericValue); // Prevent negative values
+                break;
+            case 'set':
+                newValue = Math.max(0, numericValue); // Prevent negative values
+                break;
+            case 'reset':
+                newValue = 0;
+                break;
+            default:
+                throw new Error(`Invalid operation: ${operation}. Must be 'add', 'remove', 'set', or 'reset'`);
+        }
+
+        if (this.credits[creditType] !== newValue) {
+            this.credits[creditType] = newValue;
+            hasChanges = true;
+        }
+    });
+
+    // Update spendRatio if provided
+    if (spendRatio !== undefined && spendRatio !== null) {
+        const validRatios = [1080, 1666, 1583];
+        if (validRatios.includes(spendRatio)) {
+            if (this.credits.spendRatio !== spendRatio) {
+                this.credits.spendRatio = spendRatio;
+                hasChanges = true;
             }
-        });
-        this.credits = {
-            activePlan: payment._id,
-            llmCredits: freeSubscription.credits.llm,
-            knowledgeCredits: freeSubscription.credits.knowledge,
-            miscellaneousCredits: freeSubscription.credits.miscellaneous,
-            spendRatio: freeSubscription.spendRatio,
-            balance: freeSubscription.credits.llm + freeSubscription.credits.knowledge + freeSubscription.credits.miscellaneous,
-            lastUpdated: new Date(),
+        } else {
+            console.warn(`Invalid spendRatio: ${spendRatio}. Must be one of: ${validRatios.join(', ')}`);
         }
     }
-    next();
-});
-BusinessSchema.methods.UpdateCredits = async function (credits) {
-    const { llmCredits, knowledgeCredits, miscellaneousCredits, spendRatio } = credits;
-    this.credits.llmCredits += llmCredits;
-    this.credits.knowledgeCredits += knowledgeCredits;
-    this.credits.miscellaneousCredits += miscellaneousCredits;
-    this.credits.spendRatio = spendRatio;
-    this.credits.balance += llmCredits + knowledgeCredits + miscellaneousCredits;
-    this.credits.lastUpdated = new Date();
-    await this.save();
+    if (typeof isPlanInActive === 'boolean') {
+        this.credits.IsPlanInActive = isPlanInActive;
+        hasChanges = true;
+    }
+    if (activePlan) {
+        this.credits.activePlan = activePlan;
+        hasChanges = true;
+    }
+    // Recalculate balance
+    const newBalance = (this.credits.llmCredits || 0) + (this.credits.knowledgeCredits || 0) + (this.credits.miscellaneousCredits || 0);
+    if (this.credits.balance !== newBalance) {
+        this.credits.balance = newBalance;
+        hasChanges = true;
+    }
+    // Update timestamp if there were any changes
+    if (hasChanges) this.credits.lastUpdated = new Date();
+    // Save if autoSave is enabled and there were changes
+    if (autoSave && hasChanges) await this.save();
+    return {
+        llmCredits: this.credits.llmCredits,
+        knowledgeCredits: this.credits.knowledgeCredits,
+        miscellaneousCredits: this.credits.miscellaneousCredits,
+        spendRatio: this.credits.spendRatio,
+        balance: this.credits.balance,
+        lastUpdated: this.credits.lastUpdated
+    };
 }
 export const Business = model('Businesses', BusinessSchema, "Businesses");

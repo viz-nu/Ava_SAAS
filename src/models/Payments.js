@@ -3,31 +3,42 @@ const AmountSchema = new Schema({
     value: { type: Number, required: true }, // eg: 22000
     currency: { type: String, default: "INR" }
 }, { _id: false });
-const WebhookEventSchema = new Schema({
-    event: String,
-    payload: Schema.Types.Mixed,
-    receivedAt: { type: Date, default: Date.now },
-}, { _id: false });
 const PaymentSchema = new Schema({
-    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
     subscription: { type: Schema.Types.ObjectId, ref: 'Subscriptions' },
-    gateway: { type: String, enum: ['razorpay', 'stripe', 'paypal', 'bank_transfer', 'cash', 'other'], required: true },
-    type: { type: String, enum: ['subscription', 'topup', 'one_time', 'other'], required: true },
-    amount: AmountSchema,
-    gatewayFee: AmountSchema,
-    tax: AmountSchema,
-    netAmount: AmountSchema,
-    gatewayRefernce: Schema.Types.Mixed,
-    webhookEvents: [WebhookEventSchema],
-    metadata: {
-        expiresAt: { type: Date, default: null },
-        status: { type: String, enum: ["created", "pending", "authorized", "captured", "success", "failed", "refunded", "cancelled", "attempted"], default: 'created' },
-        failureReason: String,
-        retryCount: { type: Number, default: 0 }
-    }
+    gateway: String,
+    gatewayReference: Schema.Types.Mixed, //{ paymentId: String, orderId: String, invoiceId: String },
+    events: {
+        authorized: Date,
+        captured: Date,
+        failed: Date,
+        refunded: Date
+    },
+    status: { type: String, enum: ['authorized', 'captured', 'failed', 'refunded'], default: 'authorized' },
+    failureReason: String,
+    retryCount: { type: Number, default: 0 },
+    paidAt: Date
 }, {
     timestamps: true,
-    versionKey: false,
+    versionKey: false
 });
+const InvoiceSchema = new Schema({
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
+    subscription: { type: Schema.Types.ObjectId, ref: 'Subscriptions' },
+    payment: { type: Schema.Types.ObjectId, ref: 'Payments' },
+    gatewayReference: Schema.Types.Mixed, // {  invoiceId: String,   // inv_xxx   orderId: String },
+    amount: AmountSchema,
+    events: {
+        issuedAt: Date,
+        paidAt: Date,
+        cancelledAt: Date,
+        expiredAt: Date
+    },
+    shortUrl: String,
+}, {
+    timestamps: true,
+    versionKey: false
+});
+
+export const Invoice = model('Invoices', InvoiceSchema, "Invoices");
 export const Payment = model('Payments', PaymentSchema, "Payments");

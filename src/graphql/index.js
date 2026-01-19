@@ -19,6 +19,8 @@ import { GraphQLError } from 'graphql';
 import { corsOptions, openCors } from '../server.js';
 import cors from 'cors'
 import { ticketResolvers } from './tickets/resolver.js';
+import { paymentResolvers } from './payments/resolvers.js';
+import { paymentTypeDefs } from './payments/schema.js';
 import { ticketTypeDefs } from './tickets/schema.js';
 import { notificationTypeDefs } from './notifications/schema.js';
 import { notificationResolvers } from './notifications/resolver.js';
@@ -55,7 +57,8 @@ const typeDefs = mergeTypeDefs([
   collectionTypeDefs,
   jobTypeDefs,
   messageTypeDefs,
-  leadTypeDefs
+  leadTypeDefs,
+  paymentTypeDefs
 ]);
 const resolvers = mergeResolvers([
   conversationResolvers,
@@ -71,7 +74,8 @@ const resolvers = mergeResolvers([
   collectionResolvers,
   jobResolvers,
   messageResolvers,
-  leadResolvers
+  leadResolvers,
+  paymentResolvers
 ]);
 export const registerApollo = async (app, httpServer) => {
   const schema = makeExecutableSchema({
@@ -133,6 +137,8 @@ export const registerApollo = async (app, httpServer) => {
   const publicOperations = [
     'IntrospectionQuery',
     'login',
+    'Login',
+    'Register',
     'register',
     'forgotPassword'
   ];

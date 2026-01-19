@@ -1,17 +1,17 @@
-export const paymentsTypeDefs = `#graphql
-type Subscription {
+export const paymentTypeDefs = `#graphql
+type Plan {
     _id: ID!
     code: String
     name: String
     description: String
     price:JSON
-    type: subscriptionTypeEnum
+    type: PlanTypeEnum
     validity: Int
     credits:CreditsType
     spendRatio: Int
-    status: subscriptionStatusEnum
+    status: PlanStatusEnum
     features: [String]
-    allowedTopUps: [SubscriptionType]
+    allowedTopUps: [Plan]
     autoRenew: Boolean
     createdAt: DateTime
     updatedAt: DateTime
@@ -21,39 +21,45 @@ type CreditsType {
     knowledge: Int
     miscellaneous: Int
 }
-enum subscriptionTypeEnum {
+    input CreditsTypeInput {
+    llm: Int
+    knowledge: Int
+    miscellaneous: Int
+}
+enum PlanTypeEnum {
     FREE
     BASE
     TOPUP
 }
-enum subscriptionStatusEnum {
+enum PlanStatusEnum {
     active
     inactive
 }
-input SubscriptionInput {
+input PlanInput {
     code: String
     name: String
     description: String
     price:JSON
-    type: subscriptionTypeEnum
+    type: PlanTypeEnum
     validity: Int
-    credits:CreditsType
+    credits:CreditsTypeInput
     spendRatio: Int
-    status: subscriptionStatusEnum
+    status: PlanStatusEnum
     features: [String]
     allowedTopUps: [ID]
     autoRenew: Boolean
-}
+} 
 type Query {
-    fetchPublicSubscriptions(code: String, name: String, type: subscriptionTypeEnum, status: subscriptionStatusEnum, id: ID): [Subscription]
-    fetchSubscriptions(code: String, name: String, type: subscriptionTypeEnum, status: subscriptionStatusEnum, id: ID): [Subscription] @requireScope(scope: "super:all")
+    fetchPublicPlans(code: String, name: String, type: PlanTypeEnum, status: PlanStatusEnum, id: ID): [Plan]
+    fetchPlans(code: String, name: String, type: PlanTypeEnum, status: PlanStatusEnum, id: ID): [Plan] @requireScope(scope: "super:all")
 
 }
 type Mutation {
-    createAVASubscription(input: SubscriptionInput!): SubscriptionType @requireScope(scope: "super:all")
-    updateAVASubscription(id: ID!, input: SubscriptionInput!): SubscriptionType @requireScope(scope: "super:all")
-    deleteAVASubscription(id: ID!): Boolean @requireScope(scope: "super:all")
-    startSubscription(subscriptionId: ID!, gateway: String!, paymentType: String): Payment @requireScope(scope: "subscription:upgrade")
+    createAVAPlan(input: PlanInput!): Plan @requireScope(scope: "super:all")
+    updateAVAPlan(id: ID!, input: PlanInput!): Plan @requireScope(scope: "super:all")
+    deleteAVAPlan(id: ID!): Boolean @requireScope(scope: "super:all")
+    startPayment(planId: ID!, gateway: String, paymentType: String): JSON @requireScope(scope: "subscription:upgrade")
+    cancelSubscription(id: ID!): Boolean @requireScope(scope: "subscription:upgrade")
 }
 `;
 // subscriptionUpdate(subscriptionId: ID!, gateway: String!, paymentType: String): Payment @requireScope(scope: "subscription:upgrade")
