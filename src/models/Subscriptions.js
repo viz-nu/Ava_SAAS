@@ -42,7 +42,7 @@ const SubscriptionSchema = new Schema({
     metadata: {
         expiresAt: { type: Date, default: null },
         cancelledAt: { type: Date, default: null },
-        status: { type: String, enum: ['authenticated', 'activated', 'charged', 'completed', 'updated', 'pending', 'halted', 'cancelled', 'paused', 'resumed'], default: 'authenticated' },
+        status: { type: String, enum: ['active', 'authenticated', 'activated', 'charged', 'completed', 'updated', 'pending', 'halted', 'cancelled', 'paused', 'resumed'], default: 'authenticated' },
         inActive: Boolean,
         failureReason: String,
         retryCount: { type: Number, default: 0 },
