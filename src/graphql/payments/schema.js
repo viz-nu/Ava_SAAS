@@ -35,7 +35,6 @@ type Subscription {
     billing: JSON
     gatewayReference: JSON
     metadata: JSON
-    credits: CreditsType
     createdAt: DateTime
     updatedAt: DateTime
 }
