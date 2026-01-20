@@ -16,6 +16,29 @@ type Plan {
     createdAt: DateTime
     updatedAt: DateTime
 }
+type AmountSchema {
+    value: Int
+    currency: String
+}
+type Subscription {
+    _id: ID!
+    business: Business
+    createdBy: User
+    plan: Plan
+    gateway: String
+    type: String
+    events: JSON
+    amount: AmountSchema
+    gatewayFee: AmountSchema
+    tax: AmountSchema
+    netAmount: AmountSchema
+    billing: JSON
+    gatewayReference: JSON
+    metadata: JSON
+    credits: CreditsType
+    createdAt: DateTime
+    updatedAt: DateTime
+}
 type CreditsType {
     llm: Int
     knowledge: Int
@@ -52,12 +75,13 @@ input PlanInput {
 type Query {
     fetchPublicPlans(code: String, name: String, type: PlanTypeEnum, status: PlanStatusEnum, id: ID): [Plan]
     fetchPlans(code: String, name: String, type: PlanTypeEnum, status: PlanStatusEnum, id: ID): [Plan] @requireScope(scope: "super:all")
+    fetchSubscription(id: ID!): Subscription @requireScope(scope: "subscription:upgrade")
 }
 type Mutation {
     createAVAPlan(input: PlanInput!): Plan @requireScope(scope: "super:all")
     updateAVAPlan(id: ID!, input: PlanInput!): Plan @requireScope(scope: "super:all")
     deleteAVAPlan(id: ID!): Boolean @requireScope(scope: "super:all")
-    startPayment(planId: ID!, gateway: String, paymentType: String, startDate:DateTime): JSON @requireScope(scope: "subscription:upgrade")
+    startPayment(planId: ID!, gateway: String, paymentType: String, startDate:DateTime): Subscription @requireScope(scope: "subscription:upgrade")
     cancelSubscription(id: ID!): Boolean @requireScope(scope: "subscription:upgrade")
 }
 `;

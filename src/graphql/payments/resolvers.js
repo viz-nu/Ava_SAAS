@@ -30,7 +30,21 @@ export const paymentResolvers = {
             if (type) filter.type = type;
             const Plans = await Plan.find(filter).sort({ createdAt: -1 }).select(projection).populate({ path: "allowedTopUps", select: projection });
             return Plans;
-        }
+        },
+        async fetchSubscription(_, { id }, context, info) {
+            const subscription = await Subscription.findById(id).select('plan gatewayReference metadata').populate('plan', 'type');
+            if (!subscription) throw new GraphQLError("Subscription not found", { extensions: { code: "BAD_USER_INPUT" } });
+            if (subscription.gateway === "razorpay") {
+                let ref = await RazorPayService.fetchSubscriptionById(subscription.gatewayReference.id);
+                if (ref.status !== subscription.metadata.status) {
+                    subscription.gatewayReference = ref
+                    subscription.metadata.expiresAt = new Date(subscription.gatewayReference.current_end * 1000);
+                    subscription.metadata.status = subscription.gatewayReference.status;
+                    await subscription.save();
+                }
+            }
+            return subscription;
+        },
     },
     Mutation: {
         async createAVAPlan(_, { input }, context, info) {
@@ -58,7 +72,6 @@ export const paymentResolvers = {
             if (!plan) throw new GraphQLError("Plan not found", { extensions: { code: "BAD_USER_INPUT" } });
             // understand the active plan and compare it with the new plan
             const existingPlan = await Subscription.findById(business?.credits?.activePlan).select('plan metadata').populate('plan', 'type');
-
             if (existingPlan) {
                 if (existingPlan.plan.type !== "FREE") {
                     switch (existingPlan.gateway) {
@@ -100,6 +113,7 @@ export const paymentResolvers = {
                         await business.save()
                         return subscription;
                     }
+                case "TEST":
                 case "BASE":
                     {
                         const subscription = await Subscription.create({ business: context.user.business, createdBy: context.user._id, plan: planId, gateway, type: paymentType, amount: plan.amount, metadata: { expiresAt: new Date(Date.now() + plan.validity * 24 * 60 * 60 * 1000).setHours(0, 0, 0, 0) } });
@@ -120,12 +134,13 @@ export const paymentResolvers = {
         async cancelSubscription(_, { id }, context, info) {
             const subscription = await Subscription.findById(id);
             if (!subscription) throw new GraphQLError("Subscription not found", { extensions: { code: "BAD_USER_INPUT" } });
-            await RazorPayService.cancelSubscription(subscription.gatewayReference.subscription_id);
+            await RazorPayService.cancelSubscription(subscription.gatewayReference.id);
             subscription.metadata.cancelledAt = new Date();
             subscription.metadata.cancelledReason = "Cancelled by user";
-            subscription.inActive = true;
+            subscription.metadata.inActive = true;
+            subscription.metadata.status = "cancelled";
             await subscription.save();
-            return subscription;
+            return true;
         }
     }
 };
