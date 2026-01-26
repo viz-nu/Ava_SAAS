@@ -149,7 +149,7 @@ BusinessSchema.methods.checkSubscriptionStatus = async function () {
     return "active";
 }
 BusinessSchema.methods.UpdateCredits = async function (options = {}) {
-    const { operation = 'set', spendRatio, autoSave = true, activePlan, isPlanInActive = true } = options;
+    const { operation = 'set', spendRatio, autoSave = true, activePlan, isPlanInActive = false } = options;
     // Ensure credits object exists
     if (!this.credits) this.credits = { llmCredits: 0, knowledgeCredits: 0, miscellaneousCredits: 0, balance: 0, spendRatio: 1080 };
     // Initialize current values

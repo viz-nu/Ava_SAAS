@@ -108,7 +108,7 @@ export const paymentResolvers = {
                                 expiresAt: new Date(Date.now() + plan.validity * 24 * 60 * 60 * 1000).setHours(0, 0, 0, 0)
                             }
                         });
-                        await business.UpdateCredits({ operation: 'set', llmCredits: plan.credits.llm, knowledgeCredits: plan.credits.knowledge, miscellaneousCredits: plan.credits.miscellaneous, spendRatio: plan.spendRatio, isPlanInActive: true, activePlan: subscription._id });
+                        await business.UpdateCredits({ operation: 'set', llmCredits: plan.credits.llm, knowledgeCredits: plan.credits.knowledge, miscellaneousCredits: plan.credits.miscellaneous, spendRatio: plan.spendRatio, isPlanInActive: false, activePlan: subscription._id });
                         business.freeTrailClaimed = true;
                         await business.save()
                         return subscription;
