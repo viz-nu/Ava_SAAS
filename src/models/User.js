@@ -130,6 +130,11 @@ const ScopesEnum = {
     'integration:update': 'User can update integration configurations',
     'integration:delete': 'User can delete integrations',
 
+    // Workflow Management
+    'workflow:read': 'User can read workflow details',
+    'workflow:create': 'User can create new workflows',
+    'workflow:update': 'User can update workflow configurations',
+    'workflow:delete': 'User can delete workflows',
 };
 
 // Role-based scope mappings
@@ -228,7 +233,11 @@ const RoleScopes = {
         'integration:read',
         'integration:create',
         'integration:update',
-        'integration:delete'
+        'integration:delete',
+        'workflow:read',
+        'workflow:create',
+        'workflow:update',
+        'workflow:delete'
     ],
     'admin': [
         'admin:users',
@@ -306,7 +315,11 @@ const RoleScopes = {
         'integration:read',
         'integration:create',
         'integration:update',
-        'integration:delete'
+        'integration:delete',
+        'workflow:read',
+        'workflow:create',
+        'workflow:update',
+        'workflow:delete'
     ],
     'manager': [
         'business:read',
@@ -339,7 +352,8 @@ const RoleScopes = {
         'auth:refresh',
         'user:read',
         'user:update',
-        'notification:read'
+        'notification:read',
+        'workflow:read',
     ]
 };
 
