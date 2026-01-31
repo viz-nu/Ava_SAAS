@@ -31,6 +31,24 @@ export const workflowResolvers = {
             const workflow = await Workflow.findByIdAndDelete(id);
             if (!workflow) throw new GraphQLError("Workflow not found", { extensions: { code: "BAD_USER_INPUT" } });
             return true;
+        },
+        async testWorkflowNode(_, { input, node }, context, info) {
+            const { handlerFunction, errorFunction, config, inputMapper } = node.core
+            const
+                inputFunction = `"use strict"; ${inputMapper}`,
+                handlerBody = `"use strict"; ${handlerFunction}`,
+                errorBody = `"use strict"; ${errorFunction}`;
+            const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+            const inputHandler = new AsyncFunction("input", "config", inputFunction);
+            const nodeInput = await inputHandler(input, config);
+            try {
+                const handler = new AsyncFunction("input", "config", handlerBody);
+                return await handler(nodeInput, config);
+            }
+            catch (error) {
+                const errorHandler = new AsyncFunction("input", "config", "error", errorBody);
+                return await errorHandler(input, config, error);
+            }
         }
     }
 };
