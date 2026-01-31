@@ -16,6 +16,7 @@ const ConversationSchema = new Schema({
     channelFullDetails: { type: Schema.Types.ObjectId, ref: "Channel" },
     campaign: { type: Schema.Types.ObjectId, ref: "Campaign" },
     voiceCallIdentifierNumberSID: String,
+    input: [Schema.Types.Mixed],
     telegramChatId: String,
     whatsappChatId: String,
     contact: Schema.Types.Mixed,

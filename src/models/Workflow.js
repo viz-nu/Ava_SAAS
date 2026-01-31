@@ -14,9 +14,10 @@ const PortSchema = new Schema(
 );
 const NodeCoreSchema = new Schema(
     {
+        inputMapper: String,
         config: Schema.Types.Mixed,
         handlerFunction: { type: String, required: true },
-        errorFunction: { type: String }
+        errorFunction: String
     },
     { _id: false }
 );
@@ -87,15 +88,20 @@ WorkflowSchema.methods.getNextNode = function ({ currentNode = "", outputPortsOf
     })
     return nextNodes
 };
-WorkflowSchema.methods.executeNode = async function ({ input = [], nodeId }) {
+WorkflowSchema.methods.executeNode = async function ({ input = [], nodeId, conversationId }) {
     const node = this.nodes.get(nodeId);
     if (!node) throw new Error(`Node ${nodeId} not found`);
-    const { handlerFunction, errorFunction, config } = node.core
-    const handlerBody = `"use strict"; ${handlerFunction}`, errorBody = `"use strict"; ${errorFunction}`;
+    const { handlerFunction, errorFunction, config, inputMapper } = node.core
+    const
+        inputFunction = `"use strict"; ${inputMapper}`,
+        handlerBody = `"use strict"; ${handlerFunction}`,
+        errorBody = `"use strict"; ${errorFunction}`;
     const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+    const inputHandler = new AsyncFunction("input", "config", "conversationId", inputFunction);
+    const nodeInput = await inputHandler(input, config, conversationId);
     try {
         const handler = new AsyncFunction("input", "config", handlerBody);
-        return await handler(input, config);
+        return await handler(nodeInput, config);
     }
     catch (error) {
         const errorHandler = new AsyncFunction("input", "config", "error", errorBody);
@@ -105,8 +111,8 @@ WorkflowSchema.methods.executeNode = async function ({ input = [], nodeId }) {
 WorkflowSchema.methods.execute = async function ({ conversationId, currentNode = "" }) {
     const nodeId = (!currentNode) ? this.getNextNode()[0] : currentNode
     const conversation = await Conversation.findById(conversationId)
-    if (!conversation) throw new Error(`Conversation ${conversationId} not found`);
-    const output = this.executeNode({ input: conversation.input, nodeId })
+    const input = conversation.input;
+    const output = await this.executeNode({ input, nodeId, conversationId })
     conversation.input.push(output)
     await conversation.save();
     const nextnodes = this.getNextNode({ currentNode: nodeId, outputPortsOfCurentNode: output })

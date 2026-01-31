@@ -27,5 +27,6 @@ type Mutation {
     createWorkflow(name: String, nodes: JSON, connections: JSON): Workflow @requireScope(scope: "workflow:create") @requireBusinessAccess
     updateWorkflow(id: ID!, name: String, nodes: JSON, connections: JSON): Workflow @requireScope(scope: "workflow:update") @requireBusinessAccess
     deleteWorkflow(id: ID!): Boolean @requireScope(scope: "workflow:delete") @requireBusinessAccess
+    testWorkflowNode(input: JSON, node: JSON): JSON @requireScope(scope: "workflow:create") @requireBusinessAccess
 }
 `;
