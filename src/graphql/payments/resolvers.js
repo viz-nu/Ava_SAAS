@@ -124,7 +124,6 @@ export const paymentResolvers = {
                                 subscription.credits.lastGrantedAt = new Date();
                                 break;
                             default:
-                                console.log("Invalid gateway while creating subscription", gateway);
                                 throw new GraphQLError("Invalid gateway", { extensions: { code: "BAD_USER_INPUT" } });
                         }
                         await subscription.save()
