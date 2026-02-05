@@ -35,12 +35,17 @@ export class RazorPayService {
         return await this.client.payments.refund(payment_id, amount ? { amount: amount * 100 } : {});
     }
     static async createSubscription({ plan_id, total_count = 120, quantity = 1, notes = {}, addons = null, offer_id = null, startDate = new Date() }) {
-        let startTime = new Date(startDate);
+        let startTime = new Date(startDate), subscription;
         const startTimestampMs = startTime.getTime();
         const nowMs = Date.now();
         const start_at = startTimestampMs > nowMs ? Math.floor(startTimestampMs / 1000) : null;
-        const subscription = await this.client.subscriptions.create({ total_count, plan_id, quantity, customer_notify: true, addons, offer_id, notes, start_at });
-        return subscription;
+        try {
+            subscription = await this.client.subscriptions.create({ total_count, plan_id, quantity, customer_notify: true, addons, offer_id, notes, start_at });
+            return subscription;
+        } catch (error) {
+            console.error(error);
+            throw new Error("Failed to create subscription");
+        }
     }
     static async fetchSubscriptionById(subscription_id) {
         return await this.client.subscriptions.fetch(subscription_id);
