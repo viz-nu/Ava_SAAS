@@ -70,13 +70,12 @@ export const paymentResolvers = {
                 Business.findById(context.user.business).select('credits freeTrailClaimed')
             ]);
             if (!plan) throw new GraphQLError("Plan not found", { extensions: { code: "BAD_USER_INPUT" } });
-            // understand the active plan and compare it with the new plan
             const existingPlan = await Subscription.findById(business?.credits?.activePlan).select('plan metadata gateway gatewayReference inActive').populate('plan', 'type');
             if (existingPlan && !existingPlan.inActive) {
                 if (existingPlan.plan.type !== "FREE") {
                     switch (existingPlan.gateway) {
                         case "razorpay":
-                            await RazorPayService.cancelSubscription(existingPlan.gatewayReference.subscription_id);
+                            await RazorPayService.cancelSubscription(existingPlan.gatewayReference.id);
                             break;
                         default:
                             throw new GraphQLError("Invalid gateway", { extensions: { code: "BAD_USER_INPUT" } });
