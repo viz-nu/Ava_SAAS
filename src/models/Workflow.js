@@ -1,60 +1,55 @@
 import { model, Schema } from 'mongoose';
 import { Conversation } from './Conversations.js';
 
-const PortSchema = new Schema(
-    {
-        id: String,
-        meta: {
-            index: Number,
-        },
-        label: String,
-        schema: Schema.Types.Mixed
-    },
-    { _id: false }
-);
-const NodeCoreSchema = new Schema(
-    {
-        inputMapper: String,
-        config: Schema.Types.Mixed,
-        handlerFunction: { type: String, required: true },
-        errorFunction: String
-    },
-    { _id: false }
-);
+// const PortSchema = new Schema(
+//     {
+//         id: String,
+//         meta: {
+//             index: Number,
+//         },
+//         label: String,
+//         schema: Schema.Types.Mixed
+//     },
+//     { _id: false }
+// );
+// const NodeCoreSchema = new Schema(
+//     {
+//         inputMapper: String,
+//         config: Schema.Types.Mixed,
+//         handlerFunction: { type: String, required: true },
+//         errorFunction: String
+//     },
+//     { _id: false }
+// );
 
-const NodeSchema = new Schema(
-    {
-        type: { type: String, required: true, enum: ['trigger', 'task', 'conditional'] },
-        ports: {
-            input: {
-                type: Map,
-                of: PortSchema
-            },
-            output: {
-                type: Map,
-                of: PortSchema
-            }
-        },
-        core: NodeCoreSchema,
-        meta: {
-            label: String,
-            type: String
-        }
-    },
-    { _id: false }
-);
-const ConnectionSchema = new Schema(
-    {
-        from: { type: String, required: true }, // "nodeId/output/portId"
-        to: { type: String, required: true }    // "nodeId/input/portId"
-    },
-    { _id: false }
-);
+// const NodeSchema = new Schema(
+//     {
+//         type: { type: String, required: true, enum: ['trigger', 'task', 'conditional'] },
+//         ports: {
+//             input: Object,
+//             output: Object
+//         },
+//         core: NodeCoreSchema,
+//         meta: {
+//             label: String,
+//             type: String,
+//             templateType: String
+//         }
+//     },
+//     { _id: false }
+// );
+// const ConnectionSchema = new Schema(
+//     {
+//         from: { type: String, required: true }, // "nodeId/output/portId"
+//         to: { type: String, required: true }    // "nodeId/input/portId"
+//     },
+//     { _id: false }
+// );
 const WorkflowSchema = new Schema({
     name: { type: String, default: "Untitled Workflow" },
     status: { type: String, enum: ["draft", "active", "disabled"], default: 'draft' },
-    nodes: { type: Map, of: NodeSchema, required: true },
-    connections: { type: Map, of: ConnectionSchema, required: true },
+    nodes: Object,
+    connections: Object,
     business: { type: Schema.Types.ObjectId, ref: "Business" },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
 }, {
