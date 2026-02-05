@@ -73,6 +73,7 @@ export const paymentResolvers = {
             // understand the active plan and compare it with the new plan
             const existingPlan = await Subscription.findById(business?.credits?.activePlan).select('plan metadata').populate('plan', 'type');
             if (existingPlan && !existingPlan.inActive) {
+                console.log("Existing plan", existingPlan);
                 if (existingPlan.plan.type !== "FREE") {
                     switch (existingPlan.gateway) {
                         case "razorpay":
