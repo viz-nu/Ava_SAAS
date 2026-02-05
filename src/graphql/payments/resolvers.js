@@ -79,6 +79,7 @@ export const paymentResolvers = {
                             await RazorPayService.cancelSubscription(existingPlan.gatewayReference.subscription_id);
                             break;
                         default:
+                            console.log("Invalid gateway", existingPlan.gateway);
                             throw new GraphQLError("Invalid gateway", { extensions: { code: "BAD_USER_INPUT" } });
                     }
                 }
@@ -124,6 +125,7 @@ export const paymentResolvers = {
                                 subscription.credits.lastGrantedAt = new Date();
                                 break;
                             default:
+                                console.log("Invalid gateway while creating subscription", gateway);
                                 throw new GraphQLError("Invalid gateway", { extensions: { code: "BAD_USER_INPUT" } });
                         }
                         await subscription.save()
