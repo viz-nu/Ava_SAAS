@@ -72,6 +72,7 @@ export const paymentResolvers = {
             if (!plan) throw new GraphQLError("Plan not found", { extensions: { code: "BAD_USER_INPUT" } });
             const existingPlan = await Subscription.findById(business?.credits?.activePlan).select('plan metadata gateway gatewayReference inActive').populate('plan', 'type');
             if (existingPlan && !existingPlan.inActive) {
+                console.log(existingPlan.inActive)
                 if (existingPlan.plan.type !== "FREE") {
                     switch (existingPlan.gateway) {
                         case "razorpay":
