@@ -134,12 +134,12 @@ export const paymentResolvers = {
         async cancelSubscription(_, { id }, context, info) {
             const subscription = await Subscription.findById(id);
             if (!subscription) throw new GraphQLError("Subscription not found", { extensions: { code: "BAD_USER_INPUT" } });
-            await RazorPayService.cancelSubscription(subscription.gatewayReference.id);
             subscription.metadata.cancelledAt = new Date();
             subscription.metadata.cancelledReason = "Cancelled by user";
             subscription.metadata.inActive = true;
             subscription.metadata.status = "cancelled";
             await subscription.save();
+            await RazorPayService.cancelSubscription(subscription.gatewayReference.id);
             return true;
         }
     }
