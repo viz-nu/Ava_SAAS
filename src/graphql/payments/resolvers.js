@@ -5,6 +5,7 @@ import { RazorPayService } from "../../services/razorPayService.js";
 import { GraphQLError } from "graphql";
 import { Business } from "../../models/Business.js";
 import { Subscription } from "../../models/Subscriptions.js";
+import { postTask } from "../../services/agenda.js";
 export const paymentResolvers = {
     Query: {
         async fetchPlans(_, { code, name, type, status = 'active', id }, context, info) {
@@ -85,7 +86,7 @@ export const paymentResolvers = {
                 else if (plan.type === "FREE") {
                     throw new GraphQLError("You already have a free plan that expires at " + existingPlan.metadata.expiresAt, { extensions: { code: "BAD_USER_INPUT" } });
                 }
-                if (!startDate) startDate = new Date(existingPlan.metadata.expiresAt).setHours(1, 0, 0, 0);
+                if (!startDate) startDate = new Date(existingPlan.metadata.expiresAt);
                 existingPlan.metadata.cancelledAt = new Date()
                 existingPlan.metadata.cancelledReason = "Upgraded to a new plan"
                 existingPlan.inActive = true;
@@ -105,9 +106,10 @@ export const paymentResolvers = {
                                 activated: new Date()
                             },
                             metadata: {
-                                expiresAt: new Date(Date.now() + plan.validity * 24 * 60 * 60 * 1000).setHours(0, 0, 0, 0)
+                                expiresAt: new Date(Date.now() + plan.validity * 24 * 60 * 60 * 1000)
                             }
                         });
+                        await postTask("reset-credits", { id: subscription._id.toString(), businessId: context.user.business.toString(), planId: planId.toString() }, new Date(subscription.metadata.expiresAt).toISOString());
                         await business.UpdateCredits({ operation: 'set', llmCredits: plan.credits.llm, knowledgeCredits: plan.credits.knowledge, miscellaneousCredits: plan.credits.miscellaneous, spendRatio: plan.spendRatio, isPlanInActive: false, activePlan: subscription._id });
                         business.freeTrailClaimed = true;
                         await business.save()
@@ -116,7 +118,7 @@ export const paymentResolvers = {
                 case "TEST":
                 case "BASE":
                     {
-                        const subscription = await Subscription.create({ business: context.user.business, createdBy: context.user._id, plan: planId, gateway, type: paymentType, amount: plan.amount, metadata: { expiresAt: new Date(Date.now() + plan.validity * 24 * 60 * 60 * 1000).setHours(0, 0, 0, 0) } });
+                        const subscription = await Subscription.create({ business: context.user.business, createdBy: context.user._id, plan: planId, gateway, type: paymentType, amount: plan.amount, metadata: { expiresAt: new Date(Date.now() + plan.validity * 24 * 60 * 60 * 1000) } });
                         switch (gateway) {
                             case "razorpay":
                                 subscription.gatewayReference = await RazorPayService.createSubscription({ plan_id: plan.paymentGateWay.razorpay.plan_id, notes: { subscriptionId: subscription._id.toString(), businessId: context.user.business.toString(), planId: planId.toString() }, startDate: startDate });
