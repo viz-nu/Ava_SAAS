@@ -34,19 +34,15 @@ export const workflowResolvers = {
         },
         async testWorkflowNode(_, { input, node }, context, info) {
             const { handlerFunction, errorFunction, config, inputMapper } = node.core
-            const
-                inputFunction = `"use strict"; ${inputMapper}`,
-                handlerBody = `"use strict"; ${handlerFunction}`,
-                errorBody = `"use strict"; ${errorFunction}`;
             const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
-            const inputHandler = new AsyncFunction("input", "config", inputFunction);
+            const inputHandler = new AsyncFunction("input", "config",  `"use strict"; ${inputMapper}`);
             const nodeInput = await inputHandler(input, config);
             try {
-                const handler = new AsyncFunction("input", "config", handlerBody);
+                const handler = new AsyncFunction("input", "config", `"use strict"; ${handlerFunction}`);
                 return await handler(nodeInput, config);
             }
             catch (error) {
-                const errorHandler = new AsyncFunction("input", "config", "error", errorBody);
+                const errorHandler = new AsyncFunction("input", "config", "error", `"use strict"; ${errorFunction}`);
                 return await errorHandler(input, config, error);
             }
         }
