@@ -109,7 +109,7 @@ export const jobResolvers = {
             await AgentModel.populate(job, { path: 'payload.agent', select: nested.payload.agent });
             return job;
         },
-        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null }, context, info) => {
+        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null, workflowId = null }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const business = await Business.findById(context.user.business).select({ credits: 1 });
@@ -139,6 +139,7 @@ export const jobResolvers = {
             }
             conversation.voiceCallIdentifierNumberSID = callDetails.Sid;
             conversation.campaign = campaignId;
+            conversation.workflow = workflowId;
             conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
             await conversation.save();
             return conversation;
