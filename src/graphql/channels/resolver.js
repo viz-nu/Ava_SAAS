@@ -26,8 +26,8 @@ export const channelResolvers = {
     },
     Mutation: {
         async createChannel(_, { input }, context) {
-            const { name, type, config, systemPrompt, isPublic, UIElements } = input;
-            const channel = await Channel.create({ name, business: context.user.business, type, status: "initiated", systemPrompt: systemPrompt, isPublic: isPublic, UIElements })
+            const { name, type, config, systemPrompt, isPublic, UIElements, workflow } = input;
+            const channel = await Channel.create({ name, business: context.user.business, type, status: "initiated", systemPrompt: systemPrompt, isPublic: isPublic, UIElements, workflow })
             switch (type) {
                 case "email":
                     const { host, port, secure, fromName, defaultRecipients: { }, authType, user, pass, service, clientId, clientSecret, refreshToken, accessToken, expires } = config;
@@ -242,11 +242,12 @@ export const channelResolvers = {
         async updateChannel(_, { id, input }, context) {
             const channel = await Channel.findById(id);
             if (!channel) throw new Error('Channel not found');
-            const { name, systemPrompt, isPublic, UIElements, config } = input;
+            const { name, systemPrompt, isPublic, UIElements, config, workflow } = input;
             if (name !== undefined) channel.name = name;
             if (systemPrompt !== undefined) channel.systemPrompt = systemPrompt;
             if (isPublic !== undefined) channel.isPublic = isPublic;
             if (UIElements !== undefined) channel.UIElements = UIElements;
+            if (workflow !== undefined) channel.workflow = workflow;
             if (config) {
                 const newConfig = config;
                 switch (channel.type) {
