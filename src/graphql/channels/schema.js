@@ -7,6 +7,8 @@ type Channel {
   name: String!
   """ID of the business that owns this channel"""
     business: Business
+  """ID of the workflow that this channel is associated with"""
+  workflow: Workflow
   """Type of communication channel (email, whatsapp, etc)"""
   type: ChannelTypeEnum!
   """Current status of the channel (active, inactive, etc)"""
@@ -59,6 +61,8 @@ type Query {
 input ChannelInput {
   """Display name of the channel"""
   name: String
+  """ID of the workflow that this channel is associated with"""
+  workflow: ID
   """Type of communication channel (required)"""
   type: ChannelTypeEnum!
   """Channel-specific configuration settings"""
