@@ -82,6 +82,9 @@ type Conversation {
   """Data extracted from conversation"""
   extractedData: JSON
   transcripts:JSON
+  workflowStatus: String
+  workflow: Workflow
+  campaign: Campaign
   contact:JSON
   """Conversation metadata"""
   metadata: ConversationMetadata
