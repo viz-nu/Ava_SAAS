@@ -9,6 +9,7 @@ import { Business } from '../../models/Business.js';
 import { User } from '../../models/User.js';
 import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
+import { Workflow } from '../../models/Workflow.js';
 export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, isPublic, isFeatured, id }, context, info) => {
@@ -20,6 +21,7 @@ export const agentResolvers = {
             if (isFeatured !== undefined) filter.isFeatured = isFeatured;
             if (id !== undefined) filter._id = id;
             const agents = await AgentModel.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
+            await Workflow.populate(agents, { path: 'workflow', select: nested.workflow });
             await Business.populate(agents, { path: 'business', select: nested.business });
             await User.populate(agents, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(agents, { path: 'channels', select: nested.channels });
@@ -106,6 +108,7 @@ export const agentResolvers = {
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
             const newAgent = await AgentModel.create({ appearance, personalInfo, channels, actions, collections, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured, analysisMetrics })
             await Business.populate(newAgent, { path: 'business', select: nested.business });
+            await Workflow.populate(newAgent, { path: 'workflow', select: nested.workflow });
             await User.populate(newAgent, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newAgent, { path: 'channels', select: nested.channels });
             await Collection.populate(newAgent, { path: 'collections', select: nested.collections });
@@ -128,6 +131,7 @@ export const agentResolvers = {
                 .findByIdAndUpdate(id, { ...agent, updatedAt: new Date() }, { new: true })
                 .select(projection);
             await Business.populate(updatedAgent, { path: 'business', select: nested.business });
+            await Workflow.populate(updatedAgent, { path: 'workflow', select: nested.workflow });
             await User.populate(updatedAgent, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(updatedAgent, { path: 'channels', select: nested.channels });
             await Collection.populate(updatedAgent, { path: 'collections', select: nested.collections });

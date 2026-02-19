@@ -157,6 +157,7 @@ const AgentSchema = new Schema({
         temperature: { type: Number, default: 0.5 },
         VoiceAgentSessionConfig: AssistantConfigSchema,
     },
+    workflow: { type: Schema.Types.ObjectId, ref: 'Workflow' },
     collections: [{ type: Schema.Types.ObjectId, ref: 'Collection' }],
     channels: [{ type: Schema.Types.ObjectId, ref: 'Channel' }],
     actions: [{ type: Schema.Types.ObjectId, ref: 'Action' }],

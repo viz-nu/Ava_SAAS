@@ -173,7 +173,7 @@ Your response will be parsed and sent directly to Instagram's API, so format mus
                 return entries;
             }));
         } else {
-            conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, InstagramChatId: message.senderId, channel: "instagram" });
+            conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, InstagramChatId: message.senderId, channel: "instagram", workflow: agentDetails.workflow || null });
         }
         state.push({ role: "user", content: [{ type: "input_text", text: userMessageData.text }] });
     }

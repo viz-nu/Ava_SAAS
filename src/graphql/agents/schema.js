@@ -46,6 +46,8 @@ export const agentTypeDefs = `#graphql
     personalInfo: PersonalInfo
     """ Associated knowledge collections """
     collections: [Collection]
+    """ Associated workflow """
+    workflow: Workflow
     """ Communication channels the agent is active on """
     channels: [Channel]
     """ Available actions/functions the agent can perform """
@@ -96,6 +98,7 @@ export const agentTypeDefs = `#graphql
     appearance: AppearanceInput
     personalInfo: AgentPersonalInfoInput
     collections: [ID]
+    workflow: ID
     channels: [ID]
     actions: [ID]
     analysisMetrics: JSON

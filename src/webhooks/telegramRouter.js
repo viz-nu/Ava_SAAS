@@ -50,7 +50,7 @@ async function processUserMessage(chatId, userMessage, bot, agentDetails, messag
                 return entries;
             }));
         } else {
-            conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, telegramChatId: chatId, channel: "telegram" });
+            conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, telegramChatId: chatId, channel: "telegram",  workflow: channel?.workflow || agentDetails.workflow || null });
         }
         state.push({ role: "user", content: [{ type: "input_text", text: userMessageData.text }] });
     }
