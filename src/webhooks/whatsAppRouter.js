@@ -53,7 +53,7 @@ async function processUserMessage(message, userMessage, bot, agentDetails, chann
         return entries;
       }));
     } else {
-      conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp", channelFullDetails: channelDetails._id, contact: { waId: message.contact.waId, name: message.contact.name } });
+      conversation = await Conversation.create({ business: agentDetails.business._id, agent: agentDetails._id, whatsappChatId: message.from, channel: "whatsapp", channelFullDetails: channelDetails._id, contact: { waId: message.contact.waId, name: message.contact.name }, workflow: channelDetails?.workflow || agentDetails.workflow || null });
     }
     state.push({ role: "user", content: [{ type: "input_text", text: userMessageData.text }] });
   }
