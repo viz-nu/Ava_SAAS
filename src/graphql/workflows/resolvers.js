@@ -1,3 +1,4 @@
+import { InbuiltNodes } from "../../models/InbuiltNodes.js";
 import { Workflow } from "../../models/Workflow.js";
 import { validateLoops } from "../../utils/workflowHelpers.js";
 import { GraphQLError } from "graphql";
@@ -10,6 +11,16 @@ export const workflowResolvers = {
             const workflows = await Workflow.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             const totalDocuments = await Workflow.countDocuments(filter);
             return { data: workflows, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
+        },
+        async fetchInbuiltNodes(_, { label, type, templateType, id, limit = 10, page = 1 }, context, info) {
+            const filter = {};
+            if (label) filter.label = label;
+            if (type) filter.type = type;
+            if (templateType) filter.templateType = templateType;
+            if (id) filter._id = id;
+            const inbuiltNodes = await InbuiltNodes.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            const totalDocuments = await InbuiltNodes.countDocuments(filter);
+            return { data: inbuiltNodes, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
     },
     Mutation: {
@@ -35,7 +46,7 @@ export const workflowResolvers = {
         async testWorkflowNode(_, { input, node }, context, info) {
             const { handlerFunction, errorFunction, config, inputMapper } = node.core
             const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
-            const inputHandler = new AsyncFunction("input", "config",  `"use strict"; ${inputMapper}`);
+            const inputHandler = new AsyncFunction("input", "config", `"use strict"; ${inputMapper}`);
             const nodeInput = await inputHandler(input, config);
             try {
                 const handler = new AsyncFunction("input", "config", `"use strict"; ${handlerFunction}`);
@@ -45,6 +56,21 @@ export const workflowResolvers = {
                 const errorHandler = new AsyncFunction("input", "config", "error", `"use strict"; ${errorFunction}`);
                 return await errorHandler(input, config, error);
             }
-        }
+        },
+        async createInbuiltNode(_, { id, ports, core, meta }, context, info) {
+            let InbuiltNodeTemplate = { id, ports, core, meta, createdBy: context.user._id }
+            const inbuiltNode = await InbuiltNodes.create(InbuiltNodeTemplate);
+            return inbuiltNode;
+        },
+        async updateInbuiltNode(_, { id, ports, core, meta }, context, info) {
+            let InbuiltNodeTemplate = { ports, core, meta }
+            const inbuiltNode = await InbuiltNodes.findByIdAndUpdate(id, InbuiltNodeTemplate, { new: true });
+            return inbuiltNode;
+        },
+        async deleteInbuiltNode(_, { id }, context, info) {
+            const inbuiltNode = await InbuiltNodes.findByIdAndDelete(id);
+            return inbuiltNode;
+        },
+
     }
 };
