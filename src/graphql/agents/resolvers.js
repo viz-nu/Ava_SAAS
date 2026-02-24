@@ -47,7 +47,16 @@ export const agentResolvers = {
                         {
                             const { data } = await axios.post(
                                 "https://api.openai.com/v1/realtime/client_secrets",
-                                { session: { type: "realtime", model: sessionConfig.model, audio: { output: { voice: sessionConfig.voice } }, }, },
+                                {
+                                    session: {
+                                        type: "realtime", model: sessionConfig.model, audio: {
+                                            input: {
+                                                noise_reduction: { type: "near_field" },
+                                            },
+                                            output: { voice: sessionConfig.voice }
+                                        },
+                                    },
+                                },
                                 {
                                     headers: {
                                         Authorization: `Bearer ${process.env.OPEN_API_KEY}`,
