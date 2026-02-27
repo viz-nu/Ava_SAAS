@@ -117,6 +117,8 @@ export const jobResolvers = {
             const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
             if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "AGENT_NOT_FOUND" } });
             const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channel._id, agent: agentDetails._id, PreContext, contact: { phone: number }, metadata: { status: "initiated" }, workflow: channel?.workflow || agentDetails.workflow || null });
+            const { data } = await axios.post(`https://sockets.avakado.ai/session`, { "conversationId": conversation._id, "model": agentDetails.personalInfo.VoiceAgentSessionConfig.model, "tsp": channel.config.provider });
+            console.log("session created", data);
             let callDetails = null;
             switch (channel.config.provider) {
                 case 'exotel':
