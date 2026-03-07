@@ -1,16 +1,17 @@
 import { model, Schema } from 'mongoose';
-
-const InbuiltNodesSchema = new Schema({
-    id: { type: String, required: true },
-    ports: { input: Object, output: Object },
-    core: {
-        config: Object,
-        handlerFunction: String,
-        errorFunction: String,
-        inputMapper: String,
+const NodeSchema = new Schema(
+    {
+        type: { type: String, required: true, enum: ['trigger', 'task', 'conditional'] },
+        core: {
+            inputMapper: String,
+            inputSchema: Schema.Types.Mixed,
+            outputSchema: Schema.Types.Mixed,
+            configSchema: Schema.Types.Mixed,
+            handlerFunction: { type: String, required: true },
+            errorFunction: { type: String }
+        },
+        meta: { label: String }
     },
-    meta: { label: String, type: String, templateType: String },
-    createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
-});
-
-export const InbuiltNodes = model('InbuiltNodes', InbuiltNodesSchema);
+    { timestamps: true }
+);
+export const NodeModel = model('Node', NodeSchema, 'Nodes');
