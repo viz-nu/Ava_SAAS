@@ -1,4 +1,4 @@
-import { InbuiltNodes } from "../../models/InbuiltNodes.js";
+import { NodeModel } from "../../models/InbuiltNodes.js";
 import { Workflow } from "../../models/Workflow.js";
 import { validateLoops } from "../../utils/workflowHelpers.js";
 import { GraphQLError } from "graphql";
@@ -14,13 +14,12 @@ export const workflowResolvers = {
         },
         async fetchInbuiltNodes(_, { label, type, templateType, id, limit = 10, page = 1 }, context, info) {
             const filter = {};
-            if (label) filter.label = label;
+            if (label) filter['meta.label'] = label;
             if (type) filter.type = type;
-            if (templateType) filter.templateType = templateType;
             if (id) filter._id = id;
-            const inbuiltNodes = await InbuiltNodes.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
-            const totalDocuments = await InbuiltNodes.countDocuments(filter);
-            return { data: inbuiltNodes, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
+            const nodes = await NodeModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            const totalDocuments = await NodeModel.countDocuments(filter);
+            return { data: nodes, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
     },
     Mutation: {
@@ -59,16 +58,16 @@ export const workflowResolvers = {
         },
         async createInbuiltNode(_, { id, ports, core, meta }, context, info) {
             let InbuiltNodeTemplate = { id, ports, core, meta, createdBy: context.user._id }
-            const inbuiltNode = await InbuiltNodes.create(InbuiltNodeTemplate);
+            const inbuiltNode = await NodeModel.create(InbuiltNodeTemplate);
             return inbuiltNode;
         },
         async updateInbuiltNode(_, { id, ports, core, meta }, context, info) {
             let InbuiltNodeTemplate = { ports, core, meta }
-            const inbuiltNode = await InbuiltNodes.findByIdAndUpdate(id, InbuiltNodeTemplate, { new: true });
+            const inbuiltNode = await NodeModel.findByIdAndUpdate(id, InbuiltNodeTemplate, { new: true });
             return inbuiltNode;
         },
         async deleteInbuiltNode(_, { id }, context, info) {
-            const inbuiltNode = await InbuiltNodes.findByIdAndDelete(id);
+            const inbuiltNode = await NodeModel.findByIdAndDelete(id);
             return inbuiltNode;
         },
 
