@@ -78,7 +78,7 @@ type Campaign {
     name: String
     agent: Agent
     communicationChannels: [Channel]
-    receivers: [Receiver]
+    leads: [Lead]
     schedule: scheduleCampaign
     cps: Int
     instructions: String
@@ -91,11 +91,6 @@ type scheduleCampaign {
     startAt: DateTime
     endAt: DateTime
     timezone: String
-}
-type Receiver {
-    personalInfo: CampaignPersonalInfo
-    preferredLanguage: String
-    instructions: String
 }
 type CampaignPersonalInfo {
     name: String
