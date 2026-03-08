@@ -49,11 +49,11 @@ export const jobResolvers = {
         }
     },
     Mutation: {
-        createCampaign: async (_, { name, communicationChannels, leads, nodes, edges }, context, info) => {
+        createCampaign: async (_, { name, communicationChannels, leads, nodes = [], edges = [] }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const { newAccessToken } = AuthService.generateTokens(context.user._id, '30d')
-            const newCampaign = await Campaign.create({ communicationChannels, name, leads, business: context.user.business, createdBy: context.user._id, execution: { nodes: nodes.map(node => ({ ...node, nodeConfig: { ...node.nodeConfig, accessKey: newAccessToken } })), edges } });
+            const newCampaign = await Campaign.create({ communicationChannels, name, leads, business: context.user.business, createdBy: context.user._id, execution: { nodes: nodes?.map(node => ({ ...node, nodeConfig: { ...node.nodeConfig, accessKey: newAccessToken } })), edges } });
             await Business.populate(newCampaign, { path: 'business', select: nested.business });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
