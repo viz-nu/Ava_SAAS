@@ -34,7 +34,10 @@ export const agentResolvers = {
                 let sessionConfig = {};
                 if (model && voice && provider) sessionConfig = { model, voice, provider };
                 else if (id) {
-                    const filter = { business: context.user.business, _id: id };
+                    const filter = {
+                        // business: context.user.business,
+                        _id: id
+                    };
                     const agentDetails = await AgentModel.findOne(filter).select({ personalInfo: 1 });
                     if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "NOT_FOUND" } });
                     const { model: dbModel, provider: dbProvider, voice: dbVoice, } = agentDetails.personalInfo.VoiceAgentSessionConfig;
