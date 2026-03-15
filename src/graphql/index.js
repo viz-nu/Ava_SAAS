@@ -144,7 +144,9 @@ export const registerApollo = async (app, httpServer) => {
     'Login',
     'Register',
     'register',
-    'forgotPassword'
+    'forgotPassword',
+    'ephemeralToken',
+    'EphemeralToken'
   ];
 
   // Helper function to extract operation name from GraphQL query
