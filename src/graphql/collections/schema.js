@@ -65,8 +65,6 @@ input CollectionInput {
   description: String
   """Initial content items"""
   contents: [ContentInput]
-  """Business that will own the collection"""
-  business: ID
   """Whether collection should be public"""
   isPublic: Boolean
   """Whether collection should be featured"""
