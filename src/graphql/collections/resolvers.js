@@ -80,15 +80,15 @@ export const collectionResolvers = {
             })(newCollection, receiver);
             return newCollection;
         },
-        getUploadUrl: async (_, { key = "sampleDocument" }, context, _) => {
+        getUploadUrl: async (_, { key = "sampleDocument" }, context, info) => {
             const uploadUrl = await cloudflareIntegration.createTemporaryUploadURL({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
             return uploadUrl;
         },
-        getDownloadUrl: async (_, { key = "" }, context, _) => {
+        getDownloadUrl: async (_, { key = "" }, context, info) => {
             const downloadUrl = await cloudflareIntegration.generateDownloadURL({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
             return downloadUrl;
         },
-        deleteUploadedFileFromStorage: async (_, { key = "" }, context, _) => {
+        deleteUploadedFileFromStorage: async (_, { key = "" }, context, info) => {
             await cloudflareIntegration.deleteObject({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
             return true;
         },
