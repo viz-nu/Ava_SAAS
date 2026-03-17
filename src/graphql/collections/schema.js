@@ -99,13 +99,26 @@ type Query {
   @param limit - Maximum number of collections to return
   @param isPublic - Filter by public/private status"""
   collections(id:ID limit: Int isPublic: Boolean): [Collection] @requireScope(scope: "collection:read") @requireBusinessAccess
+  """Get a list of uploaded files
+  @param StartAfter - The key to start after
+  @param ContinuationToken - The continuation token
+  @param includeSize - Whether to include the size of the uploaded files"""
+  getListOfUploadedFiles(StartAfter: String ContinuationToken: String includeSize: Boolean): JSON @requireScope(scope: "collection:read") @requireBusinessAccess
 }
 
 type Mutation {
   """Create a new collection
   @param collection - Collection data to create"""
   createCollection(collection: CollectionInput!): Collection @requireScope(scope: "collection:create") @requireBusinessAccess
-
+  """Get an upload URL
+  @param key - The key to upload the file to"""
+  getUploadUrl(key: String!): String @requireScope(scope: "collection:read") @requireBusinessAccess
+  """Get a download URL
+  @param key - The key to download the file from"""
+  getDownloadUrl(key: String!): String @requireScope(scope: "collection:read") @requireBusinessAccess
+  """Delete an uploaded file from storage
+  @param key - The key of the file to delete"""
+  deleteUploadedFileFromStorage(key: String!): Boolean @requireScope(scope: "collection:read") @requireBusinessAccess
   """Update an existing collection
   @param id - ID of collection to update
   @param action - Type of update to perform

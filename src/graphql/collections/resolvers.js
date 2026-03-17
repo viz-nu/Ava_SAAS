@@ -9,6 +9,7 @@ import { processYT } from "../../utils/ytHelper.js";
 import { processFile } from "../../utils/fileHelper.js";
 import { Business } from '../../models/Business.js';
 import { sendMessageToRoom } from '../../utils/socketIoClient.js';
+import { cloudflareIntegration } from '../../services/cloudflare.js';
 export const collectionResolvers = {
     Query: {
         collections: async (_, { id, limit = 10, isPublic }, context, info) => {
@@ -25,7 +26,15 @@ export const collectionResolvers = {
             await Business.populate(collections, { path: 'business', select: nested.business });
             await User.populate(collections, { path: 'createdBy', select: nested.createdBy });
             return collections;
-        }
+        },
+        getListOfUploadedFiles: async (_, { StartAfter, ContinuationToken, includeSize = false }, context, info) => {
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const { projection, nested } = flattenFields(requestedFields);
+            const listOfFiles = await cloudflareIntegration.listObjects({ Bucket: "ava-client-documents", Prefix: context.user.business.toString() + "/" });
+            if (includeSize) listOfFiles.SizeUploaded = await cloudflareIntegration.getBucketSize({ Bucket: "ava-client-documents", Prefix: context.user.business.toString() + "/" });
+            return listOfFiles;
+
+        },
     },
 
     Mutation: {
@@ -58,7 +67,7 @@ export const collectionResolvers = {
                                 break;
                             case "file":
                                 console.log("file process started");
-                                if (metaData?.urls) result = await processFile(newCollection._id, metaData.urls[0].url, receiver, _id);
+                                if (metaData) result = await processFile(newCollection._id, metaData, receiver, _id);
                                 break;
                             default:
                                 console.warn(`Unknown source type: ${source}`);
@@ -70,6 +79,18 @@ export const collectionResolvers = {
                 }
             })(newCollection, receiver);
             return newCollection;
+        },
+        getUploadUrl: async (_, { key = "sampleDocument" }, context, _) => {
+            const uploadUrl = await cloudflareIntegration.createTemporaryUploadURL({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
+            return uploadUrl;
+        },
+        getDownloadUrl: async (_, { key = "" }, context, _) => {
+            const downloadUrl = await cloudflareIntegration.generateDownloadURL({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
+            return downloadUrl;
+        },
+        deleteUploadedFileFromStorage: async (_, { key = "" }, context, _) => {
+            await cloudflareIntegration.deleteObject({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
+            return true;
         },
         updateCollection: async (_, { id, action, name, description, removeContents, addContents }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
