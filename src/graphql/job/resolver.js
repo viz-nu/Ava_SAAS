@@ -114,8 +114,9 @@ export const jobResolvers = {
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const business = await Business.findById(context.user.business).select({ credits: 1 });
             if (business.credits.balance <= 100) throw new GraphQLError("Insufficient credits", { extensions: { code: "INSUFFICIENT_CREDITS" } });
-            const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig");
+            const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig workflow");
             if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "AGENT_NOT_FOUND" } });
+            console.log(agentDetails.workflow);
             const conversation = await Conversation.create({ business: channel.business, channel: channel.type, channelFullDetails: channel._id, agent: agentDetails._id, PreContext, contact: { phone: number }, metadata: { status: "initiated" }, workflow: channel?.workflow || agentDetails.workflow || null });
             const { data } = await axios.post(`https://sockets.avakado.ai/session`, { "conversationId": conversation._id, "model": agentDetails.personalInfo.VoiceAgentSessionConfig.model, "tsp": channel.config.provider });
             console.log("session created", data);
