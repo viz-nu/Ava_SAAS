@@ -2,7 +2,6 @@ import { Router } from "express";
 import xssReqSanitizer from "xss-req-sanitizer";
 import { authRouter } from "./auth.js";
 import { publicRouter } from "./public.js";
-import { collectionRouter } from "./collectionRouter.js";
 import { essentialsRouter } from "./essentials.js";
 import { AgentsRouter } from "./agent.js";
 import { AdminRouter } from "./admin.js";
@@ -22,7 +21,6 @@ indexRouter.use("/auth", authRouter);
 indexRouter.use("/public", publicRouter);
 
 // Protected routes with scope-based authorization
-indexRouter.use("/collection", collectionRouter);
 indexRouter.use("/essentials", essentialsRouter)
 indexRouter.use("/agent", AgentsRouter)
 indexRouter.use("/admin", AdminRouter)
