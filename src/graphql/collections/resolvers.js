@@ -6,10 +6,10 @@ import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
-import { processFile } from "../../utils/fileHelper.js";
 import { Business } from '../../models/Business.js';
 import { sendMessageToRoom } from '../../utils/socketIoClient.js';
 import { cloudflareIntegration } from '../../services/cloudflare.js';
+import { llamaParser } from '../../services/llamaparse.js';
 export const collectionResolvers = {
     Query: {
         collections: async (_, { id, limit = 10, isPublic }, context, info) => {
@@ -33,7 +33,6 @@ export const collectionResolvers = {
             const listOfFiles = await cloudflareIntegration.listObjects({ Bucket: "ava-client-documents", Prefix: context.user.business.toString() + "/" });
             if (includeSize) listOfFiles.SizeUploaded = await cloudflareIntegration.getBucketSize({ Bucket: "ava-client-documents", Prefix: context.user.business.toString() + "/" });
             return listOfFiles;
-
         },
     },
 
@@ -41,43 +40,50 @@ export const collectionResolvers = {
         createCollection: async (_, { collection }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let { name, description, contents, isPublic, isFeatured } = collection;
-            contents = contents.map(content => {
-                content.metaData.detailedReport = content.metaData.urls.map(u => ({ url: u.url, attempted: false, success: false, error: null }));
-                return content;
-            });
-            const newCollection = await Collection.create({ name, description, contents, business: context.user.business, createdBy: context.user._id })
-                .select(projection);
+            let { name, description, source, chunkingDetails, parserDetails, isPublic, isFeatured } = collection;
+            let progressStages = [];
+            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails }, business: context.user.business, createdBy: context.user._id }).select(projection);
+            switch (source) {
+                case "website":
+                    break;
+                case "youtube":
+                    break;
+                case "file":
+                    const parsing = await llamaParser.parse(newCollection.metaData.parserDetails, { collection_id: newCollection._id });
+                    newCollection.metaData.parserDetails.lastUpdate = parsing;
+                    newCollection.metaData.parserDetails.jobId = parsing.id;
+                    newCollection.metaData.progressStages = [{ name: "Parsing", status: "RUNNING", moreInfo: parsing }, { name: "Chunking" }, { name: "embed and upsert" }];
+                    break;
+            }
+            // sendMessageToRoom(context.user.business.toString(), "collection-status", { collectionId: newCollection._id, status: "loading" }, "admin");
+            // sendMessageToRoom(receiver.toString(), "adding-collection", { total: 1, progress: 0.3, collectionId: collectionId }, "admin");
+            await newCollection.save();
             await Business.populate(newCollection, { path: 'business', select: nested.business });
             await User.populate(newCollection, { path: 'createdBy', select: nested.createdBy });
-            (async function processCollection(newCollection, receiver = context.user.business) {
-                try {
-                    for (const content of newCollection.contents) {
-                        const { source, metaData, _id } = content;
-                        let result
-                        sendMessageToRoom(context.user.business.toString(), "collection-status", { collectionId: newCollection._id, status: "loading" }, "admin");
-                        switch (source) {
-                            case "website":
-                                console.log("website process started");
-                                if (metaData?.urls) result = await processURLS(newCollection._id, metaData.urls, receiver, _id);
-                                break;
-                            case "youtube":
-                                console.log("youtube process started");
-                                if (metaData?.urls) result = await processYT(newCollection._id, metaData.urls, receiver, _id);
-                                break;
-                            case "file":
-                                console.log("file process started");
-                                if (metaData) result = await processFile(newCollection._id, metaData, receiver, _id);
-                                break;
-                            default:
-                                console.warn(`Unknown source type: ${source}`);
-                                break;
-                        }
-                    }
-                } catch (error) {
-                    console.error("Failed to sync collection:", error);
-                }
-            })(newCollection, receiver);
+            // (async function processCollection(newCollection, receiver = context.user.business) {
+            //     try {
+            //         for (const content of newCollection.contents) {
+            //             const { source, metaData, _id } = content;
+            //             let result
+                        
+            //             switch (source) {
+            //                 case "website":
+            //                     console.log("website process started");
+            //                     if (metaData?.urls) result = await processURLS(newCollection._id, metaData.urls, receiver, _id);
+            //                     break;
+            //                 case "youtube":
+            //                     console.log("youtube process started");
+            //                     if (metaData?.urls) result = await processYT(newCollection._id, metaData.urls, receiver, _id);
+            //                     break;
+            //                 default:
+            //                     console.warn(`Unknown source type: ${source}`);
+            //                     break;
+            //             }
+            //         }
+            //     } catch (error) {
+            //         console.error("Failed to sync collection:", error);
+            //     }
+            // })(newCollection, receiver);
             return newCollection;
         },
         getUploadUrl: async (_, { key = "sampleDocument" }, context, info) => {

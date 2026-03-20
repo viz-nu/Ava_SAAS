@@ -99,29 +99,29 @@ const metaData = new Schema({
         jobId: String,
         lastUpdate: Schema.Types.Mixed,
     },
-    urls: [{ "url": String }],
-    detailedReport: [{
-        "success": Boolean,
-        "url": String,
-        "error": String,
-        "attempted": { type: Boolean, default: false }
-    }]
+    progressStages: [{
+        name: { type: String, enum: ['embed and upsert','Chunking', 'Parsing'] },
+        accomplished: { type: Boolean, default: false },
+        status: { type: String, default: "PENDING", enum: ["PENDING", "RUNNING", "COMPLETED", "FAILED","CANCELLED"] },
+        error: { type: String },
+        startedAt: { type: Date, default: Date.now },
+        completedAt: { type: Date },
+        failedAt: { type: Date },
+        moreInfo: { type: Schema.Types.Mixed }
+    }],
 }, { _id: false });
-const content = new Schema({
-    source: { type: String, enum: ['website', 'youtube', 'file'] },
-    metaData: metaData,
-    status: { type: String, default: "loading", enum: ["active", "loading", "failed"] },
-    error: { type: String }
-})
 const CollectionSchema = new Schema({
     name: { type: String, required: true, },
+    source: { type: String, enum: ['website', 'youtube', 'file', 'text'] },
+    status: { type: String, default: "loading", enum: ["active", "loading", "failed"] },
+    error: { type: String },
+    metaData: metaData,
     description: { type: String },
-    topics: [String],
+    tags: [String],
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     isPublic: { type: Boolean, default: false },
-    isFeatured: { type: Boolean, default: false },
-    contents: [content],
+    isFeatured: { type: Boolean, default: false }
 }, {
     timestamps: true
 });
