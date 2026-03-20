@@ -109,7 +109,7 @@ export const jobResolvers = {
             await AgentModel.populate(job, { path: 'payload.agent', select: nested.payload.agent });
             return job;
         },
-        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null, workflowId = null }, context, info) => {
+        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null}, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const business = await Business.findById(context.user.business).select({ credits: 1 });
@@ -117,37 +117,38 @@ export const jobResolvers = {
             const agentDetails = await AgentModel.findOne({ channels: channel._id }, "_id personalInfo.VoiceAgentSessionConfig workflow");
             if (!agentDetails) throw new GraphQLError("Agent not found", { extensions: { code: "AGENT_NOT_FOUND" } });
             const conversation = await Conversation.create({
-                business: channel.business, 
-                channel: channel.type, 
+                business: channel.business,
+                channel: channel.type,
                 channelFullDetails: channel._id, agent: agentDetails._id, PreContext, contact: { phone: number }, metadata: { status: "initiated" },
                 workflow: agentDetails.workflow
             });
-            console.log("conversation created",JSON.stringify(conversation, null, 2));
             const { data } = await axios.post(`https://sockets.avakado.ai/session`, { "conversationId": conversation._id, "model": agentDetails.personalInfo.VoiceAgentSessionConfig.model, "tsp": channel.config.provider });
             console.log("session created", data);
             let callDetails = null;
             switch (channel.config.provider) {
-                case 'exotel':
+                case 'exotel': {
                     const { apiKey, apiToken } = channel.config.integration.secrets;
                     const { AccountSid, domain, region } = channel.config.integration.config;
                     const exotelService = new ExotelService(apiKey, apiToken, AccountSid, domain, region);
                     const customField = { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model, webSocketsUrl: encodeURIComponent(channel.config.webSocketsUrl) }
                     callDetails = await exotelService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), VoiceAppletId: channel.config.exotelVoiceAppletId, customField });
                     break;
+                }
                 case 'twilio':
                     const service = new TwilioService(channel.config.integration.config.AccountSid, TWILIO_AUTH_TOKEN);
                     callDetails = await service.makeAIOutboundCall({ to: number, from: channel.config.phoneNumber, url: channel.config.webSocketsUrl, webhookUrl: channel.config.voiceUpdatesWebhookUrl + conversation._id.toString(), conversationId: conversation._id.toString(), model: agentDetails.personalInfo.VoiceAgentSessionConfig.model });
                     break;
-                case 'tataTele':
-                    const tataTeleService = new TataTeleService(channel.config.integration.secrets.apiKey);
+                case 'tataTele': {
+                    const { apiKey, apiToken } = channel.config.integration.secrets;
+                    const tataTeleService = new TataTeleService(apiKey, apiToken);
                     callDetails = await tataTeleService.outboundCallToFlow({ number, CallerId: channel.config.phoneNumber, customField: { conversationId: conversation._id, model: agentDetails.personalInfo.VoiceAgentSessionConfig.model } });
                     break;
+                }
                 default:
                     throw new GraphQLError("Invalid provider", { extensions: { code: "INVALID_PROVIDER" } });
             }
             conversation.voiceCallIdentifierNumberSID = callDetails.Sid;
             conversation.campaign = campaignId;
-            conversation.workflow = workflowId;
             conversation.metadata.callDetails = { ...JSON.parse(JSON.stringify(callDetails || {})) };
             await conversation.save();
             return conversation;
