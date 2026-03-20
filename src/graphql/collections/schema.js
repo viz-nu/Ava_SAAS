@@ -41,8 +41,14 @@ type Collection {
   description: String
   """Topic tags for categorizing the collection"""
   topics: [String]
-  """Content items in this collection"""
-  contents: [Content]
+  """Source of the collection"""
+  source: contentSourceEnum
+  """Status of the collection"""
+  status: contentStatusEnum
+  """Error message if processing failed"""
+  error: String
+  """Metadata about the collection"""
+  metaData: JSON
   """Business that owns this collection"""
   business: Business
   """User who created the collection"""
@@ -56,6 +62,65 @@ type Collection {
   """Last update timestamp"""
   updatedAt: DateTime
 }
+ enum contentSourceEnum{
+  """Website URL content source"""
+  website
+  """YouTube video content source"""  
+  youtube
+  """File upload content source"""
+  file
+  """Text content source"""
+  text
+}
+enum chunkingStrategyEnum{
+  """Recursive structural chunking"""
+  recursiveStructural
+  """Recursive semantic chunking"""
+  recursiveSemantic
+}
+    input chunkingDetailsInput {
+        strategy: chunkingStrategyEnum
+        tunables: JSON
+    }
+ enum parserTierEnum{
+    """Fast parser tier"""
+      fast
+      """Cost-effective parser tier"""
+      cost_effective
+      """Agentic parser tier"""
+      agentic
+      """Agentic+ parser tier"""
+      agentic_plus
+      }
+enum parserExpandEnum{
+    """Text content"""
+    text
+    """Items content"""
+    items
+    """Markdown content"""
+    markdown
+    """Metadata content"""
+    metadata
+    """Images content metadata"""
+    images_content_metadata
+    """XLSX content metadata"""
+    xlsx_content_metadata
+    """Output PDF content metadata"""
+    output_pdf_content_metadata
+    }
+enum parserVersionEnum{
+      """Latest version"""
+      latest
+    }
+    input parserDetailsInput {
+        tier: parserTierEnum
+        expand: [parserExpandEnum]
+        version: parserVersionEnum
+        source_url: String
+        advancedOptions: JSON
+        jobId: String
+        lastUpdate: JSON
+    }
 
 """Input type for creating collections"""
 input CollectionInput {
@@ -64,19 +129,15 @@ input CollectionInput {
   """Description of the collection"""
   description: String
   """Initial content items"""
-  contents: [ContentInput]
+  source: contentSourceEnum!
+  """Chunking details"""
+  chunkingDetails: chunkingDetailsInput
+  """Parser details"""
+  parserDetails: parserDetailsInput
   """Whether collection should be public"""
   isPublic: Boolean
   """Whether collection should be featured"""
   isFeatured: Boolean
-}
-
-"""Input type for adding content"""
-input ContentInput {
-  """Source type of the content"""
-  source: contentSourceEnum
-  """Additional metadata about the content"""
-  metaData: JSON
 }
 
 """Available actions for updating collections"""
@@ -117,15 +178,11 @@ type Mutation {
   """Delete an uploaded file from storage
   @param key - The key of the file to delete"""
   deleteUploadedFileFromStorage(key: String!): Boolean @requireScope(scope: "collection:read") @requireBusinessAccess
-  """Update an existing collection
+  """Update a collection
   @param id - ID of collection to update
-  @param action - Type of update to perform
-  @param name - New name when renaming
-  @param description - New description when redescribing
-  @param removeContents - Content IDs to remove
-  @param addContents - New content to add"""
-  updateCollection(id: ID! action: updateCollectionActionEnum! name: String description: String removeContents: [ID] addContents: [ContentInput]): Collection @requireScope(scope: "collection:update") @requireBusinessAccess
-
+  @param name - New name of the collection
+  @param description - New description of the collection"""
+  updateCollection(id: ID! name: String description: String): Collection @requireScope(scope: "collection:update") @requireBusinessAccess
   """Delete a collection
   @param id - ID of collection to delete"""
   deleteCollection(id: ID!): Boolean @requireScope(scope: "collection:delete") @requireBusinessAccess

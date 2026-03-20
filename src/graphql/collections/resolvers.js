@@ -41,8 +41,7 @@ export const collectionResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             let { name, description, source, chunkingDetails, parserDetails, isPublic, isFeatured } = collection;
-            let progressStages = [];
-            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails }, business: context.user.business, createdBy: context.user._id }).select(projection);
+            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails }, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured }).select(projection);
             switch (source) {
                 case "website":
                     break;
@@ -65,7 +64,7 @@ export const collectionResolvers = {
             //         for (const content of newCollection.contents) {
             //             const { source, metaData, _id } = content;
             //             let result
-                        
+
             //             switch (source) {
             //                 case "website":
             //                     console.log("website process started");
@@ -98,38 +97,17 @@ export const collectionResolvers = {
             await cloudflareIntegration.deleteObject({ Bucket: "ava-client-documents", Key: context.user.business.toString() + "/" + key });
             return true;
         },
-        updateCollection: async (_, { id, action, name, description, removeContents, addContents }, context, info) => {
+        updateCollection: async (_, { id, name, description }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const collection = await Collection.findOne({ _id: id, business: context.user.business });
+            const updateFields = {};
+            if (name !== undefined && name !== "") updateFields.name = name;
+            if (description !== undefined && description !== "") updateFields.description = description;
+            const collection = await Collection.findOneAndUpdate({ _id: id, business: context.user.business }, updateFields, { new: true }).select(projection);
             if (!collection) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
-            switch (action) {
-                case "rename":
-                    if (name) collection.name = name;
-                    break;
-                case "redescribe":
-                    if (description) collection.description = description;
-                    break;
-                case "addContents":
-                    collection.contents.push(...addContents)
-                    break;
-                case "removeContents":
-                    let redundantContents = collection.contents.filter(ele => removeContents.includes(ele._id.toString()))
-                    await Promise.all(
-                        redundantContents.map(async (content) => {
-                            const urls = content.metaData.urls.map(urlObj => urlObj.url);
-                            return Data.deleteMany({ collection: collection._id, "metadata.url": { $in: urls } });
-                        })
-                    );
-                    collection.contents = collection.contents.filter(ele => !removeContents.includes(ele._id.toString()))
-                    break;
-                default:
-                    throw new GraphQLError("Invalid action", { extensions: { code: "INVALID_ACTION" } });
-            }
-            const updatedCollection = await collection.save().select(projection);
-            await Business.populate(updatedCollection, { path: 'business', select: nested.business });
-            await User.populate(updatedCollection, { path: 'createdBy', select: nested.createdBy });
-            return updatedCollection;
+            await Business.populate(collection, { path: 'business', select: nested.business });
+            await User.populate(collection, { path: 'createdBy', select: nested.createdBy });
+            return collection;
         },
         deleteCollection: async (_, { id }, context) => {
             // const jobs = await urlProcessingQueue.getJobs(['waiting', 'active', 'delayed']);
