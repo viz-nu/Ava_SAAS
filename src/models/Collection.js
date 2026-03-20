@@ -100,9 +100,9 @@ const metaData = new Schema({
         lastUpdate: Schema.Types.Mixed,
     },
     progressStages: [{
-        name: { type: String, enum: ['embed and upsert','Chunking', 'Parsing'] },
+        name: { type: String, enum: ['embed and upsert', 'Chunking', 'Parsing'] },
         accomplished: { type: Boolean, default: false },
-        status: { type: String, default: "PENDING", enum: ["PENDING", "RUNNING", "COMPLETED", "FAILED","CANCELLED"] },
+        status: { type: String, default: "PENDING", enum: ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] },
         error: { type: String },
         startedAt: { type: Date, default: Date.now },
         completedAt: { type: Date },
@@ -113,7 +113,7 @@ const metaData = new Schema({
 const CollectionSchema = new Schema({
     name: { type: String, required: true, },
     source: { type: String, enum: ['website', 'youtube', 'file', 'text'] },
-    status: { type: String, default: "loading", enum: ["active", "loading", "failed"] },
+    status: { type: String, default: "loading", enum: ["active", "loading", "failed", "cancelled"] },
     error: { type: String },
     metaData: metaData,
     description: { type: String },
