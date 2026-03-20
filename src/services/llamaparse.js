@@ -11,10 +11,12 @@ class LlamaParser {
         return url.toString();
     }
     async parse({ source_url, tier = 'cost_effective', version = 'latest', expand = ['items', "markdown", 'metadata', 'images_content_metadata'], advancedOptions = {} }, queryOptions = {}) {
+        if (tier === 'fast') expand = ["text"];
+        const webhook_url = this.buildWebhookUrl("https://chat.avakado.ai/webhook/llamaparse", queryOptions);
         try {
-            if (tier === 'fast') expand = ["text"];
-            const webhook_url = this.buildWebhookUrl("https://chat.avakado.ai/webhook/llamaparse", queryOptions);
+            console.log(" parser create options:", { tier, version, source_url, expand, ...advancedOptions, webhook_configurations: [{ webhook_headers: { 'Content-Type': 'application/json', 'X-custom-header': 'custom-value' }, webhook_url }] });
             const parsing = await this.client.parsing.create({ tier, version, source_url, expand, ...advancedOptions, webhook_configurations: [{ webhook_headers: { 'Content-Type': 'application/json', 'X-custom-header': 'custom-value' }, webhook_url }] });
+            console.log(" parser created:", parsing);
             return parsing;
         } catch (error) {
             console.error({ name: error.name, code: error.Code, message: error.message, metadata: error.$metadata });
