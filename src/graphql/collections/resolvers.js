@@ -41,7 +41,7 @@ export const collectionResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             let { name, description, source, chunkingDetails, parserDetails, isPublic, isFeatured } = collection;
-            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails }, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured }).select(projection);
+            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails }, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured });
             switch (source) {
                 case "website":
                     break;
