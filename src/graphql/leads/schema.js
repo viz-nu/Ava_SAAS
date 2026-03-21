@@ -5,7 +5,6 @@ type Lead {
     business: Business
     createdBy: User
     data: JSON
-    status: String
     notes: String
     createdAt: DateTime
     updatedAt: DateTime
@@ -14,53 +13,22 @@ type LeadTemplate {
     _id: ID!
     name: String
     description: String
-    fields: [LeadTemplateField]
+    fields: JSON
     isActive: Boolean
     createdBy: User
     business: Business
     createdAt: DateTime
     updatedAt: DateTime
 }
-type LeadTemplateField {
-    name: String
-    type: LeadTemplateFieldTypeEnum
-    required: Boolean
-    defaultValue: JSON
-    validation: JSON
-    label: String
-    placeholder: String
-    description: String
-}
-input LeadTemplateFieldInput {
-    name: String
-    type: LeadTemplateFieldTypeEnum
-    required: Boolean
-    defaultValue: JSON
-    validation: JSON
-    label: String
-    placeholder: String
-    description: String
-}
-enum LeadTemplateFieldTypeEnum {
-    string
-    number
-    email
-    phone
-    date
-    boolean
-    url
-    text
-}
 input LeadCreateInput {
     templateId: ID!
     data: JSON!
-    status: String
     notes: String
 }
 input LeadTemplateInput {
     name: String
     description: String
-    fields: [LeadTemplateFieldInput]
+    fields: JSON
     isActive: Boolean
 }
     type Query {
