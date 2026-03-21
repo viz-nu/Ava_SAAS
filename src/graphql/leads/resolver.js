@@ -33,8 +33,7 @@ export const leadResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const { name, description, fields, isActive } = LeadTemplateInput;
-            if (!name || !fields || !Array.isArray(fields) || fields.length === 0) throw new GraphQLError("Name and fields array (with at least one field) are required", { extensions: { code: "BAD_USER_INPUT" } });
-            for (const field of fields) if (!field.name || !field.type || !field.label) throw new GraphQLError("Each field must have name, type, and label", { extensions: { code: "BAD_USER_INPUT" } });
+            if (!name) throw new GraphQLError("Name is required", { extensions: { code: "BAD_USER_INPUT" } });
             if (await LeadTemplate.findOne({ name, business: context.user.business })) throw new GraphQLError("Template name already exists", { extensions: { code: "BAD_USER_INPUT" } });
             const newLeadTemplate = await LeadTemplate.create({ name, description, fields, isActive: isActive !== undefined ? isActive : true, business: context.user.business, createdBy: context.user._id });
             return newLeadTemplate;
@@ -46,10 +45,6 @@ export const leadResolvers = {
             const updateData = {};
             if (name !== undefined) updateData.name = name;
             if (description !== undefined) updateData.description = description;
-            if (fields !== undefined) {
-                if (!Array.isArray(fields) || fields.length === 0) throw new GraphQLError("Fields must be a non-empty array", { extensions: { code: "BAD_USER_INPUT" } });
-                updateData.fields = fields;
-            }
             if (isActive !== undefined) updateData.isActive = isActive;
             const updatedLeadTemplate = await LeadTemplate.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
             if (!updatedLeadTemplate) throw new GraphQLError("Template not found", { extensions: { code: "BAD_USER_INPUT" } });
@@ -64,19 +59,19 @@ export const leadResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const { templateId, data, status, notes } = LeadCreateInput;
-            const { validatedData } = await validateLeadDataCore(templateId, data);
+            // const { validatedData } = await validateLeadDataCore(templateId, data);
 
             // Use validated data instead of raw data
-            const newLead = await Lead.create({ template: templateId, data: validatedData, status: status || 'new', notes, business: context.user.business, createdBy: context.user._id });
+            const newLead = await Lead.create({ template: templateId, data: data, notes, business: context.user.business, createdBy: context.user._id });
             return newLead;
         },
         bulkCreateLeads: async (_, { dataList }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const validatedDataList = [];
-            for (const { templateId, data, status, notes } of dataList) {
-                const { validatedData } = await validateLeadDataCore(templateId, data);
-                validatedDataList.push({ template: templateId, data: validatedData, status: status || 'new', notes, business: context.user.business, createdBy: context.user._id });
+            for (const { templateId, data, notes } of dataList) {
+                // const { validatedData } = await validateLeadDataCore(templateId, data);
+                validatedDataList.push({ template: templateId, data: data, notes, business: context.user.business, createdBy: context.user._id });
             }
             const newLeads = await Lead.insertMany(validatedDataList);
             return newLeads;
@@ -87,8 +82,8 @@ export const leadResolvers = {
             const lead = await Lead.findById(id);
             if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "BAD_USER_INPUT" } });
             const { data, status, notes } = LeadCreateInput;
-            const { validatedData } = await validateLeadDataCore(lead.template, data);
-            const updatedLead = await Lead.findByIdAndUpdate(id, { data: validatedData, status: status || 'new', notes }, { new: true, runValidators: true });
+            // const { validatedData } = await validateLeadDataCore(lead.template, data);
+            const updatedLead = await Lead.findByIdAndUpdate(id, { data: data, status: status || 'new', notes }, { new: true, runValidators: true });
             if (!updatedLead) throw new GraphQLError("Lead not found", { extensions: { code: "BAD_USER_INPUT" } });
             return updatedLead;
         },
