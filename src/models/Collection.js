@@ -1,5 +1,9 @@
 import { model, Schema } from 'mongoose';
 const metaData = new Schema({
+    webcrawlerDetails: {
+        options: Object,
+        
+    },
     chunkingDetails: {
         strategy: { type: String, enum: ["recursiveStructural", "recursiveSemantic"], default: 'recursiveStructural' },
         tunables: {
