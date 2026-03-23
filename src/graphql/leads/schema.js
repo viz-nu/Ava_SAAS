@@ -20,6 +20,16 @@ type LeadTemplate {
     createdAt: DateTime
     updatedAt: DateTime
 }
+type LeadPagination {
+    data: [Lead]
+    metaData: LeadPaginationMetaData
+}
+type LeadPaginationMetaData {
+    page: Int
+    limit: Int
+    totalPages: Int
+    totalDocuments: Int
+}
 input LeadCreateInput {
     templateId: ID!
     data: JSON!
@@ -33,7 +43,8 @@ input LeadTemplateInput {
 }
     type Query {
     fetchleadsTemplates(limit: Int, templateId: ID, id: ID, isActive: Boolean): [LeadTemplate]
-    fetchLeads(limit: Int, templateId: ID, page: Int, id: ID, status: String): [Lead]
+    fetchLeads(limit: Int templateId: ID page: Int id: ID status: String origin: String creator: String tags: [String]): LeadPagination
+    fetchLeadFacets(templateId: ID, status: String creator: String origin: String tags: [String]): JSON
 }
     type Mutation {
     createLeadTemplate(LeadTemplateInput: LeadTemplateInput): LeadTemplate
