@@ -33,7 +33,7 @@ input LeadTemplateInput {
 }
     type Query {
     fetchleadsTemplates(limit: Int, templateId: ID, id: ID, isActive: Boolean): [LeadTemplate]
-    fetchLeads(limit: Int, templateId: ID, id: ID, status: String): [Lead]
+    fetchLeads(limit: Int, templateId: ID, page: Int, id: ID, status: String): [Lead]
 }
     type Mutation {
     createLeadTemplate(LeadTemplateInput: LeadTemplateInput): LeadTemplate
