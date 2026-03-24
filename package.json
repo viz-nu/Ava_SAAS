@@ -22,7 +22,6 @@
     "@langchain/community": "^0.3.33",
     "@langchain/core": "^0.3.42",
     "@llamaindex/llama-cloud": "^1.8.0",
-    "@mendable/firecrawl-js": "^1.29.3",
     "@openai/agents": "^0.0.3",
     "@zohocrm/nodejs-sdk-2.0": "^6.1.0",
     "@zohocrm/nodejs-sdk-8.0": "^2.0.0",
