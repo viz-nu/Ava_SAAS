@@ -1,6 +1,6 @@
 import axios from "axios";
 
-class firecrawlService {
+class FirecrawlService {
     constructor() {
         this.apiKey = process.env.FIRECRAWL_API_KEY;
     }
@@ -60,4 +60,4 @@ class firecrawlService {
         return data;
     }
 }
-export const firecrawlService = new firecrawlService();
+export const firecrawlService = new FirecrawlService();
