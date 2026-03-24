@@ -12,6 +12,7 @@ const TranscriptionSchema = new Schema({
 });
 const ConversationSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+    lead: { type: Schema.Types.ObjectId, ref: "Lead" },
     channel: { type: String, enum: ['email', 'whatsapp', 'telegram', 'web', 'phone', 'sms', 'instagram'], default: "web" },
     channelFullDetails: { type: Schema.Types.ObjectId, ref: "Channel" },
     campaign: { type: Schema.Types.ObjectId, ref: "Campaign" },

@@ -109,7 +109,7 @@ export const jobResolvers = {
             await AgentModel.populate(job, { path: 'payload.agent', select: nested.payload.agent });
             return job;
         },
-        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null}, context, info) => {
+        makeAnOutboundCall: async (_, { number, channelId, PreContext = "", campaignId = null, leadId = null }, context, info) => {
             const channel = await Channel.findById(channelId).select({ config: 1, business: 1, type: 1 }).populate({ path: 'config.integration', select: { config: 1, secrets: 1 } }).lean();
             if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             const business = await Business.findById(context.user.business).select({ credits: 1 });
@@ -120,7 +120,8 @@ export const jobResolvers = {
                 business: channel.business,
                 channel: channel.type,
                 channelFullDetails: channel._id, agent: agentDetails._id, PreContext, contact: { phone: number }, metadata: { status: "initiated" },
-                workflow: agentDetails.workflow
+                workflow: agentDetails.workflow,
+                lead: leadId
             });
             const { data } = await axios.post(`https://sockets.avakado.ai/session`, { "conversationId": conversation._id, "model": agentDetails.personalInfo.VoiceAgentSessionConfig.model, "tsp": channel.config.provider });
             console.log("session created", data);
