@@ -10,6 +10,7 @@ import { Business } from '../../models/Business.js';
 import { sendMessageToRoom } from '../../utils/socketIoClient.js';
 import { cloudflareIntegration } from '../../services/cloudflare.js';
 import { llamaParser } from '../../services/llamaparse.js';
+import { firecrawlService } from '../../services/firecrawl.js';
 export const collectionResolvers = {
     Query: {
         collections: async (_, { id, limit = 10, isPublic }, context, info) => {
@@ -40,10 +41,15 @@ export const collectionResolvers = {
         createCollection: async (_, { collection }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let { name, description, source, chunkingDetails, parserDetails, isPublic, isFeatured } = collection;
-            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails }, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured });
+            let { name, description, source, chunkingDetails, webcrawler, parserDetails, isPublic, isFeatured } = collection;
+            //webcrawler.options: {formats: ['markdown']}
+            const newCollection = await Collection.create({ name, description, source, metaData: { chunkingDetails, parserDetails, webcrawler }, business: context.user.business, createdBy: context.user._id, isPublic, isFeatured });
             switch (source) {
                 case "website":
+                    const lastUpdate = await firecrawlService.startBatchScrape(webcrawler.urls, webcrawler.options, { collection_id: newCollection._id, business_id: context.user.business._id });
+                    newCollection.metaData.webcrawler.lastUpdate = lastUpdate;
+                    newCollection.metaData.webcrawler.jobId = lastUpdate.id;
+                    newCollection.metaData.progressStages = [{ name: "webcrawler", status: "RUNNING", moreInfo: lastUpdate }, { name: "Chunking" }, { name: "embed and upsert" }];
                     break;
                 case "youtube":
                     break;

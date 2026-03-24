@@ -1,8 +1,10 @@
 import { model, Schema } from 'mongoose';
 const metaData = new Schema({
-    webcrawlerDetails: {
+    webcrawler: {
         options: Object,
-        
+        jobId: String,
+        lastUpdate: Schema.Types.Mixed,
+        urls: [String]
     },
     chunkingDetails: {
         strategy: { type: String, enum: ["recursiveStructural", "recursiveSemantic"], default: 'recursiveStructural' },
@@ -104,7 +106,7 @@ const metaData = new Schema({
         lastUpdate: Schema.Types.Mixed,
     },
     progressStages: [{
-        name: { type: String, enum: ['embed and upsert', 'Chunking', 'Parsing'] },
+        name: { type: String, enum: ['webcrawler', 'embed and upsert', 'Chunking', 'Parsing'] },
         accomplished: { type: Boolean, default: false },
         status: { type: String, default: "PENDING", enum: ["PENDING", "RUNNING", "COMPLETED", "FAILED", "CANCELLED"] },
         error: { type: String },
