@@ -122,6 +122,13 @@ enum parserVersionEnum{
         lastUpdate: JSON
     }
 
+input webcrawlerInput {
+  options: JSON
+  jobId: String
+  lastUpdate: JSON
+  urls: [String]
+}
+
 """Input type for creating collections"""
 input CollectionInput {
   """Display name (required)"""
@@ -132,6 +139,7 @@ input CollectionInput {
   source: contentSourceEnum!
   """Chunking details"""
   chunkingDetails: chunkingDetailsInput
+  webcrawler: webcrawlerInput
   """Parser details"""
   parserDetails: parserDetailsInput
   """Whether collection should be public"""
