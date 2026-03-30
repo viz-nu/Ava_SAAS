@@ -43,6 +43,8 @@ import { leadTypeDefs } from './leads/schema.js';
 import { leadResolvers } from './leads/resolver.js';
 import { workflowTypeDefs } from './workflows/schema.js';
 import { workflowResolvers } from './workflows/resolvers.js';
+import { serviceProvidersTypeDefs } from './serviceProviders/schema.js';
+import { serviceProvidersResolvers } from './serviceProviders/resolvers.js';
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
@@ -54,6 +56,7 @@ const typeDefs = mergeTypeDefs([
   userTypeDefs,
   IntegrationTypeDefs,
   // zohoTypeDefs,
+  serviceProvidersTypeDefs,
   agentTypeDefs,
   actionTypeDefs,
   collectionTypeDefs,
@@ -72,6 +75,7 @@ const resolvers = mergeResolvers([
   userResolvers,
   IntegrationResolvers,
   // zohoResolvers,
+  serviceProvidersResolvers,
   agentResolvers,
   actionResolvers,
   collectionResolvers,
