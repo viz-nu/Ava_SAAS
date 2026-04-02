@@ -99,21 +99,3 @@ export const Api = model('Api', ApiSchema, 'Api');
 export const Providers = model('Providers', ProvidersSchema, 'Providers');
 
 
-// const apis = await Api.aggregate([
-//     {
-//       $lookup: {
-//         from: 'Providers',
-//         localField: 'provider',
-//         foreignField: '_id',
-//         as: 'provider'
-//       }
-//     },
-//     { $unwind: '$provider' },
-//     {
-//       $match: {
-//         'provider.name': 'Stripe'
-//       }
-//     }
-//   ]);
-
-

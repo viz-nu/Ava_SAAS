@@ -1,9 +1,7 @@
-
-
 import { model, Schema } from 'mongoose';
 const baseOpts = { _id: false };      // subdocs don’t need their own _id
 const docOpts = { timestamps: true, discriminatorKey: 'authType' };
-const ApiConnectorSchema = new Schema({
+const ApiAuthenticationSchema = new Schema({
     provider: { type: Schema.Types.ObjectId, ref: 'Providers' },
     accountDetails: Schema.Types.Mixed,
     scope: [String],
@@ -11,8 +9,6 @@ const ApiConnectorSchema = new Schema({
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' },
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
 }, docOpts);
-
-
 const oauth2Schema = new Schema({
     credentials: {
         accessToken: String,
@@ -105,18 +101,18 @@ const cookieSchema = new Schema({
 
 const noAuthSchema = new Schema({}, baseOpts);
 
-ApiConnectorSchema.discriminator('oauth2', oauth2Schema);
-ApiConnectorSchema.discriminator('apiKey', apiKeySchema);
-ApiConnectorSchema.discriminator('basic', basicSchema);
-ApiConnectorSchema.discriminator('bearer', bearerSchema);
-ApiConnectorSchema.discriminator('jwt', jwtSchema);
-ApiConnectorSchema.discriminator('hmac', hmacSchema);
-ApiConnectorSchema.discriminator('customHeader', customHeaderSchema);
-ApiConnectorSchema.discriminator('mtls', mtlsSchema);
-ApiConnectorSchema.discriminator('cookie', cookieSchema);
-ApiConnectorSchema.discriminator('none', noAuthSchema);
+ApiAuthenticationSchema.discriminator('oauth2', oauth2Schema);
+ApiAuthenticationSchema.discriminator('apiKey', apiKeySchema);
+ApiAuthenticationSchema.discriminator('basic', basicSchema);
+ApiAuthenticationSchema.discriminator('bearer', bearerSchema);
+ApiAuthenticationSchema.discriminator('jwt', jwtSchema);
+ApiAuthenticationSchema.discriminator('hmac', hmacSchema);
+ApiAuthenticationSchema.discriminator('customHeader', customHeaderSchema);
+ApiAuthenticationSchema.discriminator('mtls', mtlsSchema);
+ApiAuthenticationSchema.discriminator('cookie', cookieSchema);
+ApiAuthenticationSchema.discriminator('none', noAuthSchema);
 
-ApiConnectorSchema.methods.getSecrets = function () {
+ApiAuthenticationSchema.methods.getSecrets = function () {
     return { credentials: this.credentials, config: this.config };
 };
 //  Stripe → apiKey
@@ -125,4 +121,4 @@ ApiConnectorSchema.methods.getSecrets = function () {
 // Twilio → basic
 // Slack → oauth2
 // Internal APIs → customHeader
-export const ApiConnector = model('ApiConnector', ApiConnectorSchema, 'ApiConnector');
+export const ApiAuthenticators = model('ApiAuthenticators', ApiAuthenticationSchema, 'ApiAuthenticators');
