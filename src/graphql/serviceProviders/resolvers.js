@@ -113,6 +113,19 @@ export const serviceProvidersResolvers = {
             }
             const ApiAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });
             return ApiAuthenticator
+        },
+        createApi: async (_, { providerId, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
+            const provider = await Providers.findById(providerId);
+            if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
+            const api = await Api.create({ provider: providerId, title: title, description: description, version: version, schemas: schemas, requestTemplate: requestTemplate, requiredScopes: requiredScopes });
+            return api
+        },
+        updateApi: async (_, { id, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
+            const api = await Api.findByIdAndUpdate(id, { title: title, description: description, version: version, schemas: schemas, requestTemplate: requestTemplate, requiredScopes: requiredScopes }, { new: true });
+            return api
+        },
+        deleteApi: async (_, { id }) => {
+            return await Api.findByIdAndDelete(id);
         }
     }
 };
