@@ -110,7 +110,7 @@ export const generateFactsAndFAQs = async (businessName, content) => {
                 format: zodTextFormat(BusinessExtraction, "business_extraction"),
             }
         })
-        return factsAndFaqs;
+        return factsAndFaqs.output_parsed;
     } catch (error) {
         console.error('Error generating facts and FAQs:', error.message);
         throw new Error('Failed to generate facts and FAQs');

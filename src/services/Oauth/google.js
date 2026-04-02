@@ -90,7 +90,7 @@ export default {
                 ];
         }
     },
-    getAuthUrl(state, scopeCategory) {
+    getAuthUrl({state, scopeCategory}) {
         const params = new URLSearchParams({
             client_id: process.env.GOOGLE_CLIENT_ID,
             redirect_uri: process.env.GOOGLE_REDIRECT_URI,

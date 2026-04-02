@@ -4,9 +4,8 @@ const BASE = `https://login.microsoftonline.com/common/oauth2/v2.0`;
 
 export default {
     name: "microsoft",
-
     getScopes(scopeCategory) {
-        const base = ["openid", "profile", "email", "offline_access","User.Read"  ];
+        const base = ["openid", "profile", "email", "offline_access", "User.Read"];
         switch (scopeCategory) {
             case "excel.read": return [...base, "Files.Read",];
             case "excel.write": return [...base, "Files.ReadWrite",]; // ✅ recommended
@@ -22,7 +21,6 @@ export default {
             default: return [...base, "Files.ReadWrite",];
         }
     },
-
     getAuthUrl({ state, scopeCategory }) {
         const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: this.getScopes(scopeCategory).join(" "), state, prompt: "consent" });
         return `${BASE}/authorize?${params}`;
@@ -31,8 +29,6 @@ export default {
         try {
             const { data } = await axios.post(`${BASE}/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, code, redirect_uri: process.env.AZURE_REDIRECT_URI, grant_type: "authorization_code", }));
             return data;
-            // { access_token, refresh_token, id_token, expires_in, ... }
-
         } catch (err) {
             console.error(err);
             const azureError = err.response?.data;
@@ -63,7 +59,6 @@ export default {
                 message: JSON.stringify(error.response?.data?.error),     // human readable
                 status: error.response?.status,               // 400, 401, etc
             };
-            }
         }
-
-    };
+    }
+};

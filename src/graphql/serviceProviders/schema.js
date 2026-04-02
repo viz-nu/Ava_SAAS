@@ -69,8 +69,8 @@ type ApiAuthenticator {
   createdBy: User
   business: Business
   authType: apiAuthEnum!
-  credentials: JSON
-  config: JSON
+#   credentials: JSON
+#   config: JSON
 }
 
 type Query {
@@ -86,7 +86,7 @@ type Mutation {
     updateApi(id: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     deleteApi(id: ID!): Boolean
     createIntegrationAuthenticationUrl(scopeCategory:String! provider:String!):String
-    createApiAuthenticator(providerId: ID!, code: String!): JSON
+    createApiAuthenticator(providerId: ID!, code: String!): ApiAuthenticator
 }
 
 `;

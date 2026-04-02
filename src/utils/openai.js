@@ -341,9 +341,7 @@ export const OpenAiLLM = async ({ input = [], model = "gpt-4o-mini", text = {} }
             input,
             text
         });
-
-
-        return response.output_parsed
+        return response
     } catch (error) {
         console.error(error);
         return null;
