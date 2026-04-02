@@ -85,4 +85,10 @@ export const sharedTypeDefs = `#graphql
     updatedAt: DateTime
   }
 
+  type PaginationMetaData {
+    page: Int
+    limit: Int
+    totalPages: Int
+    totalDocuments: Int
+  }
 `; 

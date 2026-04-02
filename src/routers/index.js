@@ -9,7 +9,6 @@ import { channelRouter } from "./channel.js";
 import { actionsRouter } from "./actions.js";
 import { marketRouter } from "./market.js";
 import { ticketsRouter } from "./tickets.js";
-import { SuperUserRouter } from "./SuperUser.js";
 
 export const indexRouter = Router();
 indexRouter.use(xssReqSanitizer())
@@ -28,6 +27,3 @@ indexRouter.use("/channels", channelRouter)
 indexRouter.use("/actions", actionsRouter)
 indexRouter.use("/template", marketRouter)
 indexRouter.use("/tickets", ticketsRouter)
-
-// Super User routes (platform-level operations)
-indexRouter.use("/super", SuperUserRouter)

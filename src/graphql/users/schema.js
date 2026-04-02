@@ -151,5 +151,7 @@ export const userTypeDefs = `#graphql
 
   #   # Send password reset email
   #   sendPasswordResetEmail(email: String!): Boolean @requireScope(scope: "admin:users")
+  """Talk to AI"""
+  talkToAi(systemInstructions: String!, userQuery: String!, model: String = "gpt-4o-mini", zodFormat: JSON): JSON
   }
 `; 

@@ -111,15 +111,10 @@ input ReactionsInput {
   """Number of negative reactions"""
   dislike: Int
 }
-type ConversationPaginationMetaData {
-  page: Int
-  limit: Int
-  totalPages: Int
-  totalDocuments: Int
-}
+
 type ConversationPagination {
   data: [Conversation]
-  metaData: ConversationPaginationMetaData
+  metaData: PaginationMetaData
 }
 
 type Query {

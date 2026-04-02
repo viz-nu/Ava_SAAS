@@ -22,14 +22,9 @@ type LeadTemplate {
 }
 type LeadPagination {
     data: [Lead]
-    metaData: LeadPaginationMetaData
+    metaData: PaginationMetaData
 }
-type LeadPaginationMetaData {
-    page: Int
-    limit: Int
-    totalPages: Int
-    totalDocuments: Int
-}
+
 input LeadCreateInput {
     templateId: ID!
     data: JSON!

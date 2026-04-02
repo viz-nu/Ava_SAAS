@@ -12,23 +12,11 @@ export const workflowTypeDefs = `#graphql
     }
     type WorkflowConnection {
         data: [Workflow]
-        metaData: WorkflowPaginationMetaData
-    }
-    type WorkflowPaginationMetaData {
-        page: Int
-        limit: Int
-        totalPages: Int
-        totalDocuments: Int
+        metaData: PaginationMetaData
     }
     type InbuiltNodeConnection {
         data: [InbuiltNode]
-        metaData: InbuiltNodePaginationMetaData
-    }
-    type InbuiltNodePaginationMetaData {
-        page: Int
-        limit: Int
-        totalPages: Int
-        totalDocuments: Int
+        metaData: PaginationMetaData
     }
     type InbuiltNode {
         _id: ID!

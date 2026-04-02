@@ -13,6 +13,7 @@ import graphqlFields from 'graphql-fields';
 import { flattenFields } from '../../utils/graphqlTools.js';
 import AuthService from '../../services/authService.js';
 import { GraphQLError } from 'graphql';
+import { OpenAiLLM } from '../../utils/openai.js';
 export const userResolvers = {
     Query: {
         me: async (_, filters, context, info) => {
@@ -75,6 +76,15 @@ export const userResolvers = {
             } catch (error) {
                 throw new GraphQLError(error.message || "Registration failed", { extensions: { code: error.extensions?.code || "INTERNAL_SERVER_ERROR" } });
             }
+        },
+
+        talkToAi: async (_, { systemInstructions, userQuery, model = "gpt-4o-mini", zodFormat }, context) => {
+            const response = await OpenAiLLM({
+                input: [{ role: "system", content: systemInstructions }, { role: "user", content: userQuery }],
+                model,
+                text: { format: zodFormat }
+            })
+            return response
         },
         // forgotPassword: async (_, { email }, context) => {}
         //     updateUserScopes: async (_, { userId, scopeUpdate }, context) => {
