@@ -73,7 +73,11 @@ export const serviceProvidersResolvers = {
             switch (provider) {
                 case "Microsoft Excel":
                     return OauthMicrosoft.getAuthUrl({ scopeCategory });
+                case "Gmail":
+                case "Google Drive":
+                case "Google Forms":
                 case "Google Sheets":
+                case "Google Calendar":
                     return OauthGoogle.getAuthUrl({ scopeCategory });
                 default:
                     throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
@@ -93,14 +97,18 @@ export const serviceProvidersResolvers = {
                     config = { clientId: process.env.AzureApplicationClientId, clientSecret: process.env.AzureClientSecretValue, redirectUri: process.env.AZURE_REDIRECT_URI }
                     accountDetails = await OauthMicrosoft.getUserInfo(tokens.access_token);
                     break;
-                default:
+                case "Gmail":
+                case "Google Drive":
+                case "Google Forms":
                 case "Google Sheets":
-                    const tokens = await OauthGoogle.getTokens(code);
-                    scope = tokens.scope.split(' ');
-                    credentials = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type }
-                    config = { clientId: process.env.GoogleClientId, clientSecret: process.env.GoogleClientSecret, redirectUri: process.env.GOOGLE_REDIRECT_URI }
+                case "Google Calendar":
+                    tokens = await OauthGoogle.getTokens(code);
+                    credentials = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type, refreshTokenExpiresAt: new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) }
+                    scope = tokens.scope.split(' ')
+                    config = { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET, redirectUri: process.env.GOOGLE_REDIRECT_URI }
                     accountDetails = await OauthGoogle.getUserInfo(tokens.access_token);
                     break;
+                default:
                     throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             }
             const ApiAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });

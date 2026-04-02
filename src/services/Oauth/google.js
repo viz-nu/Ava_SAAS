@@ -90,7 +90,7 @@ export default {
                 ];
         }
     },
-    getAuthUrl({state, scopeCategory}) {
+    getAuthUrl({ state, scopeCategory }) {
         const params = new URLSearchParams({
             client_id: process.env.GOOGLE_CLIENT_ID,
             redirect_uri: process.env.GOOGLE_REDIRECT_URI,
@@ -121,5 +121,13 @@ export default {
             grant_type: "refresh_token",
         });
         return res.data;
+    },
+    async getUserInfo(accessToken) {
+        const { data } = await axios.get("https://www.googleapis.com/oauth2/v1/userinfo", {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        return data;
     },
 };

@@ -14,6 +14,7 @@ const oauth2Schema = new Schema({
         accessToken: String,
         refreshToken: String,
         expiresAt: Date,
+        refreshTokenExpiresAt: Date,
         tokenType: { type: String, default: 'Bearer' }
     },
     config: {
