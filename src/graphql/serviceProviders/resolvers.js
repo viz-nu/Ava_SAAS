@@ -3,6 +3,14 @@ import { ApiAuthenticators } from "../../models/apiAuthenticator.js";
 import { Api, Providers } from "../../models/ExternalServiceProviders.js";
 import OauthGoogle from "../../services/Oauth/google.js";
 import OauthMicrosoft from "../../services/Oauth/microsoft.js";
+const PROVIDER_MAP = {
+    'Gmail': OauthGoogle,
+    'Google Drive': OauthGoogle,
+    'Google Forms': OauthGoogle,
+    'Google Calendar': OauthGoogle,
+    'Google Sheets': OauthGoogle,
+    'Microsoft Excel': OauthMicrosoft
+};
 export const serviceProvidersResolvers = {
     Query: {
         fetchProviders: async (_, { name, description, icon, color, _id, page = 1, limit = 10 }, context) => {
@@ -84,44 +92,19 @@ export const serviceProvidersResolvers = {
             }
 
         },
-        createApiAuthenticator: async (_, { providerId, code }, context) => {
+        createApiAuthenticator: async (_, { providerId, code, authType = "oauth2" }, context) => {
             const provider = await Providers.findById(providerId);
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             if (!code) throw new GraphQLError("Code not found", { extensions: { code: 'INVALID_INPUT' } });
-            let credentials, config, authType = "oauth2", scope, accountDetails, tokens;
-            switch (provider.name) {
-                case "Microsoft Excel":
-                    {
-                        const tokenRes = await OauthMicrosoft.getTokens(code);
-                        if (!tokenRes.success) throw new GraphQLError(tokenRes.error.message, { extensions: { code: tokenRes.error.code } });
-                        tokens = tokenRes.data;
-                        scope = tokens.scope.split(' ');
-                        credentials = { tokenId: tokens.id_token, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type }
-                        config = { clientId: process.env.AzureApplicationClientId, clientSecret: process.env.AzureClientSecretValue, redirectUri: process.env.AZURE_REDIRECT_URI }
-                        const userInfoRes = await OauthMicrosoft.getUserInfo(tokens.access_token);
-                        if (!userInfoRes.success) throw new GraphQLError(userInfoRes.error.message, { extensions: { code: userInfoRes.error.code } });
-                        accountDetails = userInfoRes.data;
-                        break;
-                    }
-                case "Gmail":
-                case "Google Drive":
-                case "Google Forms":
-                case "Google Sheets":
-                case "Google Calendar": {
-                    const tokenRes = await OauthGoogle.getTokens(code);
-                    if (!tokenRes.success) throw new GraphQLError(tokenRes.error.message, { extensions: { code: tokenRes.error.code } });
-                    tokens = tokenRes.data;
-                    credentials = { tokenId: tokens.id_token, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type, refreshTokenExpiresAt: new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) }
-                    scope = tokens.scope.split(' ')
-                    config = { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET, redirectUri: process.env.GOOGLE_REDIRECT_URI }
-                    const userInfoRes = await OauthGoogle.getUserInfo(tokens.access_token);
-                    if (!userInfoRes.success) throw new GraphQLError(userInfoRes.error.message, { extensions: { code: userInfoRes.error.code } });
-                    accountDetails = userInfoRes.data;
-                    break;
-                }
-                default:
-                    throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            }
+            const oauthProvider = PROVIDER_MAP[provider.name];
+            if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
+            const { success: tokensSuccess, data: tokens, error: tokensError } = await oauthProvider.getTokens(code);
+            if (!tokensSuccess) throw new GraphQLError(tokensError.message, { extensions: { code: tokensError.code } });
+            let scope = tokens.scope.split(' ');
+            let credentials = { tokenId: tokens.id_token, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type, refreshTokenExpiresAt: new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) }
+            let config = { clientId: process.env.AzureApplicationClientId, clientSecret: process.env.AzureClientSecretValue, redirectUri: process.env.AZURE_REDIRECT_URI }
+            const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens.access_token);
+            if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
             const ApiAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });
             return ApiAuthenticator
         },
