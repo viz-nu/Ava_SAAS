@@ -1,4 +1,14 @@
 import { model, Schema } from 'mongoose';
+import google from '../services/Oauth/google.js';
+import microsoft from '../services/Oauth/microsoft.js';
+const PROVIDER_MAP = {
+    'Gmail': google,
+    'Google Drive': google,
+    'Google Forms': google,
+    'Google Calendar': google,
+    'Google Sheets': google,
+    'Microsoft Excel': microsoft
+};
 const baseOpts = { _id: false };      // subdocs don’t need their own _id
 const docOpts = { timestamps: true, discriminatorKey: 'authType' };
 const ApiAuthenticationSchema = new Schema({
@@ -117,6 +127,30 @@ ApiAuthenticationSchema.discriminator('none', noAuthSchema);
 ApiAuthenticationSchema.methods.getSecrets = function () {
     return { credentials: this.credentials, config: this.config };
 };
+ApiAuthenticationSchema.methods.validateToken = async function () {
+    await this.populate('provider');
+    const serviceProvider = PROVIDER_MAP[this.provider.name];
+    if (!serviceProvider) throw new Error('Unsupported provider');
+    return await serviceProvider.validateToken(this.credentials.accessToken);
+}
+ApiAuthenticationSchema.methods.refreshToken = async function () {
+    await this.populate('provider');
+    const serviceProvider = PROVIDER_MAP[this.provider.name];
+    if (!serviceProvider) throw new Error('Unsupported provider');
+    const newTokensRes = await serviceProvider.refreshToken(this.credentials.refreshToken);
+    if (!newTokensRes.success) throw new Error(newTokensRes.error.message);
+    const credentials = {
+        tokenId: newTokensRes.data.id_token, // keep consistent naming
+        accessToken: newTokensRes.data.access_token,
+        refreshToken: newTokensRes.data.refresh_token || this.credentials.refreshToken,
+        expiresAt: new Date(Date.now() + (newTokensRes.data.expires_in * 1000)),
+        tokenType: newTokensRes.data.token_type,
+        refreshTokenExpiresAt: newTokensRes.data.refresh_token_expires_in ? new Date(Date.now() + (newTokensRes.data.refresh_token_expires_in * 1000)) : this.credentials.refreshTokenExpiresAt // fallback
+    };
+    this.credentials = credentials;
+    await this.save();
+    return this;
+}
 //  Stripe → apiKey
 // Google → oauth2
 // AWS → hmac

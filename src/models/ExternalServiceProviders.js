@@ -24,18 +24,18 @@ const ApiSchema = new Schema({
     requiredScopes: [String]
 }, { timestamps: true });
 
-ApiSchema.methods.evaluateExpressions = function (context = { input, config }) {
+ApiSchema.methods.evaluateExpressions = function (context = { input, config, auth }) {
     const EXPR_REGEX = /\{\{\{([\s\S]*?)\}\}\}|\{\{([\s\S]*?)\}\}/g;
-
     function evalExpression(expr) {
         try {
             const fn = new Function(
                 "input",
                 "config",
+                "auth",
                 "context",
                 `return (${expr})`
             );
-            return fn(context.input, context.config, context);
+            return fn(context.input, context.config, context.auth, context);
         } catch (err) {
             console.error("Expression error:", expr, err);
             return undefined;
@@ -78,11 +78,9 @@ ApiSchema.methods.evaluateExpressions = function (context = { input, config }) {
             }
             return result;
         }
-
         // Pimitive (number, boolean, etc.)
         return value;
     }
-
     return process(this.requestTemplate);
 };
 

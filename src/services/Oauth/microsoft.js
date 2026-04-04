@@ -54,6 +54,15 @@ export default {
             return { success: false, error: this._handleMicrosoftError(error) };
         }
     },
+    async validateToken(accessToken) {
+        if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
+        try {
+            const { data } = await axios.get("https://graph.microsoft.com/v1.0/me", { headers: { Authorization: `Bearer ${accessToken}` } });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    },
     _handleMicrosoftError(error) {
         const response = error.response;
         switch (response?.status) {

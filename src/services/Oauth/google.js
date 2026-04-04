@@ -151,6 +151,15 @@ export default {
             return { success: false, error: this._handleGoogleError(error) };
         }
     },
+    async validateToken(accessToken) {
+        if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
+        try {
+            const { data } = await axios.get(`https://oauth2.googleapis.com/tokeninfo`, { params: { access_token: accessToken }, timeout: 5000, });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    },
     /**
      * Internal helper to categorize errors
      */
