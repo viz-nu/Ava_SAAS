@@ -11,6 +11,7 @@ const ApiAuthenticationSchema = new Schema({
 }, docOpts);
 const oauth2Schema = new Schema({
     credentials: {
+        tokenId: String,
         accessToken: String,
         refreshToken: String,
         expiresAt: Date,

@@ -91,23 +91,34 @@ export const serviceProvidersResolvers = {
             let credentials, config, authType = "oauth2", scope, accountDetails, tokens;
             switch (provider.name) {
                 case "Microsoft Excel":
-                    tokens = await OauthMicrosoft.getTokens(code);
-                    scope = tokens.scope.split(' ');
-                    credentials = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type }
-                    config = { clientId: process.env.AzureApplicationClientId, clientSecret: process.env.AzureClientSecretValue, redirectUri: process.env.AZURE_REDIRECT_URI }
-                    accountDetails = await OauthMicrosoft.getUserInfo(tokens.access_token);
-                    break;
+                    {
+                        const tokenRes = await OauthMicrosoft.getTokens(code);
+                        if (!tokenRes.success) throw new GraphQLError(tokenRes.error.message, { extensions: { code: tokenRes.error.code } });
+                        tokens = tokenRes.data;
+                        scope = tokens.scope.split(' ');
+                        credentials = { tokenId: tokens.id_token, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type }
+                        config = { clientId: process.env.AzureApplicationClientId, clientSecret: process.env.AzureClientSecretValue, redirectUri: process.env.AZURE_REDIRECT_URI }
+                        const userInfoRes = await OauthMicrosoft.getUserInfo(tokens.access_token);
+                        if (!userInfoRes.success) throw new GraphQLError(userInfoRes.error.message, { extensions: { code: userInfoRes.error.code } });
+                        accountDetails = userInfoRes.data;
+                        break;
+                    }
                 case "Gmail":
                 case "Google Drive":
                 case "Google Forms":
                 case "Google Sheets":
-                case "Google Calendar":
-                    tokens = await OauthGoogle.getTokens(code);
-                    credentials = { accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type, refreshTokenExpiresAt: new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) }
+                case "Google Calendar": {
+                    const tokenRes = await OauthGoogle.getTokens(code);
+                    if (!tokenRes.success) throw new GraphQLError(tokenRes.error.message, { extensions: { code: tokenRes.error.code } });
+                    tokens = tokenRes.data;
+                    credentials = { tokenId: tokens.id_token, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type, refreshTokenExpiresAt: new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) }
                     scope = tokens.scope.split(' ')
                     config = { clientId: process.env.GOOGLE_CLIENT_ID, clientSecret: process.env.GOOGLE_CLIENT_SECRET, redirectUri: process.env.GOOGLE_REDIRECT_URI }
-                    accountDetails = await OauthGoogle.getUserInfo(tokens.access_token);
+                    const userInfoRes = await OauthGoogle.getUserInfo(tokens.access_token);
+                    if (!userInfoRes.success) throw new GraphQLError(userInfoRes.error.message, { extensions: { code: userInfoRes.error.code } });
+                    accountDetails = userInfoRes.data;
                     break;
+                }
                 default:
                     throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             }
