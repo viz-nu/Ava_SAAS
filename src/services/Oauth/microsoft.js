@@ -4,25 +4,25 @@ const BASE = `https://login.microsoftonline.com/common/oauth2/v2.0`;
 
 export default {
     name: "microsoft",
-    getScopes(scopeCategory) {
-        const base = ["openid", "profile", "email", "offline_access", "User.Read"];
-        switch (scopeCategory) {
-            case "excel.read": return [...base, "Files.Read",];
-            case "excel.write": return [...base, "Files.ReadWrite",]; // ✅ recommended
-            case "excel.full": return [...base, "Files.ReadWrite.All",]; // ⚠️ full tenant access   "Sites.ReadWrite.All",
-            case "onedrive.read": return [...base, "Files.Read",];
-            case "onedrive.write": return [...base, "Files.ReadWrite",];
-            case "onedrive.full": return [...base, "Files.ReadWrite.All",];
-            case "outlook.read": return [...base, "Mail.Read",];
-            case "outlook.send": return [...base, "Mail.Send",];
-            case "calendar.read": return [...base, "Calendars.Read",];
-            case "calendar.write": return [...base, "Calendars.ReadWrite",];
-            case "user.basic": return [...base, "User.Read",];
-            default: return [...base, "Files.ReadWrite",];
-        }
-    },
-    getAuthUrl({ state, scopeCategory }) {
-        const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: this.getScopes(scopeCategory).join(" "), state, prompt: "consent" });
+    // getScopes(scopeCategory) {
+    //     const base = ["openid", "profile", "email", "offline_access", "User.Read"];
+    //     switch (scopeCategory) {
+    //         case "excel.read": return [...base, "Files.Read",];
+    //         case "excel.write": return [...base, "Files.ReadWrite",]; // ✅ recommended
+    //         case "excel.full": return [...base, "Files.ReadWrite.All",]; // ⚠️ full tenant access   "Sites.ReadWrite.All",
+    //         case "onedrive.read": return [...base, "Files.Read",];
+    //         case "onedrive.write": return [...base, "Files.ReadWrite",];
+    //         case "onedrive.full": return [...base, "Files.ReadWrite.All",];
+    //         case "outlook.read": return [...base, "Mail.Read",];
+    //         case "outlook.send": return [...base, "Mail.Send",];
+    //         case "calendar.read": return [...base, "Calendars.Read",];
+    //         case "calendar.write": return [...base, "Calendars.ReadWrite",];
+    //         case "user.basic": return [...base, "User.Read",];
+    //         default: return [...base, "Files.ReadWrite",];
+    //     }
+    // },
+    getAuthUrl({ state = "", scopes = [] }) {
+        const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: scopes.join(" "), state, prompt: "consent" });
         return `${BASE}/authorize?${params}`;
     },
     async getTokens(code) {

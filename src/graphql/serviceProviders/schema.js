@@ -85,7 +85,7 @@ type Mutation {
     createApi(providerId: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     updateApi(id: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     deleteApi(id: ID!): Boolean
-    createIntegrationAuthenticationUrl(scopeCategory:String! provider:String!):String
+    createIntegrationAuthenticationUrl(state: String, scopes: [String]!, provider:String!):String
     createApiAuthenticator(providerId: ID!, code: String!): ApiAuthenticator
 }
 

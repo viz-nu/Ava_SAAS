@@ -77,20 +77,10 @@ export const serviceProvidersResolvers = {
         deleteProvider: async (_, { id }) => {
             return await Providers.findByIdAndDelete(id);
         },
-        createIntegrationAuthenticationUrl: async (_, { scopeCategory, provider }, context) => {
-            switch (provider) {
-                case "Microsoft Excel":
-                    return OauthMicrosoft.getAuthUrl({ scopeCategory });
-                case "Gmail":
-                case "Google Drive":
-                case "Google Forms":
-                case "Google Sheets":
-                case "Google Calendar":
-                    return OauthGoogle.getAuthUrl({ scopeCategory });
-                default:
-                    throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            }
-
+        createIntegrationAuthenticationUrl: async (_, { state = "", scopes = [], provider }, context) => {
+            const oauthProvider = PROVIDER_MAP[provider];
+            if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
+            return oauthProvider.getAuthUrl({ state, scopes });
         },
         createApiAuthenticator: async (_, { providerId, code, authType = "oauth2" }, context) => {
             const provider = await Providers.findById(providerId);

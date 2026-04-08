@@ -1,27 +1,27 @@
 import { model, Schema } from 'mongoose';
 const ApiSchema = new Schema({
     provider: { type: Schema.Types.ObjectId, ref: 'Providers' },
-    title: String,
-    description: String,
-    version: String,
+    title: String, // <Provider>.<Resource>.<Action> excel.table.list  excel.range.update
+    description: String, // description of the api in human readable format
+    version: String, // version of the api
     schemas: {
-        input: Schema.Types.Mixed,
-        config: Schema.Types.Mixed,
-        output: Schema.Types.Mixed,
-        error: Schema.Types.Mixed,
-        auth: { type: String, enum: ['oauth2', 'apiKey', 'basic', 'bearer', 'jwt', 'hmac', 'customHeader', 'mtls', 'cookie', 'none'] }
+        input: Schema.Types.Mixed, // JSON schema for the input
+        config: Schema.Types.Mixed, // JSON schema for the config
+        output: Schema.Types.Mixed, // JSON schema for the output
+        error: Schema.Types.Mixed, // JSON schema for the error
+        auth: { type: String, enum: ['oauth2', 'apiKey', 'basic', 'bearer', 'jwt', 'hmac', 'customHeader', 'mtls', 'cookie', 'none'] } // auth type for now only oauth2 is supported
     },
     requestTemplate: {
-        method: String,
+        method: String, // GET, POST, PUT, DELETE, PATCH, etc.
         url: {
-            base: String,
-            path: String,
-            params: Schema.Types.Mixed
+            base: String, // base url of the api
+            path: String, // path of the api
+            params: Schema.Types.Mixed // query params of the api 
         },
-        headers: Schema.Types.Mixed,
-        body: Schema.Types.Mixed
+        headers: Schema.Types.Mixed, // headers of the api
+        body: Schema.Types.Mixed // body of the api
     },
-    requiredScopes: [String]
+    requiredScopes: [String] // scopes required for the api
 }, { timestamps: true });
 
 ApiSchema.methods.evaluateExpressions = function (context = { input, config, auth }) {
