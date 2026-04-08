@@ -72,7 +72,12 @@ type ApiAuthenticator {
 #   credentials: JSON
 #   config: JSON
 }
-
+type AuthStrategy {
+    authType: apiAuthEnum!
+    authUrl: String
+    scopes: [String]
+    providerId: ID
+}
 type Query {
     fetchProviders(name: String, description: String, icon: String, color: String, _id: ID, page: Int, limit: Int): ProviderPagination
     fetchApis(provider: ID, providerName: String, title: String, description: String, version: String, _id: ID, page: Int, limit: Int): ApiPagination
@@ -85,8 +90,8 @@ type Mutation {
     createApi(providerId: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     updateApi(id: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     deleteApi(id: ID!): Boolean
-    createIntegrationAuthenticationUrl(state: String, scopes: [String]!, provider:String!):String
-    createApiAuthenticator(providerId: ID!, code: String!): ApiAuthenticator
+    createAuthStrategy(apiId: ID!, state: String):AuthStrategy
+    createApiAuthenticator(providerId: ID!, code: String!, authType: apiAuthEnum!): ApiAuthenticator
 }
 
 `;

@@ -77,10 +77,22 @@ export const serviceProvidersResolvers = {
         deleteProvider: async (_, { id }) => {
             return await Providers.findByIdAndDelete(id);
         },
-        createIntegrationAuthenticationUrl: async (_, { state = "", scopes = [], provider }, context) => {
-            const oauthProvider = PROVIDER_MAP[provider];
+        createAuthStrategy: async (_, { apiId, state = "" }, context) => {
+            const api = await Api.findById(apiId).populate('provider');
+            if (!api) throw new GraphQLError("Api not found", { extensions: { code: 'INVALID_INPUT' } });
+            const oauthProvider = PROVIDER_MAP[api.provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            return oauthProvider.getAuthUrl({ state, scopes });
+            const scopes = api.requiredScopes;
+            if (!scopes) throw new GraphQLError("Scopes not found", { extensions: { code: 'INVALID_INPUT' } });
+            let authStrategy = {};
+            switch (api.schemas.auth) {
+                case 'oauth2':
+                    authStrategy = { authType: api.schemas.auth, authUrl: oauthProvider.getAuthUrl({ state, scopes }), scopes: scopes, providerId: api.provider._id }
+                    break;
+                default:
+                    throw new GraphQLError("Invalid auth type", { extensions: { code: 'INVALID_INPUT' } });
+            }
+            return authStrategy;
         },
         createApiAuthenticator: async (_, { providerId, code, authType = "oauth2" }, context) => {
             const provider = await Providers.findById(providerId);
