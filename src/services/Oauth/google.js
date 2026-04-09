@@ -2,6 +2,13 @@ import axios from "axios";
 
 export default {
     name: "google",
+    getConfig() {
+        return {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            redirectUri: process.env.GOOGLE_REDIRECT_URI
+        }
+    },
     // getScopes(scopeCategory) {
     //     const base = ["openid", "profile", "email"];
     //     switch (scopeCategory) {

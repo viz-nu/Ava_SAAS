@@ -103,8 +103,15 @@ export const serviceProvidersResolvers = {
             const { success: tokensSuccess, data: tokens, error: tokensError } = await oauthProvider.getTokens(code);
             if (!tokensSuccess) throw new GraphQLError(tokensError.message, { extensions: { code: tokensError.code } });
             let scope = tokens.scope.split(' ');
-            let credentials = { tokenId: tokens.id_token, accessToken: tokens.access_token, refreshToken: tokens.refresh_token, expiresAt: new Date(Date.now() + (tokens.expires_in * 1000)), tokenType: tokens.token_type, refreshTokenExpiresAt: new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) }
-            let config = { clientId: process.env.AzureApplicationClientId, clientSecret: process.env.AzureClientSecretValue, redirectUri: process.env.AZURE_REDIRECT_URI }
+            let credentials = {
+                tokenId: tokens.id_token,
+                accessToken: tokens.access_token,
+                refreshToken: tokens.refresh_token,
+                expiresAt: tokens.expires_in ? new Date(Date.now() + (tokens.expires_in * 1000)) : null,
+                tokenType: tokens.token_type,
+                refreshTokenExpiresAt: tokens.refresh_token_expires_in ? new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) : null
+            }
+            let config = oauthProvider.getConfig();
             const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens.access_token);
             if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
             const ApiAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });

@@ -25,6 +25,13 @@ export default {
         const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: scopes.join(" "), state, prompt: "consent" });
         return `${BASE}/authorize?${params}`;
     },
+    getConfig() {
+        return {
+            clientId: process.env.AzureApplicationClientId,
+            clientSecret: process.env.AzureClientSecretValue,
+            redirectUri: process.env.AZURE_REDIRECT_URI
+        }
+    },
     async getTokens(code) {
         if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
