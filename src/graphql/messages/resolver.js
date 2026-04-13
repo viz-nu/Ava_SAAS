@@ -10,8 +10,8 @@ export const messageResolvers = {
             if (conversationId) filter.conversationId = conversationId;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const messages = await Message.find(filter).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
-            await Business.populate(messages, { path: 'business', select: nested.business });
+            const messages = await Message.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            await Business.populate(messages, { path: 'business', select: nested.data.business });
             return messages;
         }
     }

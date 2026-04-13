@@ -20,14 +20,14 @@ export const agentResolvers = {
             if (isPublic !== undefined) filter.isPublic = isPublic;
             if (isFeatured !== undefined) filter.isFeatured = isFeatured;
             if (id !== undefined) filter._id = id;
-            const agents = await AgentModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(projection);
+            const agents = await AgentModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             const totalDocuments = await AgentModel.countDocuments(filter);
-            await Workflow.populate(agents, { path: 'workflow', select: nested.workflow });
-            await Business.populate(agents, { path: 'business', select: nested.business });
-            await User.populate(agents, { path: 'createdBy', select: nested.createdBy });
-            await Channel.populate(agents, { path: 'channels', select: nested.channels });
-            await Collection.populate(agents, { path: 'collections', select: nested.collections });
-            await Action.populate(agents, { path: 'actions', select: nested.actions });
+            await Workflow.populate(agents, { path: 'workflow', select: nested.data.workflow });
+            await Business.populate(agents, { path: 'business', select: nested.data.business });
+            await User.populate(agents, { path: 'createdBy', select: nested.data.createdBy });
+            await Channel.populate(agents, { path: 'channels', select: nested.data.channels });
+            await Collection.populate(agents, { path: 'collections', select: nested.data.collections });
+            await Action.populate(agents, { path: 'actions', select: nested.data.actions });
             return { data: agents, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         ephemeralToken: async (_, { id, model, voice, provider }, context, info) => {
@@ -140,9 +140,7 @@ export const agentResolvers = {
             if (foundChannels.length !== channels.length) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             if (foundCollections.length !== collections.length) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
-            const updatedAgent = await AgentModel
-                .findByIdAndUpdate(id, { ...agent, updatedAt: new Date() }, { new: true })
-                .select(projection);
+            const updatedAgent = await AgentModel.findByIdAndUpdate(id, { ...agent, updatedAt: new Date() }, { new: true });
             await Business.populate(updatedAgent, { path: 'business', select: nested.business });
             await Workflow.populate(updatedAgent, { path: 'workflow', select: nested.workflow });
             await User.populate(updatedAgent, { path: 'createdBy', select: nested.createdBy });

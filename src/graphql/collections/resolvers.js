@@ -20,10 +20,10 @@ export const collectionResolvers = {
             if (isPublic !== undefined) filter.isPublic = isPublic;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let collections = await Collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(projection);
+            let collections = await Collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             const totalDocuments = await Collection.countDocuments(filter);
-            await Business.populate(collections, { path: 'business', select: nested.business });
-            await User.populate(collections, { path: 'createdBy', select: nested.createdBy });
+            await Business.populate(collections, { path: 'business', select: nested.data.business });
+            await User.populate(collections, { path: 'createdBy', select: nested.data.createdBy });
             return { data: collections, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         getListOfUploadedFiles: async (_, { StartAfter, ContinuationToken, includeSize = false }, context, info) => {
@@ -107,7 +107,7 @@ export const collectionResolvers = {
             const updateFields = {};
             if (name !== undefined && name !== "") updateFields.name = name;
             if (description !== undefined && description !== "") updateFields.description = description;
-            const collection = await Collection.findOneAndUpdate({ _id: id, business: context.user.business }, updateFields, { new: true }).select(projection);
+            const collection = await Collection.findOneAndUpdate({ _id: id, business: context.user.business }, updateFields, { new: true });
             if (!collection) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             await Business.populate(collection, { path: 'business', select: nested.business });
             await User.populate(collection, { path: 'createdBy', select: nested.createdBy });

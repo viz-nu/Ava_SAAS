@@ -21,8 +21,10 @@ export const channelResolvers = {
             if (id) filter._id = id;
             if (type) filter.type = type;
             if (status) filter.status = status;
-            const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(projection);
+            const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             const totalDocuments = await Channel.countDocuments(filter);
+            await Business.populate(channels, { path: 'business', select: nested.data.business });
+            await User.populate(channels, { path: 'createdBy', select: nested.data.createdBy });
             return { data: channels, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
     },

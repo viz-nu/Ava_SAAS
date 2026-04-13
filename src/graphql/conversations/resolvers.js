@@ -28,7 +28,7 @@ export const conversationResolvers = {
         Conversation.countDocuments(filter)
       ]);
       // await Business.populate(conversations, { path: 'business', select: nested.business });
-      await AgentModel.populate(conversations, { path: 'agent', select: nested.agent });
+      await AgentModel.populate(conversations, { path: 'agent', select: nested.data.agent });
       // await Channel.populate(conversations, { path: 'channel', select: nested.channel });
       // await Campaign.populate(conversations, { path: 'campaign', select: nested.campaign });
       return { data: conversations, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };

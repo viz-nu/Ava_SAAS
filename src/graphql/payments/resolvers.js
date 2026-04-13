@@ -17,7 +17,7 @@ export const paymentResolvers = {
             if (name) filter.name = name;
             if (status) filter.status = status;
             if (type) filter.type = type;
-            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).select(projection).populate({ path: "allowedTopUps", select: projection });
+            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).populate({ path: "allowedTopUps", select: projection });
             return Plans;
         },
         async fetchPublicPlans(_, { code, name, id, status = 'active', type }, context, info) {
@@ -29,7 +29,7 @@ export const paymentResolvers = {
             if (name) filter.name = name;
             if (status) filter.status = status;
             if (type) filter.type = type;
-            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).select(projection).populate({ path: "allowedTopUps", select: projection });
+            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).populate({ path: "allowedTopUps", select: projection });
             return Plans;
         },
         async fetchSubscription(_, { id }, context, info) {
@@ -58,7 +58,7 @@ export const paymentResolvers = {
         async updateAVAPlan(_, { id, input }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const plan = await Plan.findByIdAndUpdate(id, input, { new: true }).select(projection).populate({ path: "allowedTopUps", select: projection });
+            const plan = await Plan.findByIdAndUpdate(id, input, { new: true }).populate({ path: "allowedTopUps", select: projection });
             return plan;
         },
         async deleteAVAPlan(_, { id }, context, info) {

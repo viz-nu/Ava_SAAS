@@ -28,11 +28,11 @@ export const jobResolvers = {
             if (schedule_run_at) filter["schedule.run_at"] = schedule_run_at;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const jobs = await Job.find(filter).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
-            await Business.populate(jobs, { path: 'business', select: nested.business });
-            await User.populate(jobs, { path: 'createdBy', select: nested.createdBy });
-            await Channel.populate(jobs, { path: 'payload.channel', select: nested.payload.channel });
-            await AgentModel.populate(jobs, { path: 'payload.agent', select: nested.payload.agent });
+            const jobs = await Job.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            await Business.populate(jobs, { path: 'business', select: nested.data.business });
+            await User.populate(jobs, { path: 'createdBy', select: nested.data.createdBy });
+            await Channel.populate(jobs, { path: 'payload.channel', select: nested.data.payload.channel });
+            await AgentModel.populate(jobs, { path: 'payload.agent', select: nested.data.payload.agent });
             return jobs;
         },
         fetchCampaigns: async (_, { id, limit = 10, page = 1 }, context, info) => {
@@ -40,11 +40,11 @@ export const jobResolvers = {
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const campaigns = await Campaign.find(filter).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
-            await Business.populate(campaigns, { path: 'business', select: nested.business });
-            await User.populate(campaigns, { path: 'createdBy', select: nested.createdBy });
-            await AgentModel.populate(campaigns, { path: 'agent', select: nested.agent });
-            await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.communicationChannels });
+            const campaigns = await Campaign.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            await Business.populate(campaigns, { path: 'business', select: nested.data.business });
+            await User.populate(campaigns, { path: 'createdBy', select: nested.data.createdBy });
+            await AgentModel.populate(campaigns, { path: 'agent', select: nested.data.agent });
+            await Channel.populate(campaigns, { path: 'communicationChannels', select: nested.data.communicationChannels });
             return campaigns;
         }
     },
@@ -91,7 +91,7 @@ export const jobResolvers = {
         updateJobSchedule: async (_, { id, schedule }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const job = await Job.findOne({ _id: id, business: context.user.business }).select(projection);
+            const job = await Job.findOne({ _id: id, business: context.user.business });
             if (!job) throw new GraphQLError("Invalid Id")
             job.schedule = schedule
             job.log.push({

@@ -13,7 +13,7 @@ export const ticketResolvers = {
             if (status) filter.status = status;
             if (channel) filter.channel = id;
             if (priority) filter.priority = priority;
-            const tickets = await Ticket.find(filter).select(projection).sort({ createdAt: -1 });
+            const tickets = await Ticket.find(filter).sort({ createdAt: -1 });
             Business.populate(tickets, { path: "business", select: nested })
             return tickets
         }

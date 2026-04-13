@@ -60,9 +60,9 @@ export const actionTypeDefs = `#graphql
     @param limit - Maximum number of actions to return
     @param page - Page number to return
     @param id - Optional ID to fetch a specific action
-    @param limit - Maximum number of actions to return
+    @param page - Page number to return
     @param isPublic - Filter by public/private status"""
-    actions(id:ID limit: Int isPublic: Boolean): ActionPagination @requireScope(scope: "action:read") @requireBusinessAccess
+    actions(id:ID limit: Int page: Int isPublic: Boolean): ActionPagination @requireScope(scope: "action:read") @requireBusinessAccess
   }
 
   type Mutation {

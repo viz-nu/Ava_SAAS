@@ -17,9 +17,9 @@ export const IntegrationResolvers = {
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const integration = await Integration.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
-            await Business.populate(integration, { path: 'business', select: nested.business });
-            await User.populate(integration, { path: 'createdBy', select: nested.createdBy });
+            const integration = await Integration.find(filter).limit(limit).sort({ createdAt: -1 });
+            await Business.populate(integration, { path: 'business', select: nested.data.business });
+            await User.populate(integration, { path: 'createdBy', select: nested.data.createdBy });
             return integration;
         }
     },

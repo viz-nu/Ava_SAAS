@@ -16,6 +16,6 @@ type message {
     updatedAt: DateTime
 }
 type Query {
-    fetchMessages(conversationId: ID!, limit: Int page: Int): [message] @requireScope(scope: "conversation:read") @requireBusinessAccess
+    fetchMessages(conversationId: ID! limit: Int page: Int): [message] @requireScope(scope: "conversation:read") @requireBusinessAccess
 }         
 `;

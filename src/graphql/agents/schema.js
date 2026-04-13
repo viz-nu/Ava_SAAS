@@ -119,7 +119,7 @@ type AgentPagination {
         @param isPublic - Filter by public/private status
         @param isFeatured - Filter by featured status
         @param id - Optional ID to fetch a specific agent """
-    agents(limit: Int isPublic: Boolean isFeatured: Boolean id: ID): AgentPagination @requireScope(scope: "agent:read") @requireBusinessAccess
+    agents(limit: Int page: Int isPublic: Boolean isFeatured: Boolean id: ID): AgentPagination @requireScope(scope: "agent:read") @requireBusinessAccess
     """ Get an ephemeral token for an agent
         @param id - ID of agent to get the token for """
     ephemeralToken(id: ID,model: String, voice: String, provider: AgentProviderEnum): JSON

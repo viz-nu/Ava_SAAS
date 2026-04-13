@@ -13,13 +13,9 @@ export const actionResolvers = {
             filter.business = context.user.business;
             if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
-            const actions = await Action.find(filter)
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .select(projection);
+            const actions = await Action.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             const totalDocuments = await Action.countDocuments(filter);
-            await Business.populate(actions, { path: 'business', select: nested.business });
+            await Business.populate(actions, { path: 'business', select: nested.data.business });
             return { data: actions, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         }
     },
@@ -28,7 +24,6 @@ export const actionResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const newAction = await Action.create({ ...action, business: context.user.business })
-                .select(projection);
             await Business.populate(newAction, { path: 'business', select: nested.business });
             return newAction;
         },
@@ -36,7 +31,6 @@ export const actionResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const updatedAction = await Action.findByIdAndUpdate(id, action, { new: true })
-                .select(projection);
             await Business.populate(updatedAction, { path: 'business', select: nested.business });
             return updatedAction;
         },

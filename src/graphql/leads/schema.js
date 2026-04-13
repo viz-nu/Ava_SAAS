@@ -37,8 +37,8 @@ input LeadTemplateInput {
     isActive: Boolean
 }
     type Query {
-    fetchleadsTemplates(limit: Int, templateId: ID, id: ID, isActive: Boolean): [LeadTemplate]
-    fetchLeads(limit: Int templateId: ID page: Int id: ID status: String origin: String creator: String tags: [String]): LeadPagination
+    fetchleadsTemplates(limit: Int page: Int, templateId: ID, id: ID, isActive: Boolean): [LeadTemplate]
+    fetchLeads(limit: Int page: Int templateId: ID id: ID status: String origin: String creator: String tags: [String]): LeadPagination
     fetchLeadFacets(templateId: ID, status: String creator: String origin: String tags: [String]): JSON
 }
     type Mutation {

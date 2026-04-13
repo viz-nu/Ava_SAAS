@@ -19,7 +19,7 @@ export const userResolvers = {
         me: async (_, filters, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const user = await User.findById(context.user._id).select(projection);
+            const user = await User.findById(context.user._id);
             return user
         },
         users: async (_, { id, limit = 10, role, isVerified }, context, info) => {
@@ -30,7 +30,7 @@ export const userResolvers = {
             if (role) filter.role = role;
             if (isVerified !== undefined) filter.isVerified = isVerified;
             if (id) filter._id = id
-            return await User.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
+            return await User.find(filter).limit(limit).sort({ createdAt: -1 });
         }
     },
     Mutation: {
