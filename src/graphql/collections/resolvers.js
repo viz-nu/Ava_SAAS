@@ -13,20 +13,18 @@ import { llamaParser } from '../../services/llamaparse.js';
 import { firecrawlService } from '../../services/firecrawl.js';
 export const collectionResolvers = {
     Query: {
-        collections: async (_, { id, limit = 10, isPublic }, context, info) => {
+        collections: async (_, { limit = 10, page = 1, id, isPublic }, context, info) => {
             const filter = {};
             filter.business = context.user.business;
             if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let collections = await Collection.find(filter)
-                .select(projection)
-                .limit(limit)
-                .sort({ createdAt: -1 });
+            let collections = await Collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(projection);
+            const totalDocuments = await Collection.countDocuments(filter);
             await Business.populate(collections, { path: 'business', select: nested.business });
             await User.populate(collections, { path: 'createdBy', select: nested.createdBy });
-            return collections;
+            return { data: collections, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         getListOfUploadedFiles: async (_, { StartAfter, ContinuationToken, includeSize = false }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });

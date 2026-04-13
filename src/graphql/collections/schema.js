@@ -160,12 +160,16 @@ enum updateCollectionActionEnum {
   removeContents
 }
 
+type CollectionPagination {
+  data: [Collection]
+  metaData: PaginationMetaData
+}
 type Query {
   """Get all collections for the user's business
   @param id - Optional ID to fetch specific collection
   @param limit - Maximum number of collections to return
   @param isPublic - Filter by public/private status"""
-  collections(id:ID limit: Int isPublic: Boolean): [Collection] @requireScope(scope: "collection:read") @requireBusinessAccess
+  collections(id:ID limit: Int isPublic: Boolean): CollectionPagination @requireScope(scope: "collection:read") @requireBusinessAccess
   """Get a list of uploaded files
   @param StartAfter - The key to start after
   @param ContinuationToken - The continuation token

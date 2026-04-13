@@ -48,13 +48,17 @@ enum ChannelTypeEnum {
     """Twilio integration channel"""
     twilio
 }
+type ChannelPagination {
+  data: [Channel]
+  metaData: PaginationMetaData
+}
 
 type Query {
   """Get channels matching the specified filters
   @param _id - Optional channel ID to fetch a specific channel
   @param type - Filter by channel type
   @param status - Filter by channel status"""
-  getChannels(_id: ID, type: ChannelTypeEnum, status: String): [Channel] @requireScope(scope: "channel:read")
+  getChannels(_id: ID, type: ChannelTypeEnum, status: String): ChannelPagination @requireScope(scope: "channel:read")
 }
 
 """Input type for creating/updating channels"""

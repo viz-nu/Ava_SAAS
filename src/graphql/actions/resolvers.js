@@ -6,7 +6,7 @@ import { Business } from "../../models/Business.js";
 
 export const actionResolvers = {
     Query: {
-        actions: async (_, { id, limit = 10, isPublic }, context, info) => {
+        actions: async (_, { limit = 10, page = 1, id, isPublic }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const filter = {};
@@ -14,11 +14,13 @@ export const actionResolvers = {
             if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
             const actions = await Action.find(filter)
-                .select(projection)
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
                 .limit(limit)
-                .sort({ createdAt: -1 });
+                .select(projection);
+            const totalDocuments = await Action.countDocuments(filter);
             await Business.populate(actions, { path: 'business', select: nested.business });
-            return actions;
+            return { data: actions, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         }
     },
     Mutation: {

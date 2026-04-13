@@ -12,7 +12,7 @@ import { GoogleGenAI } from "@google/genai";
 import { Workflow } from '../../models/Workflow.js';
 export const agentResolvers = {
     Query: {
-        agents: async (_, { limit = 10, isPublic, isFeatured, id }, context, info) => {
+        agents: async (_, { limit = 10, page = 1, isPublic, isFeatured, id }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const filter = {};
@@ -20,14 +20,15 @@ export const agentResolvers = {
             if (isPublic !== undefined) filter.isPublic = isPublic;
             if (isFeatured !== undefined) filter.isFeatured = isFeatured;
             if (id !== undefined) filter._id = id;
-            const agents = await AgentModel.find(filter).select(projection).limit(limit).sort({ createdAt: -1 });
+            const agents = await AgentModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(projection);
+            const totalDocuments = await AgentModel.countDocuments(filter);
             await Workflow.populate(agents, { path: 'workflow', select: nested.workflow });
             await Business.populate(agents, { path: 'business', select: nested.business });
             await User.populate(agents, { path: 'createdBy', select: nested.createdBy });
             await Channel.populate(agents, { path: 'channels', select: nested.channels });
             await Collection.populate(agents, { path: 'collections', select: nested.collections });
             await Action.populate(agents, { path: 'actions', select: nested.actions });
-            return agents;
+            return { data: agents, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         ephemeralToken: async (_, { id, model, voice, provider }, context, info) => {
             try {

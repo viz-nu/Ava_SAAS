@@ -14,14 +14,16 @@ import { TwilioService } from '../../utils/twilio.js';
 const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID, TWILIO_AUTH_TOKEN } = process.env;
 export const channelResolvers = {
     Query: {
-        async getChannels(_, { id, type, status }, context, info) {
+        async getChannels(_, { limit = 10, page = 1, id, type, status }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             if (type) filter.type = type;
             if (status) filter.status = status;
-            return await Channel.find(filter).select(projection);
+            const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(projection);
+            const totalDocuments = await Channel.countDocuments(filter);
+            return { data: channels, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
     },
     Mutation: {
