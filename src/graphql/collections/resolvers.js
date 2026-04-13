@@ -3,7 +3,7 @@ import { Data } from '../../models/Data.js';
 import { AgentModel } from '../../models/Agent.js';
 import { User } from '../../models/User.js';
 import graphqlFields from 'graphql-fields';
-import { flattenFields } from '../../utils/graphqlTools.js';
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { processURLS } from "../../utils/websiteHelpers.js";
 import { processYT } from "../../utils/ytHelper.js";
 import { Business } from '../../models/Business.js';
@@ -19,16 +19,15 @@ export const collectionResolvers = {
             if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
-            let collections = await Collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
+            let collections = await Collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await Collection.countDocuments(filter);
-            await Business.populate(collections, { path: 'business', select: nested.data.business });
-            await User.populate(collections, { path: 'createdBy', select: nested.data.createdBy });
+            if (populateFields.business) await Business.populate(collections, { path: 'business', select: populateFields.business });
+            if (populateFields.createdBy) await User.populate(collections, { path: 'createdBy', select: populateFields.createdBy });
             return { data: collections, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         getListOfUploadedFiles: async (_, { StartAfter, ContinuationToken, includeSize = false }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
             const listOfFiles = await cloudflareIntegration.listObjects({ Bucket: "ava-client-documents", Prefix: context.user.business.toString() + "/" });
             if (includeSize) listOfFiles.SizeUploaded = await cloudflareIntegration.getBucketSize({ Bucket: "ava-client-documents", Prefix: context.user.business.toString() + "/" });
             return listOfFiles;
