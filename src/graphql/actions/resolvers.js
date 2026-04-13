@@ -1,6 +1,6 @@
 import { Action } from "../../models/Action.js";
 import graphqlFields from 'graphql-fields';
-import { flattenFields } from '../../utils/graphqlTools.js';
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { AgentModel } from "../../models/Agent.js";
 import { Business } from "../../models/Business.js";
 
@@ -8,14 +8,14 @@ export const actionResolvers = {
     Query: {
         actions: async (_, { limit = 10, page = 1, id, isPublic }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const filter = {};
             filter.business = context.user.business;
             if (id) filter._id = id;
             if (isPublic !== undefined) filter.isPublic = isPublic;
-            const actions = await Action.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            const actions = await Action.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await Action.countDocuments(filter);
-            await Business.populate(actions, { path: 'business', select: nested.data.business });
+            if (populateFields?.business) await Business.populate(actions, { path: 'business', select: populateFields.business });
             return { data: actions, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         }
     },

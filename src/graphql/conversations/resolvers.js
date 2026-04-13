@@ -1,5 +1,5 @@
 import { Conversation } from "../../models/Conversations.js";
-import { flattenFields } from "../../utils/graphqlTools.js";
+import { flattenFields, getSelectFields } from "../../utils/graphqlTools.js";
 import graphqlFields from "graphql-fields";
 import { AgentModel } from "../../models/Agent.js";
 export const conversationResolvers = {
@@ -22,13 +22,13 @@ export const conversationResolvers = {
       if (channelIds) filter.channelFullDetails = { $in: channelIds };
       if (campaignIds) filter.campaign = { $in: campaignIds };
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
-      const { projection, nested } = flattenFields(requestedFields);
+      const { rootFields, populateFields } = getSelectFields(requestedFields.data);
       const [conversations, totalDocuments] = await Promise.all([
-        Conversation.find(filter).limit(limit).skip(skip).sort({ createdAt: -1 }),
+        Conversation.find(filter).limit(limit).skip(skip).sort({ createdAt: -1 }).select(rootFields),
         Conversation.countDocuments(filter)
       ]);
       // await Business.populate(conversations, { path: 'business', select: nested.business });
-      await AgentModel.populate(conversations, { path: 'agent', select: nested.data.agent });
+      if (populateFields?.agent) await AgentModel.populate(conversations, { path: 'agent', select: populateFields.agent });
       // await Channel.populate(conversations, { path: 'channel', select: nested.channel });
       // await Campaign.populate(conversations, { path: 'campaign', select: nested.campaign });
       return { data: conversations, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };

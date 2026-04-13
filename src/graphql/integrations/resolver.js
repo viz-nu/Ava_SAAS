@@ -2,7 +2,7 @@ import { GraphQLError } from "graphql";
 import { Integration } from "../../models/Integrations.js";
 import { ZohoCRMIntegration } from "../../utils/Zoho.js";
 import graphqlFields from "graphql-fields";
-import { flattenFields } from "../../utils/graphqlTools.js";
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { TwilioService } from "../../utils/twilio.js";
 import { Business } from "../../models/Business.js";
 import { User } from "../../models/User.js";
@@ -16,10 +16,10 @@ export const IntegrationResolvers = {
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
-            const integration = await Integration.find(filter).limit(limit).sort({ createdAt: -1 });
-            await Business.populate(integration, { path: 'business', select: nested.data.business });
-            await User.populate(integration, { path: 'createdBy', select: nested.data.createdBy });
+            const { rootFields, populateFields } = getSelectFields(requestedFields);
+            const integration = await Integration.find(filter).limit(limit).sort({ createdAt: -1 }).select(rootFields);
+            if (populateFields?.business) await Business.populate(integration, { path: 'business', select: populateFields.business });
+            if (populateFields?.createdBy) await User.populate(integration, { path: 'createdBy', select: populateFields.createdBy });
             return integration;
         }
     },

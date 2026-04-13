@@ -22,8 +22,8 @@ export const collectionResolvers = {
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             let collections = await Collection.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await Collection.countDocuments(filter);
-            if (populateFields.business) await Business.populate(collections, { path: 'business', select: populateFields.business });
-            if (populateFields.createdBy) await User.populate(collections, { path: 'createdBy', select: populateFields.createdBy });
+            if (populateFields?.business) await Business.populate(collections, { path: 'business', select: populateFields.business });
+            if (populateFields?.createdBy) await User.populate(collections, { path: 'createdBy', select: populateFields.createdBy });
             return { data: collections, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         getListOfUploadedFiles: async (_, { StartAfter, ContinuationToken, includeSize = false }, context, info) => {

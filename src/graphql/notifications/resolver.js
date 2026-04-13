@@ -1,12 +1,12 @@
 import graphqlFields from "graphql-fields";
-import { flattenFields } from "../../utils/graphqlTools.js";
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { Notification } from "../../models/notifications.js";
 export const notificationResolvers = {
     Query: {
         async fetchNotifications(_, __, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
-            return await Notification.find({ business: context.user.business }).select(projection).sort({ createdAt: -1 });
+            const { rootFields, populateFields } = getSelectFields(requestedFields);
+            return await Notification.find({ business: context.user.business }).select(rootFields).sort({ createdAt: -1 });
         },
     },
     Mutation: {

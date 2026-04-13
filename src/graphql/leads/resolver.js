@@ -1,24 +1,24 @@
 import { Lead, LeadTemplate } from "../../models/Leads.js";
 import graphqlFields from "graphql-fields";
-import { flattenFields } from "../../utils/graphqlTools.js";
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { GraphQLError } from "graphql";
 import { validateLeadDataCore } from "../../middleware/validations.js";
 export const leadResolvers = {
   Query: {
     fetchleadsTemplates: async (_, { limit = 10, page = 1, templateId, id, isActive }, context, info) => {
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
-      const { projection, nested } = flattenFields(requestedFields);
+      const { rootFields, populateFields } = getSelectFields(requestedFields);
       const filter = {};
       filter.business = context.user.business;
       if (id !== undefined) filter._id = id;
       if (templateId !== undefined) filter.template = templateId;
       if (isActive !== undefined) filter.isActive = isActive;
-      const leadsTemplates = await LeadTemplate.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+      const leadsTemplates = await LeadTemplate.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
       return leadsTemplates;
     },
     fetchLeads: async (_, { limit = 10, page = 1, templateId, id, status, creator, origin, tags = [] }, context, info) => {
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
-      const { projection, nested } = flattenFields(requestedFields);
+      const { rootFields, populateFields } = getSelectFields(requestedFields.data);
       const filter = {};
       filter.business = context.user.business;
       if (id !== undefined) filter._id = id;
@@ -27,7 +27,7 @@ export const leadResolvers = {
       if (creator !== undefined) filter["data.creator"] = creator; // "user" | "avakado" | "api" | "import" | "integration";
       if (origin !== undefined) filter["data.origin"] = origin; // "facebook_ads"  | "google_ads"  | "instagram_ads"  | "linkedin_ads"  | "website"  | "landing_page"  | "whatsapp"  | "email"  | "referral"  | "event"  | "walk_in"  | "cold_call"  | "partner"  | "marketplace"  | "other";
       if (tags.length > 0) filter["data.tags"] = { $in: tags };
-      const leads = await Lead.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+      const leads = await Lead.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
       const totalDocuments = await Lead.countDocuments(filter);
       return { data: leads, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
     },

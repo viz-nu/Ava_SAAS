@@ -1,20 +1,20 @@
 import graphqlFields from "graphql-fields";
 import { Ticket } from "../../models/Tickets.js";
-import { flattenFields } from "../../utils/graphqlTools.js";
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { Business } from "../../models/Business.js";
 export const ticketResolvers = {
     Query: {
         async fetchTickets(_, { notifierEmail, channel, priority, status, id }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields);
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             if (notifierEmail) filter.notifierEmail = notifierEmail;
             if (status) filter.status = status;
             if (channel) filter.channel = id;
             if (priority) filter.priority = priority;
-            const tickets = await Ticket.find(filter).sort({ createdAt: -1 });
-            Business.populate(tickets, { path: "business", select: nested })
+            const tickets = await Ticket.find(filter).sort({ createdAt: -1 }).select(rootFields);
+            if (populateFields?.business) await Business.populate(tickets, { path: "business", select: populateFields.business });
             return tickets
         }
     },

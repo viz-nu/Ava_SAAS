@@ -1,5 +1,5 @@
 import graphqlFields from 'graphql-fields';
-import { flattenFields } from '../../utils/graphqlTools.js';
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { Channel } from '../../models/Channels.js';
 import { verifyTransporter } from '../../utils/sendEmail.js';
 import { Telegraf } from 'telegraf';
@@ -16,15 +16,15 @@ export const channelResolvers = {
     Query: {
         async getChannels(_, { limit = 10, page = 1, id, type, status }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             if (type) filter.type = type;
             if (status) filter.status = status;
-            const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await Channel.countDocuments(filter);
-            await Business.populate(channels, { path: 'business', select: nested.data.business });
-            await User.populate(channels, { path: 'createdBy', select: nested.data.createdBy });
+            if (populateFields?.business) await Business.populate(channels, { path: 'business', select: populateFields.business });
+            if (populateFields?.createdBy) await User.populate(channels, { path: 'createdBy', select: populateFields.createdBy });
             return { data: channels, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
     },

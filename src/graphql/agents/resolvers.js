@@ -2,7 +2,7 @@ import graphqlFields from 'graphql-fields';
 import { AgentModel } from '../../models/Agent.js';
 import { Collection } from '../../models/Collection.js';
 import { Action } from '../../models/Action.js';
-import { flattenFields } from '../../utils/graphqlTools.js';
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { openai } from '../../utils/openai.js';
 import { Channel } from '../../models/Channels.js';
 import { Business } from '../../models/Business.js';
@@ -14,20 +14,20 @@ export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, page = 1, isPublic, isFeatured, id }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const filter = {};
             filter.business = context.user.business;
             if (isPublic !== undefined) filter.isPublic = isPublic;
             if (isFeatured !== undefined) filter.isFeatured = isFeatured;
             if (id !== undefined) filter._id = id;
-            const agents = await AgentModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
+            const agents = await AgentModel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await AgentModel.countDocuments(filter);
-            await Workflow.populate(agents, { path: 'workflow', select: nested.data.workflow });
-            await Business.populate(agents, { path: 'business', select: nested.data.business });
-            await User.populate(agents, { path: 'createdBy', select: nested.data.createdBy });
-            await Channel.populate(agents, { path: 'channels', select: nested.data.channels });
-            await Collection.populate(agents, { path: 'collections', select: nested.data.collections });
-            await Action.populate(agents, { path: 'actions', select: nested.data.actions });
+            if (populateFields?.workflow) await Workflow.populate(agents, { path: 'workflow', select: populateFields.workflow });
+            if (populateFields?.business) await Business.populate(agents, { path: 'business', select: populateFields.business });
+            if (populateFields?.createdBy) await User.populate(agents, { path: 'createdBy', select: populateFields.createdBy });
+            if (populateFields?.channels) await Channel.populate(agents, { path: 'channels', select: populateFields.channels });
+            if (populateFields?.collections) await Collection.populate(agents, { path: 'collections', select: populateFields.collections });
+            if (populateFields?.actions) await Action.populate(agents, { path: 'actions', select: populateFields.actions });
             return { data: agents, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         ephemeralToken: async (_, { id, model, voice, provider }, context, info) => {

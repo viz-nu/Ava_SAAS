@@ -1,6 +1,6 @@
 import { Plan } from "../../models/Plans.js";
 import graphqlFields from "graphql-fields";
-import { flattenFields } from "../../utils/graphqlTools.js";
+import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
 import { RazorPayService } from "../../services/razorPayService.js";
 import { GraphQLError } from "graphql";
 import { Business } from "../../models/Business.js";
@@ -10,26 +10,26 @@ export const paymentResolvers = {
     Query: {
         async fetchPlans(_, { code, name, type, status = 'active', id }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields);
             const filter = {};
             if (id) filter._id = id;
             if (code) filter.code = code;
             if (name) filter.name = name;
             if (status) filter.status = status;
             if (type) filter.type = type;
-            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).populate({ path: "allowedTopUps", select: projection });
+            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).populate({ path: "allowedTopUps", select: rootFields });
             return Plans;
         },
         async fetchPublicPlans(_, { code, name, id, status = 'active', type }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { projection, nested } = flattenFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields);
             const filter = { public: true };
             if (id) filter._id = id;
             if (code) filter.code = code;
             if (name) filter.name = name;
             if (status) filter.status = status;
             if (type) filter.type = type;
-            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).populate({ path: "allowedTopUps", select: projection });
+            const Plans = await Plan.find(filter).sort({ createdAt: -1 }).populate({ path: "allowedTopUps", select: rootFields });
             return Plans;
         },
         async fetchSubscription(_, { id }, context, info) {
