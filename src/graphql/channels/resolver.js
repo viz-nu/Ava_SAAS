@@ -11,21 +11,29 @@ import { GraphQLError } from 'graphql';
 import { AgentModel } from '../../models/Agent.js';
 import { ExotelService } from '../../utils/exotel.js';
 import { TwilioService } from '../../utils/twilio.js';
+import { Business } from '../../models/Business.js';
+import { User } from '../../models/User.js';
 const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID, TWILIO_AUTH_TOKEN } = process.env;
 export const channelResolvers = {
     Query: {
         async getChannels(_, { limit = 10, page = 1, id, type, status }, context, info) {
-            const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
-            const filter = { business: context.user.business };
-            if (id) filter._id = id;
-            if (type) filter.type = type;
-            if (status) filter.status = status;
-            const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
-            const totalDocuments = await Channel.countDocuments(filter);
-            if (populateFields?.business) await Business.populate(channels, { path: 'business', select: populateFields.business });
-            if (populateFields?.createdBy) await User.populate(channels, { path: 'createdBy', select: populateFields.createdBy });
-            return { data: channels, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
+            try {
+                const requestedFields = graphqlFields(info, {}, { processArguments: false });
+                const { rootFields, populateFields } = getSelectFields(requestedFields.data);
+                console.log(rootFields, populateFields);
+                const filter = { business: context.user.business };
+                if (id) filter._id = id;
+                if (type) filter.type = type;
+                if (status) filter.status = status;
+                const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
+                const totalDocuments = await Channel.countDocuments(filter);
+                if (populateFields?.business) await Business.populate(channels, { path: 'business', select: populateFields.business });
+                if (populateFields?.createdBy) await User.populate(channels, { path: 'createdBy', select: populateFields.createdBy });
+                return { data: channels, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
+            } catch (error) {
+                console.log(error);
+            }
+
         },
     },
     Mutation: {
