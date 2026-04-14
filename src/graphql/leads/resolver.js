@@ -7,7 +7,7 @@ export const leadResolvers = {
   Query: {
     fetchleadsTemplates: async (_, { limit = 10, page = 1, templateId, id, isActive }, context, info) => {
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
-      const { rootFields, populateFields } = getSelectFields(requestedFields);
+      const { rootFields, populateFields } = getSelectFields(requestedFields.data);
       const filter = {};
       filter.business = context.user.business;
       if (id !== undefined) filter._id = id;

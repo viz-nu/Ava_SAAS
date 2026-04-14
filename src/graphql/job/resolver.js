@@ -39,13 +39,13 @@ export const jobResolvers = {
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { rootFields, populateFields } = getSelectFields(requestedFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const campaigns = await Campaign.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
+            const totalDocuments = await Campaign.countDocuments(filter);
             if (populateFields?.business) await Business.populate(campaigns, { path: 'business', select: populateFields.business });
             if (populateFields?.createdBy) await User.populate(campaigns, { path: 'createdBy', select: populateFields.createdBy });
             if (populateFields?.agent) await AgentModel.populate(campaigns, { path: 'agent', select: populateFields.agent });
             if (populateFields?.communicationChannels) await Channel.populate(campaigns, { path: 'communicationChannels', select: populateFields.communicationChannels });
-            const totalDocuments = await Campaign.countDocuments(filter);
             return { data: campaigns, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         }
     },

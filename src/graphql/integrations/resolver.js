@@ -12,15 +12,16 @@ import { ExotelService } from "../../utils/exotel.js";
 const { TWILIO_AUTH_TOKEN } = process.env;
 export const IntegrationResolvers = {
     Query: {
-        fetchIntegration: async (_, { id, limit = 5 }, context, info) => {
+        fetchIntegration: async (_, { id, limit = 5, page = 1 }, context, info) => {
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
-            const { rootFields, populateFields } = getSelectFields(requestedFields);
-            const integration = await Integration.find(filter).limit(limit).sort({ createdAt: -1 }).select(rootFields);
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
+            const integration = await Integration.find(filter).skip((page - 1) * limit).limit(limit).sort({ createdAt: -1 }).select(rootFields); 
+            const totalDocuments = await Integration.countDocuments(filter);
             if (populateFields?.business) await Business.populate(integration, { path: 'business', select: populateFields.business });
             if (populateFields?.createdBy) await User.populate(integration, { path: 'createdBy', select: populateFields.createdBy });
-            return integration;
+            return {data: integration, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments }};
         }
     },
     Mutation: {
