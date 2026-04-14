@@ -63,8 +63,8 @@ export const serviceProvidersResolvers = {
         }
     },
     Mutation: {
-        createProvider: async (_, { name, description, icon, color }, context) => {
-            return await Providers.create({ name, description, icon, color, createdBy: context.user._id });
+        createProvider: async (_, { name, description, icon, color, basicScopes }, context) => {
+            return await Providers.create({ name, description, icon, color, basicScopes, createdBy: context.user._id });
         },
         updateProvider: async (_, { id, name, description, icon, color }, context) => {
             const fieldsToUpdate = {};
@@ -82,7 +82,7 @@ export const serviceProvidersResolvers = {
             if (!api) throw new GraphQLError("Api not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[api.provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            const scopes = api.requiredScopes;
+            const scopes = new Set([...api.provider.basicScopes, ...api.requiredScopes]);
             if (!scopes) throw new GraphQLError("Scopes not found", { extensions: { code: 'INVALID_INPUT' } });
             let authStrategy = {};
             switch (api.schemas.auth) {
@@ -94,7 +94,7 @@ export const serviceProvidersResolvers = {
             }
             return authStrategy;
         },
-        createApiAuthenticator: async (_, { providerId, code, authType = "oauth2" }, context) => {
+        createApiAuthenticator: async (_, { providerId, code, authType = "oauth2", existingAuthenticatorId = null }, context) => {
             const provider = await Providers.findById(providerId);
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             if (!code) throw new GraphQLError("Code not found", { extensions: { code: 'INVALID_INPUT' } });
@@ -114,8 +114,13 @@ export const serviceProvidersResolvers = {
             let config = oauthProvider.getConfig();
             const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens.access_token);
             if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
-            const ApiAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });
-            return ApiAuthenticator
+            if (existingAuthenticatorId) {
+                const existingAuthenticator = await ApiAuthenticators.findByIdAndUpdate(existingAuthenticatorId, { $set: { ...(credentials && { credentials }), ...(config && { config }), ...(accountDetails && { accountDetails }), ...(scope && { scope }) } }, { new: true, runValidators: true });
+                if (!existingAuthenticator) throw new GraphQLError("Authenticator not found", { extensions: { code: 'INVALID_INPUT' } });
+                return existingAuthenticator;
+            }
+            const newAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });
+            return newAuthenticator
         },
         createApi: async (_, { providerId, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
             const provider = await Providers.findById(providerId);

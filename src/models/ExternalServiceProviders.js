@@ -90,10 +90,9 @@ const ProvidersSchema = new Schema({
     description: String,
     icon: String, // url
     color: String,
+    basicScopes: [String],
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' }
 }, { timestamps: true });
 
 export const Api = model('Api', ApiSchema, 'Api');
 export const Providers = model('Providers', ProvidersSchema, 'Providers');
-
-

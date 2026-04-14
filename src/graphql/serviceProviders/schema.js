@@ -3,6 +3,7 @@ type Provider {
     _id: ID!
     name: String
     description: String
+    basicScopes: [String]
     icon: String
     color: String
 }
@@ -84,14 +85,14 @@ type Query {
     fetchApiAuthenticators(provider: ID, providerName: String, _id: ID, page: Int, limit: Int): ApiAuthenticatorPagination
 }
 type Mutation {
-    createProvider(name: String, description: String, icon: String, color: String): Provider
+    createProvider(name: String, description: String, icon: String, color: String, basicScopes: [String]): Provider
     updateProvider(id: ID!, name: String, description: String, icon: String, color: String): Provider
     deleteProvider(id: ID!): Boolean
     createApi(providerId: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     updateApi(id: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
     deleteApi(id: ID!): Boolean
     createAuthStrategy(apiId: ID!, state: String):AuthStrategy
-    createApiAuthenticator(providerId: ID!, code: String!, authType: apiAuthEnum!): ApiAuthenticator
+    createApiAuthenticator(providerId: ID!, code: String!, authType: apiAuthEnum! , existingAuthenticatorId: ID): ApiAuthenticator
 }
 
 `;
