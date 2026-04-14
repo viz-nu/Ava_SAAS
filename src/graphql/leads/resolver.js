@@ -14,7 +14,8 @@ export const leadResolvers = {
       if (templateId !== undefined) filter.template = templateId;
       if (isActive !== undefined) filter.isActive = isActive;
       const leadsTemplates = await LeadTemplate.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
-      return leadsTemplates;
+      const totalDocuments = await LeadTemplate.countDocuments(filter);
+      return {data: leadsTemplates, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments }};
     },
     fetchLeads: async (_, { limit = 10, page = 1, templateId, id, status, creator, origin, tags = [] }, context, info) => {
       const requestedFields = graphqlFields(info, {}, { processArguments: false });

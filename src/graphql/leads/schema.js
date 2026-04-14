@@ -24,7 +24,10 @@ type LeadPagination {
     data: [Lead]
     metaData: PaginationMetaData
 }
-
+type LeadTemplatePagination {
+    data: [LeadTemplate]
+    metaData: PaginationMetaData
+}
 input LeadCreateInput {
     templateId: ID!
     data: JSON!
@@ -37,7 +40,7 @@ input LeadTemplateInput {
     isActive: Boolean
 }
     type Query {
-    fetchleadsTemplates(limit: Int page: Int, templateId: ID, id: ID, isActive: Boolean): [LeadTemplate]
+    fetchleadsTemplates(limit: Int page: Int, templateId: ID, id: ID, isActive: Boolean): LeadTemplatePagination
     fetchLeads(limit: Int page: Int templateId: ID id: ID status: String origin: String creator: String tags: [String]): LeadPagination
     fetchLeadFacets(templateId: ID, status: String creator: String origin: String tags: [String]): JSON
 }

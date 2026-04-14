@@ -45,6 +45,7 @@ export const jobResolvers = {
             if (populateFields?.createdBy) await User.populate(campaigns, { path: 'createdBy', select: populateFields.createdBy });
             if (populateFields?.agent) await AgentModel.populate(campaigns, { path: 'agent', select: populateFields.agent });
             if (populateFields?.communicationChannels) await Channel.populate(campaigns, { path: 'communicationChannels', select: populateFields.communicationChannels });
+            const totalDocuments = await Campaign.countDocuments(filter);
             return { data: campaigns, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         }
     },
