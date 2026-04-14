@@ -149,9 +149,13 @@ input outboundCallPayloadInput {
     maxRetries: Int
     cps: Int
 }
+type CampaignPagination {
+    data: [Campaign]
+    metaData: PaginationMetaData
+}
 type Query {
     fetchJobs(campaignId: ID, status: jobStatusEnum, priority: Int, jobType: jobTypeEnum id: ID schedule_type: scheduleTypeEnum schedule_run_at: DateTime limit: Int page: Int): [Job]
-    fetchCampaigns( id: ID, limit: Int page: Int ): [Campaign]
+    fetchCampaigns( id: ID, limit: Int page: Int ): CampaignPagination
 }
 type Mutation {
     createCampaign(name: String communicationChannels: [ID] leads: [ID] nodes: [JSON] edges: [JSON]): Campaign
