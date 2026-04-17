@@ -35,7 +35,7 @@ export const serviceProvidersResolvers = {
             const skip = (page - 1) * limit;
             // 🔥 If providerName is present → use aggregation
             if (providerName) {
-                const pipeline = [{ $match: filter }, { $lookup: { from: 'Providers', localField: 'provider', foreignField: '_id', as: 'provider' } }, { $unwind: '$provider' }, { $match: { 'provider.name': providerName, ...filter } }, { $facet: { data: [{ $skip: skip }, { $limit: limit }], totalCount: [{ $count: 'count' }] } }];
+                const pipeline = [{ $match: filter }, { $lookup: { from: 'Providers', localField: 'provider', foreignField: '_id', as: 'provider' } }, { $unwind: '$provider' }, { $match: { 'provider.name': providerName } }, { $facet: { data: [{ $skip: skip }, { $limit: limit }], totalCount: [{ $count: 'count' }] } }];
                 const result = await Api.aggregate(pipeline);
                 const data = result[0]?.data || [];
                 const totalDocuments = result[0]?.totalCount[0]?.count || 0;
