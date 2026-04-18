@@ -82,7 +82,7 @@ export const serviceProvidersResolvers = {
             if (!api) throw new GraphQLError("Api not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[api.provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            const scopes = new Set([...api.provider.basicScopes, ...api.requiredScopes]);
+            const scopes = [...new Set([...api.provider.basicScopes, ...api.requiredScopes])];
             if (!scopes) throw new GraphQLError("Scopes not found", { extensions: { code: 'INVALID_INPUT' } });
             let authStrategy = {};
             switch (api.schemas.auth) {
