@@ -3,6 +3,8 @@ import { ApiAuthenticators } from "../../models/apiAuthenticator.js";
 import { Api, Providers } from "../../models/ExternalServiceProviders.js";
 import OauthGoogle from "../../services/Oauth/google.js";
 import OauthMicrosoft from "../../services/Oauth/microsoft.js";
+import graphqlFields from "graphql-fields";
+import { getSelectFields } from "../../utils/graphqlTools.js";
 const PROVIDER_MAP = {
     'Gmail': OauthGoogle,
     'Google Drive': OauthGoogle,
@@ -24,7 +26,7 @@ export const serviceProvidersResolvers = {
             const totalDocuments = await Providers.countDocuments(filter);
             return { data: providers, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
-        fetchApis: async (_, { providers, providerName, title, description, version, _id, page = 1, limit = 10 }, context) => {
+        fetchApis: async (_, { providers, providerName, title, description, version, _id, page = 1, limit = 10 }, context, info) => {
             const filter = {};
             // 🛡️ Safe checks
             if (providers?.length) filter.provider = { $in: providers };
@@ -33,16 +35,19 @@ export const serviceProvidersResolvers = {
             if (version) filter.version = version;
             if (_id) filter._id = _id;
             const skip = (page - 1) * limit;
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             // 🔥 If providerName is present → use aggregation
             if (providerName) {
-                const pipeline = [{ $match: filter }, { $lookup: { from: 'Providers', localField: 'provider', foreignField: '_id', as: 'provider' } }, { $unwind: '$provider' }, { $match: { 'provider.name': providerName } }, { $facet: { data: [{ $skip: skip }, { $limit: limit }], totalCount: [{ $count: 'count' }] } }];
+                const pipeline = [{ $match: filter }, { $lookup: { from: 'Providers', localField: 'provider', foreignField: '_id', as: 'provider' } }, { $unwind: '$provider' }, { $match: { 'provider.name': providerName } }, { $facet: { data: [{ $skip: skip }, { $limit: limit }, { $select: rootFields }], totalCount: [{ $count: 'count' }] } }];
                 const result = await Api.aggregate(pipeline);
                 const data = result[0]?.data || [];
                 const totalDocuments = result[0]?.totalCount[0]?.count || 0;
                 return { data, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
             }
             // ✅ Normal query (no aggregation)
-            const [apis, totalDocuments] = await Promise.all([Api.find(filter).skip(skip).limit(limit), Api.countDocuments(filter)]);
+            const [apis, totalDocuments] = await Promise.all([Api.find(filter).skip(skip).limit(limit).select(rootFields), Api.countDocuments(filter)]);
+            if (populateFields?.provider) await Providers.populate(apis, { path: 'provider', select: populateFields.provider });
             return { data: apis, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         fetchApiAuthenticators: async (_, { provider, providerName, _id, page = 1, limit = 10 }, context) => {
