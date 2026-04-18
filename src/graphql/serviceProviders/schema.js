@@ -81,7 +81,7 @@ type AuthStrategy {
 }
 type Query {
     fetchProviders(name: String, description: String, icon: String, color: String, _id: ID, page: Int, limit: Int): ProviderPagination
-    fetchApis(provider: ID, providerName: String, title: String, description: String, version: String, _id: ID, page: Int, limit: Int): ApiPagination
+    fetchApis(providers: [ID], providerName: String, title: String, description: String, version: String, _id: ID, page: Int, limit: Int): ApiPagination
     fetchApiAuthenticators(provider: ID, providerName: String, _id: ID, page: Int, limit: Int): ApiAuthenticatorPagination
 }
 type Mutation {
