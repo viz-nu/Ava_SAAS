@@ -39,7 +39,36 @@ export const serviceProvidersResolvers = {
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             // 🔥 If providerName is present → use aggregation
             if (providerName) {
-                const pipeline = [{ $match: filter }, { $lookup: { from: 'Providers', localField: 'provider', foreignField: '_id', as: 'provider' } }, { $unwind: '$provider' }, { $match: { 'provider.name': providerName } }, { $facet: { data: [{ $skip: skip }, { $limit: limit }, { $select: rootFields }], totalCount: [{ $count: 'count' }] } }];
+                const projectFields = {};
+                if (rootFields) {
+                    rootFields.trim().split(' ').forEach(field => {
+                        projectFields[field] = 1;
+                    });
+                }
+                const pipeline = [
+                    { $match: filter },
+                    {
+                        $lookup: {
+                            from: 'Providers',
+                            localField: 'provider',
+                            foreignField: '_id',
+                            as: 'provider'
+                        }
+                    },
+                    { $unwind: '$provider' },
+                    { $match: { 'provider.name': providerName } },
+                    {
+                        $facet: {
+                            data: [
+                                { $skip: skip },
+                                { $limit: limit },
+                                { $project: projectFields }
+                            ],
+                            totalCount: [{ $count: 'count' }]
+                        }
+                    }
+                ];
+                console.log("pipeline:", JSON.stringify(pipeline, null, 2));
                 const result = await Api.aggregate(pipeline);
                 const data = result[0]?.data || [];
                 const totalDocuments = result[0]?.totalCount[0]?.count || 0;
