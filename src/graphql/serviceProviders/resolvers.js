@@ -148,10 +148,22 @@ export const serviceProvidersResolvers = {
             let config = oauthProvider.getConfig();
             const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens.access_token);
             if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
+            const update = {};
+            if (credentials) update.$set = { ...update.$set, credentials };
+            if (config) update.$set = { ...update.$set, config };
+            if (accountDetails) update.$set = { ...update.$set, accountDetails };
             if (existingAuthenticatorId) {
-                const existingAuthenticator = await ApiAuthenticators.findByIdAndUpdate(existingAuthenticatorId, { $set: { ...(credentials && { credentials }), ...(config && { config }), ...(accountDetails && { accountDetails }), ...(scope && { scope }) } }, { new: true, runValidators: true });
+                if (scope) update.$addToSet = { scope: { $each: scope } };
+                const existingAuthenticator = await ApiAuthenticators.findByIdAndUpdate(existingAuthenticatorId, update, { new: true, runValidators: true });
                 if (!existingAuthenticator) throw new GraphQLError("Authenticator not found", { extensions: { code: 'INVALID_INPUT' } });
                 return existingAuthenticator;
+            }
+            if (accountDetails.id) {
+                const existingAuthenticator = await ApiAuthenticators.findOne({ provider: providerId, 'accountDetails.id': accountDetails.id });
+                if (existingAuthenticator.hasAllScopes(scope)) {
+                    await existingAuthenticator.updateOne(update);
+                    return existingAuthenticator;
+                    }
             }
             const newAuthenticator = await ApiAuthenticators.create({ provider: providerId, authType: authType, credentials: credentials, config: config, accountDetails: accountDetails, scope: scope, createdBy: context.user._id, business: context.user.business });
             return newAuthenticator

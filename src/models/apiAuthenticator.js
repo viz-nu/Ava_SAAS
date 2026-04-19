@@ -151,6 +151,14 @@ ApiAuthenticationSchema.methods.refreshToken = async function () {
     await this.save();
     return this;
 }
+ApiAuthenticationSchema.methods.hasAllScopes = function (scopes) {
+    for (const item of scopes) {
+        if (!this.scope.includes(item)) {
+            return false;
+        }
+    }
+    return true;
+}
 //  Stripe → apiKey
 // Google → oauth2
 // AWS → hmac
