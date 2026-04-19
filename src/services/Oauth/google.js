@@ -142,6 +142,7 @@ export default {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get("https://www.googleapis.com/oauth2/v1/userinfo", { headers: { Authorization: `Bearer ${accessToken}` }, });
+            console.log(data);
             if (!data || !data.azp) return { success: false, error: { code: "malformed_response", message: "Invalid response from Google.", status: 502 } };
             return { success: true, data };
         } catch (error) {
