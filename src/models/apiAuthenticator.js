@@ -51,6 +51,8 @@ const basicSchema = new Schema({
     credentials: {
         username: String,
         password: String,
+        basicToken: String,
+        id: String,
     }
 }, baseOpts);
 

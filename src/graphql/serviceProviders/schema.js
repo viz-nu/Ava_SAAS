@@ -78,6 +78,7 @@ type AuthStrategy {
     authUrl: String
     scopes: [String]
     providerId: ID
+    misc: JSON
 }
 type Query {
     fetchProviders(name: String, description: String, icon: String, color: String, _id: ID, page: Int, limit: Int): ProviderPagination
