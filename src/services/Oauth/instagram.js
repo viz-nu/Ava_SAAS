@@ -30,7 +30,7 @@ export default {
             const credentials = { accessToken: longLivedToken.data.access_token, expiresAt: longLivedToken.data.expires_in ? new Date(Date.now() + (longLivedToken.data.expires_in * 1000)) : null, tokenType: longLivedToken.data.token_type }
             return { success: true, credentials, scope };
         } catch (error) {
-            return { success: false, error: this._handleInstagramError(error) };
+            return { success: false, tokenError: this._handleInstagramError(error) };
         }
     },
     async refreshToken({ accessToken }) {

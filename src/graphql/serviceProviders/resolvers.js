@@ -149,8 +149,8 @@ export const serviceProvidersResolvers = {
             const update = {};
             switch (authType) {
                 case "oauth2": {
-                    const { success, credentials, scope, accountDetails, config } = await oauthProvider.getTokens(code);
-                    if (!success) throw new GraphQLError(tokenResponse.error.message, { extensions: { code: tokenResponse.error.code } });
+                    const { success, credentials, scope, accountDetails, config, tokenError = {} } = await oauthProvider.getTokens(code);
+                    if (!success) throw new GraphQLError(tokenError.message, { extensions: { code: tokenError.code } });
                     update.$set = { credentials, config, accountDetails };
                     if (existingAuthenticatorId) {
                         if (scope?.length > 0) update.$addToSet = { scope: { $each: scope } };

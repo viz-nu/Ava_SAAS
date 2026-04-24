@@ -44,7 +44,7 @@ export default {
             //   }
             return { success: true, credentials, scope, accountDetails, config: this.getConfig() };
         } catch (error) {
-            return { success: false, error: this._handleGoogleError(error) };
+            return { success: false, tokenError: this._handleGoogleError(error) };
         }
     },
     async refreshToken({ refreshToken }) {

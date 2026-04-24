@@ -30,7 +30,7 @@ export default {
                 scope
             };
         } catch (error) {
-            return { success: false, error: this._handleWhatsAppError(error) };
+            return { success: false, tokenError: this._handleWhatsAppError(error) };
         }
     },
     async refreshToken(accessToken) {
