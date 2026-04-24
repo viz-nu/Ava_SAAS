@@ -12,8 +12,8 @@ export default {
         const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: scopes.join(" "), state, prompt: "consent" });
         return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
     },
-    async getTokens(code) {
-        if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
+    async getTokens({code}) {
+        if (!code || typeof code !== 'string') return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const { data } = await axios.post(`https://login.microsoftonline.com/common/oauth2/v2.0/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, code, redirect_uri: process.env.AZURE_REDIRECT_URI, grant_type: "authorization_code", }));
             //  microsoftTokens : {

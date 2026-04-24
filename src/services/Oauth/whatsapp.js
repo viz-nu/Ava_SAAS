@@ -9,8 +9,8 @@ export default {
         const params = new URLSearchParams({ client_id: wa_client_id, redirect_uri: wa_redirect_uri, config_id: wa_config_id, response_type: "code", scope: scopes.join(","), state });
         return `https://www.facebook.com/v23.0/dialog/oauth?${params}`;
     },
-    async getTokens(code) {
-        if (!code || typeof code !== "string") return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
+    async getTokens({code}) {
+        if (!code || typeof code !== "string") return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const shortLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { code, client_id: wa_client_id, client_secret: wa_client_secret, redirect_uri: wa_redirect_uri, } });
             console.log("whatsapp short lived token:", JSON.stringify(shortLivedToken.data, null, 2));

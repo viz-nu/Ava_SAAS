@@ -10,8 +10,8 @@ export default {
         const params = new URLSearchParams({ client_id: GOOGLE_CLIENT_ID, redirect_uri: GOOGLE_REDIRECT_URI, response_type: "code", scope: scopes.join(" "), access_type: "offline", prompt: "consent", state, });
         return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     },
-    async getTokens(code) {
-        if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
+    async getTokens({ code }) {
+        if (!code || typeof code !== 'string') return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const { data } = await axios.post("https://oauth2.googleapis.com/token", { code, client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET, redirect_uri: GOOGLE_REDIRECT_URI, grant_type: "authorization_code" });
             //  googleTokens :{

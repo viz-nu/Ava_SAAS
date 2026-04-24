@@ -9,8 +9,8 @@ export default {
         const params = new URLSearchParams({ client_id: IG_ClIENT_ID, redirect_uri: IG_REDIRECT_URI, response_type: "code", scope: scopes.join(" "), state });
         return `https://api.instagram.com/oauth/authorize?${params}`;
     },
-    async getTokens(code) {
-        if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
+    async getTokens({code}) {
+        if (!code || typeof code !== 'string') return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const params = new URLSearchParams({ code, client_id: IG_ClIENT_ID, client_secret: IG_CLIENT_Secret, redirect_uri: IG_REDIRECT_URI, grant_type: "authorization_code" });
             const shortLivedToken = await axios.post("https://api.instagram.com/oauth/access_token", params, { headers: { "Content-Type": "application/x-www-form-urlencoded" } });

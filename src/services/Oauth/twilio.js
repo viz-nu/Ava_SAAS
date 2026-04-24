@@ -22,11 +22,11 @@ export default {
         const params = new URLSearchParams({ redirectTo: TWILIO_REDIRECT_URI, ...(state && { state }), });
         return { ExpectedKeysFromQuery: ['AccountSid'], AuthUrl: `https://www.twilio.com/authorize/${TWILIO_CONNECT_APP_SID}?${params}` }
     },
-    async getTokens({ accountSid }) {
-        if (!accountSid || typeof accountSid !== "string") return { success: false, error: { code: "missing_account_sid", message: "accountSid is required.", status: 400 } };
+    async getTokens({ AccountSid }) {
+        if (!AccountSid) return { success: false, tokenError: { code: "missing_account_sid", message: "accountSid is required.", status: 400 } };
         try {
-            const { data: accountDetails } = await axios.get(`${BASE_URL}/Accounts/${accountSid}.json`, { headers: { Authorization: `Basic ${basicToken}` } });
-            return { success: true, credentials: { id: accountSid, basicToken: buildBasicToken(accountSid, TWILIO_AUTH_TOKEN) }, scope: [], accountDetails, config: this.getConfig() };
+            const { data: accountDetails } = await axios.get(`${BASE_URL}/Accounts/${AccountSid}.json`, { headers: { Authorization: `Basic ${buildBasicToken(AccountSid, TWILIO_AUTH_TOKEN)}` } });
+            return { success: true, credentials: { id: AccountSid, basicToken: buildBasicToken(AccountSid, TWILIO_AUTH_TOKEN) }, scope: [], accountDetails, config: this.getConfig() };
         } catch (error) {
             return { success: false, tokenError: this._handleTwilioError(error) };
         }
