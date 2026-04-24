@@ -145,17 +145,12 @@ export const serviceProvidersResolvers = {
             if (!code) throw new GraphQLError("Code not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            let credentials, config, scope=[];
+            // let credentials, config, scope = [], accountDetails;
             const update = {};
             switch (authType) {
                 case "oauth2": {
-                    const tokenResponse = await oauthProvider.getTokens(code);
-                    credentials = tokenResponse.credentials;
-                    scope = tokenResponse.scope;
-                    if (!tokenResponse.success) throw new GraphQLError(tokenResponse.error.message, { extensions: { code: tokenResponse.error.code } });
-                    config = oauthProvider.getConfig();
-                    const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens);
-                    if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
+                    const { success, credentials, scope, accountDetails, config } = await oauthProvider.getTokens(code);
+                    if (!success) throw new GraphQLError(tokenResponse.error.message, { extensions: { code: tokenResponse.error.code } });
                     update.$set = { credentials, config, accountDetails };
                     if (existingAuthenticatorId) {
                         if (scope?.length > 0) update.$addToSet = { scope: { $each: scope } };
@@ -170,6 +165,7 @@ export const serviceProvidersResolvers = {
                             return existingAuthenticator;
                         }
                     }
+                    return await ApiAuthenticators.create({ provider: providerId, authType, credentials, config, accountDetails, scope, createdBy: context.user._id, business: context.user.business });
                     break;
                 }
                 case "basic": {

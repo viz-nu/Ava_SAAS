@@ -1,4 +1,5 @@
 import axios from "axios";
+import jwt from "jsonwebtoken";
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
 export default {
     name: "google",
@@ -13,10 +14,35 @@ export default {
         if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const { data } = await axios.post("https://oauth2.googleapis.com/token", { code, client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET, redirect_uri: GOOGLE_REDIRECT_URI, grant_type: "authorization_code" });
-            console.log("google tokens:", JSON.stringify(data, null, 2));
-            const credentials = { tokenId: data.id_token, accessToken: data.access_token, expiresAt: new Date(Date.now() + (data.expires_in * 1000)), refreshToken: data.refresh_token, tokenType: data.token_type }
+            //  googleTokens :{
+            //     "access_token": "...access_token...",
+            //     "expires_in": "...expires_in number...",
+            //     "refresh_token": "...refresh_token...",
+            //     "scope": "...scope string...",
+            //     "token_type": "Bearer",
+            //     "id_token": "...id_token string...", // this is the id token that is used to get the user info
+            //     "refresh_token_expires_in": "...refresh_token_expires_in number...",
+            // }
+            const credentials = { tokenId: data.id_token, accessToken: data.access_token, expiresAt: new Date(Date.now() + (data.expires_in * 1000)), refreshToken: data.refresh_token, tokenType: data.token_type, refreshTokenExpiresAt: data.refresh_token_expires_in ? new Date(Date.now() + (data.refresh_token_expires_in * 1000)) : null }
             const scope = data.scope.split(" ")
-            return { success: true, credentials, scope };
+            const decoded = jwt.decode(data.id_token);
+            const accountDetails = decoded ? { ...decoded, id: decoded.sub } : null;
+            // {
+            //     iss: '...issuer string...',
+            //     azp: '..client id string...',
+            //     aud: '..client id string...',
+            //     sub: '..id string...',
+            //     email: '..email string...',
+            //     email_verified: '...boolean...',
+            //     at_hash: '...at_hash string...',
+            //     name: '...name string...',
+            //     picture: '...picture string...',
+            //     given_name: '...given_name string...',
+            //     family_name: '...family_name string...',
+            //     iat: '...iat number...',
+            //     exp: '...exp number...'
+            //   }
+            return { success: true, credentials, scope, accountDetails, config: this.getConfig() };
         } catch (error) {
             return { success: false, error: this._handleGoogleError(error) };
         }

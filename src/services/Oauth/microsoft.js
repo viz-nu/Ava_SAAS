@@ -16,27 +16,45 @@ export default {
         if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const { data } = await axios.post(`https://login.microsoftonline.com/common/oauth2/v2.0/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, code, redirect_uri: process.env.AZURE_REDIRECT_URI, grant_type: "authorization_code", }));
-            console.log("microsoft tokens:", JSON.stringify(data, null, 2));
-            const credentials = {
-                tokenId: data.id_token,
-                accessToken: data.access_token,
-                refreshToken: data.refresh_token,
-                expiresAt: new Date(Date.now() + (data.expires_in * 1000)),
-                tokenType: data.token_type,
-                refreshTokenExpiresAt: data.refresh_token_expires_in ? new Date(Date.now() + (data.refresh_token_expires_in * 1000)) : null
-            }
+            //  microsoftTokens : {
+            //     "scope": "...scope string...",
+            //     "token_type": "Bearer",
+            //     "expires_in": "...expires_in number...",
+            //     "ext_expires_in": 3599,
+            // "access_token": "...access_token...",
+            //     "refresh_token": "...refresh_token...",
+            //     "id_token": "...id_token string...", // this is the id token that is used to get the user info
+            // }
+            const resp = await fetch("https://graph.microsoft.com/v1.0/me", { headers: { Authorization: `Bearer ${data.access_token}` } });
+            const accountDetails = await resp.json();
+            //   microsoft user: {
+            //     "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users/$entity",
+            //     "userPrincipalName": "...userPrincipalName string...",
+            //     "id": "...id string...",
+            //     "displayName": "...displayName string...",
+            //     "surname": "...surname string...",
+            //     "givenName": "...givenName string...",
+            //     "preferredLanguage": "...preferredLanguage string...",
+            //     "mail": "...mail string...",
+            //     "mobilePhone": "...mobilePhone string...",
+            //     "jobTitle": "...jobTitle string...",
+            //     "officeLocation": "...officeLocation string...",
+            //     "businessPhones": "...businessPhones array of strings..."
+            //   }
+            const credentials = { tokenId: data.id_token, accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: new Date(Date.now() + (data.expires_in * 1000)), tokenType: data.token_type, }
             const scope = data.scope.split(" ")
-            return { success: true, credentials, scope };
+            return { success: true, credentials, scope, accountDetails, config: this.getConfig() };
         } catch (error) {
             return { success: false, error: this._handleMicrosoftError(error) };
         }
     },
 
-    async refreshToken(refreshToken) {
+    async refreshToken({ refreshToken }) {
         if (!refreshToken || typeof refreshToken !== 'string') return { success: false, error: { code: "missing_token", message: "A refresh token string is required.", status: 400 } };
         try {
             const { data } = await axios.post(`https://login.microsoftonline.com/common/oauth2/v2.0/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, refresh_token: refreshToken, grant_type: "refresh_token", }));
-            return { success: true, data: data };
+            const credentials = { tokenId: data.id_token, accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: new Date(Date.now() + (data.expires_in * 1000)), tokenType: data.token_type }
+            return { success: true, credentials };
         } catch (error) {
             return { success: false, error: this._handleMicrosoftError(error) };
         }
