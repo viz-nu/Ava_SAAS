@@ -144,23 +144,16 @@ export const serviceProvidersResolvers = {
             if (!code) throw new GraphQLError("Code not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            let credentials, config, scope;
+            let credentials, config, scope=[];
             const update = {};
             switch (authType) {
                 case "oauth2": {
-                    const { success: tokensSuccess, data: tokens, error: tokensError } = await oauthProvider.getTokens(code);
-                    if (!tokensSuccess) throw new GraphQLError(tokensError.message, { extensions: { code: tokensError.code } });
-                    scope = tokens.scope.split(' ');
-                    credentials = {
-                        tokenId: tokens.id_token,
-                        accessToken: tokens.access_token,
-                        refreshToken: tokens.refresh_token,
-                        expiresAt: tokens.expires_in ? new Date(Date.now() + (tokens.expires_in * 1000)) : null,
-                        tokenType: tokens.token_type,
-                        refreshTokenExpiresAt: tokens.refresh_token_expires_in ? new Date(Date.now() + (tokens.refresh_token_expires_in * 1000)) : null
-                    }
+                    const tokenResponse = await oauthProvider.getTokens(code);
+                    credentials = tokenResponse.credentials;
+                    scope = tokenResponse.scope;
+                    if (!tokenResponse.success) throw new GraphQLError(tokenResponse.error.message, { extensions: { code: tokenResponse.error.code } });
                     config = oauthProvider.getConfig();
-                    const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens.access_token);
+                    const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens);
                     if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
                     update.$set = { credentials, config, accountDetails };
                     if (existingAuthenticatorId) {
@@ -181,11 +174,11 @@ export const serviceProvidersResolvers = {
                 case "basic": {
                     const { AccountSid } = keys;
                     if (!AccountSid) throw new GraphQLError("AccountSid not found", { extensions: { code: 'INVALID_INPUT' } });
-                    const { success: tokensSuccess, data: tokens, error: tokensError } = await oauthProvider.getTokens(keys);
-                    if (!tokensSuccess) throw new GraphQLError(tokensError.message, { extensions: { code: tokensError.code } });
+                    const tokenResponse = await oauthProvider.getTokens(keys);
+                    credentials = tokenResponse.credentials;
+                    if (!tokenResponse.success) throw new GraphQLError(tokenResponse.error.message, { extensions: { code: tokenResponse.error.code } });
                     const { success: userInfoSuccess, data: accountDetails, error: userInfoError } = await oauthProvider.getUserInfo(tokens);
                     if (!userInfoSuccess) throw new GraphQLError(userInfoError.message, { extensions: { code: userInfoError.code } });
-                    credentials = tokens
                     config = oauthProvider.getConfig()
                     update.$set = { credentials, config, accountDetails };
                     if (existingAuthenticatorId) {

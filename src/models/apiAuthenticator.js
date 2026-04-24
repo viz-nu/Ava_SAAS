@@ -1,13 +1,19 @@
 import { model, Schema } from 'mongoose';
-import google from '../services/Oauth/google.js';
-import microsoft from '../services/Oauth/microsoft.js';
+import OauthWhatsapp from '../services/Oauth/whatsapp.js';
+import OauthInstagram from '../services/Oauth/instagram.js';
+import OauthTwilio from '../services/Oauth/twilio.js';
+import OauthGoogle from '../services/Oauth/google.js';
+import OauthMicrosoft from '../services/Oauth/microsoft.js';
 const PROVIDER_MAP = {
-    'Gmail': google,
-    'Google Drive': google,
-    'Google Forms': google,
-    'Google Calendar': google,
-    'Google Sheets': google,
-    'Microsoft Excel': microsoft
+    "Whatsapp": OauthWhatsapp,
+    "Instagram": OauthInstagram,
+    "Twilio": OauthTwilio,
+    'Gmail': OauthGoogle,
+    'Google Drive': OauthGoogle,
+    'Google Forms': OauthGoogle,
+    'Google Calendar': OauthGoogle,
+    'Google Sheets': OauthGoogle,
+    'Microsoft Excel': OauthMicrosoft
 };
 const baseOpts = { _id: false };      // subdocs don’t need their own _id
 const docOpts = { timestamps: true, discriminatorKey: 'authType' };
@@ -129,17 +135,17 @@ ApiAuthenticationSchema.discriminator('none', noAuthSchema);
 ApiAuthenticationSchema.methods.getSecrets = function () {
     return { credentials: this.credentials, config: this.config };
 };
-ApiAuthenticationSchema.methods.validateToken = async function () {
+ApiAuthenticationSchema.methods.credentials = async function () {
     await this.populate('provider');
     const serviceProvider = PROVIDER_MAP[this.provider.name];
     if (!serviceProvider) throw new Error('Unsupported provider');
-    return await serviceProvider.validateToken(this.credentials.accessToken);
+    return await serviceProvider.credentials(this.credentials);
 }
 ApiAuthenticationSchema.methods.refreshToken = async function () {
     await this.populate('provider');
     const serviceProvider = PROVIDER_MAP[this.provider.name];
     if (!serviceProvider) throw new Error('Unsupported provider');
-    const newTokensRes = await serviceProvider.refreshToken(this.credentials.refreshToken);
+    const newTokensRes = await serviceProvider.refreshToken(this.credentials);
     if (!newTokensRes.success) throw new Error(newTokensRes.error.message);
     const credentials = {
         tokenId: newTokensRes.data.id_token, // keep consistent naming

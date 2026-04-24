@@ -1,49 +1,39 @@
 import axios from "axios";
 const { wa_client_id, wa_client_secret, wa_redirect_uri } = process.env;
-// WhatsApp Business Cloud API authenticates through Meta's OAuth2 infrastructure.
-// After token exchange you'll also need the WABA ID and Phone Number ID from
-// the business account — these are fetched via getUserInfo and stored alongside
-// the access token in your credentials store.
-
 export default {
     name: "whatsapp",
     getConfig() {
-        return {
-            clientId: wa_client_id,
-            clientSecret: wa_client_secret,
-            redirectUri: wa_redirect_uri
-        };
+        return { clientId: wa_client_id, clientSecret: wa_client_secret, redirectUri: wa_redirect_uri };
     },
     getAuthUrl({ state = "", scopes = [] }) {
-        const params = new URLSearchParams({
-            client_id: wa_client_id,
-            redirect_uri: wa_redirect_uri,
-            response_type: "code",
-            scope: scopes.join(","),
-            state,
-        });
+        const params = new URLSearchParams({ client_id: wa_client_id, redirect_uri: wa_redirect_uri, response_type: "code", scope: scopes.join(","), state });
         return `https://www.facebook.com/v23.0/dialog/oauth?${params}`;
     },
     async getTokens(code) {
         if (!code || typeof code !== "string") return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
-            const { data } = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", {
-                params: {
-                    code,
-                    client_id: wa_client_id,
-                    client_secret: wa_client_secret,
-                    redirect_uri: wa_redirect_uri,
+            const shortLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { code, client_id: wa_client_id, client_secret: wa_client_secret, redirect_uri: wa_redirect_uri, } });
+            console.log("whatsapp short lived token:", JSON.stringify(shortLivedToken.data, null, 2));
+            const longLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { grant_type: "fb_exchange_token", client_id: wa_client_id, client_secret: wa_client_secret, fb_exchange_token: shortLivedToken.data.accessToken } });
+            console.log("whatsapp long lived token:", JSON.stringify(longLivedToken.data, null, 2));
+            const grantedScopes = await axios.get("https://graph.facebook.com/v23.0/me/permissions", { params: { access_token: longLivedToken.data.access_token } });
+            console.log("whatsapp granted scopes:", JSON.stringify(grantedScopes.data, null, 2));
+            const scope = grantedScopes.data.filter(item => item.status === "granted").map(item => item.permission);
+
+            return {
+                success: true,
+                credentials: {
+                    accessToken: longLivedToken.data.access_token,
+                    expiresAt: longLivedToken.data.expires_in ? new Date(Date.now() + (longLivedToken.data.expires_in * 1000)) : null,
+                    tokenType: longLivedToken.data.token_type
                 },
-            });
-            return { success: true, data };
+                scope
+            };
         } catch (error) {
             return { success: false, error: this._handleWhatsAppError(error) };
         }
     },
     async refreshToken(accessToken) {
-        // Meta short-lived tokens are exchanged for long-lived tokens (60 days)
-        // in a single step. There is no traditional refresh_token grant — instead,
-        // call this with the current access token to extend it.
         if (!accessToken || typeof accessToken !== "string") return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", {
@@ -59,7 +49,7 @@ export default {
             return { success: false, error: this._handleWhatsAppError(error) };
         }
     },
-    async getUserInfo(accessToken) {
+    async getUserInfo({ accessToken }) {
         // Returns the user identity and all WhatsApp Business Accounts (WABAs)
         // they have access to. Store waba.id and phone_numbers[].id from here.
         if (!accessToken || typeof accessToken !== "string") return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
@@ -89,7 +79,7 @@ export default {
             return { success: false, error: this._handleWhatsAppError(error) };
         }
     },
-    async getTokenInfo(accessToken) {
+    async getTokenInfo({ accessToken }) {
         if (!accessToken || typeof accessToken !== "string") return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const appAccessToken = `${wa_client_id}|${wa_client_secret}`;
@@ -117,7 +107,7 @@ export default {
             return { success: false, error: this._handleWhatsAppError(error) };
         }
     },
-    async validateToken(accessToken) {
+    async validateToken({ accessToken }) {
         if (!accessToken || typeof accessToken !== "string") return false;
         try {
             const appAccessToken = `${wa_client_id}|${wa_client_secret}`;

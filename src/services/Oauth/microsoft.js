@@ -1,30 +1,6 @@
 import axios from "axios";
-// ${process.env.AzureApplicationTenantId}
-const BASE = `https://login.microsoftonline.com/common/oauth2/v2.0`;
-
 export default {
     name: "microsoft",
-    // getScopes(scopeCategory) {
-    //     const base = ["openid", "profile", "email", "offline_access", "User.Read"];
-    //     switch (scopeCategory) {
-    //         case "excel.read": return [...base, "Files.Read",];
-    //         case "excel.write": return [...base, "Files.ReadWrite",]; // ✅ recommended
-    //         case "excel.full": return [...base, "Files.ReadWrite.All",]; // ⚠️ full tenant access   "Sites.ReadWrite.All",
-    //         case "onedrive.read": return [...base, "Files.Read",];
-    //         case "onedrive.write": return [...base, "Files.ReadWrite",];
-    //         case "onedrive.full": return [...base, "Files.ReadWrite.All",];
-    //         case "outlook.read": return [...base, "Mail.Read",];
-    //         case "outlook.send": return [...base, "Mail.Send",];
-    //         case "calendar.read": return [...base, "Calendars.Read",];
-    //         case "calendar.write": return [...base, "Calendars.ReadWrite",];
-    //         case "user.basic": return [...base, "User.Read",];
-    //         default: return [...base, "Files.ReadWrite",];
-    //     }
-    // },
-    getAuthUrl({ state = "", scopes = [] }) {
-        const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: scopes.join(" "), state, prompt: "consent" });
-        return `${BASE}/authorize?${params}`;
-    },
     getConfig() {
         return {
             clientId: process.env.AzureApplicationClientId,
@@ -32,11 +8,25 @@ export default {
             redirectUri: process.env.AZURE_REDIRECT_URI
         }
     },
+    getAuthUrl({ state = "", scopes = [] }) {
+        const params = new URLSearchParams({ client_id: process.env.AzureApplicationClientId, response_type: "code", redirect_uri: process.env.AZURE_REDIRECT_URI, response_mode: "query", scope: scopes.join(" "), state, prompt: "consent" });
+        return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`;
+    },
     async getTokens(code) {
         if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
-            const { data } = await axios.post(`${BASE}/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, code, redirect_uri: process.env.AZURE_REDIRECT_URI, grant_type: "authorization_code", }));
-            return { success: true, data: data };
+            const { data } = await axios.post(`https://login.microsoftonline.com/common/oauth2/v2.0/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, code, redirect_uri: process.env.AZURE_REDIRECT_URI, grant_type: "authorization_code", }));
+            console.log("microsoft tokens:", JSON.stringify(data, null, 2));
+            const credentials = {
+                tokenId: data.id_token,
+                accessToken: data.access_token,
+                refreshToken: data.refresh_token,
+                expiresAt: new Date(Date.now() + (data.expires_in * 1000)),
+                tokenType: data.token_type,
+                refreshTokenExpiresAt: data.refresh_token_expires_in ? new Date(Date.now() + (data.refresh_token_expires_in * 1000)) : null
+            }
+            const scope = data.scope.split(" ")
+            return { success: true, credentials, scope };
         } catch (error) {
             return { success: false, error: this._handleMicrosoftError(error) };
         }
@@ -45,23 +35,24 @@ export default {
     async refreshToken(refreshToken) {
         if (!refreshToken || typeof refreshToken !== 'string') return { success: false, error: { code: "missing_token", message: "A refresh token string is required.", status: 400 } };
         try {
-            const { data } = await axios.post(`${BASE}/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, refresh_token: refreshToken, grant_type: "refresh_token", }));
+            const { data } = await axios.post(`https://login.microsoftonline.com/common/oauth2/v2.0/token`, new URLSearchParams({ client_id: process.env.AzureApplicationClientId, client_secret: process.env.AzureClientSecretValue, refresh_token: refreshToken, grant_type: "refresh_token", }));
             return { success: true, data: data };
         } catch (error) {
             return { success: false, error: this._handleMicrosoftError(error) };
         }
     },
-    async getUserInfo(accessToken) {
+    async getUserInfo({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get("https://graph.microsoft.com/v1.0/me", { headers: { Authorization: `Bearer ${accessToken}` } });
+            console.log("microsoft user info:", JSON.stringify(data, null, 2));
             if (!data || !data.id) return { success: false, error: { code: "malformed_response", message: "Invalid response from Microsoft.", status: 502 } };
             return { success: true, data };
         } catch (error) {
             return { success: false, error: this._handleMicrosoftError(error) };
         }
     },
-    async validateToken(accessToken) {
+    async validateToken({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get("https://graph.microsoft.com/v1.0/me", { headers: { Authorization: `Bearer ${accessToken}` } });

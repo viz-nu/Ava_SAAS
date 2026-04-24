@@ -24,14 +24,10 @@ export default {
         const params = new URLSearchParams({ redirectTo: TWILIO_REDIRECT_URI, ...(state && { state }), });
         return { ExpectedKeysFromQuery: ['AccountSid'], AuthUrl: `https://www.twilio.com/authorize/${TWILIO_CONNECT_APP_SID}?${params}` }
     },
-    // Instead of a code exchange, this accepts the raw Twilio credentials,
-    // validates them against the API, and returns them in a normalised shape.
     async getTokens({ accountSid }) {
         if (!accountSid || typeof accountSid !== "string") return { success: false, error: { code: "missing_account_sid", message: "accountSid is required.", status: 400 } };
-        try {
-            // Validate by fetching the account — if this succeeds the credentials are correct.
-            await axios.get(`${BASE_URL}/Accounts/${accountSid}.json`, { headers: { Authorization: `Basic ${buildBasicToken(accountSid, TWILIO_AUTH_TOKEN)}` }, });
-            return { success: true, data: { id: accountSid, basicToken: buildBasicToken(accountSid, TWILIO_AUTH_TOKEN) } };
+        try {            
+            return { success: true, credentials: { id: accountSid, basicToken: buildBasicToken(accountSid, TWILIO_AUTH_TOKEN) } };
         } catch (error) {
             return { success: false, error: this._handleTwilioError(error) };
         }
@@ -65,7 +61,7 @@ export default {
             return { success: false, error: this._handleTwilioError(error) };
         }
     },
-    async getTokenInfo(basicToken) {
+    async getTokenInfo({basicToken}) {
         if (!basicToken || typeof basicToken !== "string") return { success: false, error: { code: "missing_token", message: "A basicToken string is required.", status: 400 } };
         try {
             const decoded = Buffer.from(basicToken, "base64").toString("utf8");
@@ -89,7 +85,7 @@ export default {
             return { success: false, error: this._handleTwilioError(error) };
         }
     },
-    async validateToken(basicToken) {
+    async validateToken({basicToken}) {
         if (!basicToken || typeof basicToken !== "string") return false;
         try {
             const decoded = Buffer.from(basicToken, "base64").toString("utf8");

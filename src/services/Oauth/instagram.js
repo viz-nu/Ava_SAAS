@@ -3,44 +3,30 @@ const { IG_ClIENT_ID, IG_CLIENT_Secret, IG_REDIRECT_URI } = process.env;
 export default {
     name: "instagram",
     getConfig() {
-        return {
-            clientId: IG_ClIENT_ID,
-            clientSecret: IG_CLIENT_Secret,
-            redirectUri: IG_REDIRECT_URI
-        }
+        return { clientId: IG_ClIENT_ID, clientSecret: IG_CLIENT_Secret, redirectUri: IG_REDIRECT_URI }
     },
     getAuthUrl({ state = "", scopes = [] }) {
-        const params = new URLSearchParams({
-            client_id: IG_ClIENT_ID,
-            redirect_uri: IG_REDIRECT_URI,
-            response_type: "code",
-            scope: scopes.join(" "),
-            state,
-        });
+        const params = new URLSearchParams({ client_id: IG_ClIENT_ID, redirect_uri: IG_REDIRECT_URI, response_type: "code", scope: scopes.join(" "), state });
         return `https://api.instagram.com/oauth/authorize?${params}`;
     },
     async getTokens(code) {
         if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
-            // Instagram requires application/x-www-form-urlencoded, not JSON
-            const params = new URLSearchParams({
-                code,
-                client_id: IG_ClIENT_ID,
-                client_secret: IG_CLIENT_Secret,
-                redirect_uri: IG_REDIRECT_URI,
-                grant_type: "authorization_code",
-            });
-            const { data } = await axios.post("https://api.instagram.com/oauth/access_token", params, {
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            });
-            return { success: true, data };
+            const params = new URLSearchParams({ code, client_id: IG_ClIENT_ID, client_secret: IG_CLIENT_Secret, redirect_uri: IG_REDIRECT_URI, grant_type: "authorization_code" });
+            const shortLivedToken = await axios.post("https://api.instagram.com/oauth/access_token", params, { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+            console.log("instagram short lived token:", JSON.stringify(shortLivedToken.data, null, 2));
+            const longLivedToken = await axios.get("https://graph.instagram.com/access_token", { params: { grant_type: "ig_exchange_token", client_secret: IG_CLIENT_Secret, access_token: shortLivedToken.data.accessToken } });
+            console.log("instagram long lived token:", JSON.stringify(longLivedToken.data, null, 2));
+            const grantedScopes = await axios.get("https://graph.instagram.com/me/permissions", { params: { access_token: longLivedToken.data.access_token } });
+            console.log("instagram granted scopes:", JSON.stringify(grantedScopes.data, null, 2));
+            const scope = grantedScopes.data.filter(item => item.status === "granted").map(item => item.permission);
+            const credentials = { accessToken: longLivedToken.data.access_token, expiresAt: longLivedToken.data.expires_in ? new Date(Date.now() + (longLivedToken.data.expires_in * 1000)) : null, tokenType: longLivedToken.data.token_type }
+            return { success: true, credentials, scope };
         } catch (error) {
             return { success: false, error: this._handleInstagramError(error) };
         }
     },
-    async refreshToken(accessToken) {
-        // Instagram uses a GET request to a dedicated refresh endpoint,
-        // not a POST to the auth token URL like Google does
+    async refreshToken({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get("https://graph.instagram.com/refresh_access_token", {
@@ -54,7 +40,7 @@ export default {
             return { success: false, error: this._handleInstagramError(error) };
         }
     },
-    async getUserInfo(accessToken) {
+    async getUserInfo({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             // Without explicit fields, Instagram's /me only returns id and username
@@ -69,7 +55,7 @@ export default {
             return { success: false, error: this._handleInstagramError(error) };
         }
     },
-    async getTokenInfo(accessToken) {
+    async getTokenInfo({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             // Instagram has no tokeninfo endpoint like Google. Use the debug_token
@@ -85,7 +71,7 @@ export default {
             return { success: false, error: this._handleInstagramError(error) };
         }
     },
-    async validateToken(accessToken) {
+    async validateToken({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return false;
         try {
             await axios.get("https://graph.instagram.com/v23.0/me", {

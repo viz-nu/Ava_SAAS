@@ -1,144 +1,36 @@
 import axios from "axios";
-
+const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
 export default {
     name: "google",
     getConfig() {
-        return {
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            redirectUri: process.env.GOOGLE_REDIRECT_URI
-        }
+        return { clientId: GOOGLE_CLIENT_ID, clientSecret: GOOGLE_CLIENT_SECRET, redirectUri: GOOGLE_REDIRECT_URI }
     },
-    // getScopes(scopeCategory) {
-    //     const base = ["openid", "profile", "email"];
-    //     switch (scopeCategory) {
-    //         case "gmail.read":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/gmail.readonly",
-    //             ];
-
-    //         case "gmail.send":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/gmail.send",
-    //             ];
-
-    //         case "gmail.full":
-    //             return [
-    //                 ...base,
-    //                 "https://mail.google.com/", // full access (be careful ⚠️)
-    //             ];
-
-    //         case "drive.read":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/drive.readonly",
-    //             ];
-
-    //         case "drive.write":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/drive.file", // recommended minimal write
-    //             ];
-
-    //         case "drive.full":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/drive",
-    //             ];
-
-    //         case "sheets.read":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/spreadsheets.readonly",
-    //             ];
-
-    //         case "sheets.write":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/spreadsheets",
-    //             ];
-
-    //         case "calendar.read":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/calendar.readonly",
-    //             ];
-
-    //         case "calendar.write":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/calendar.events",
-    //             ];
-
-    //         case "calendar.full":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/calendar",
-    //             ];
-
-    //         case "forms.read":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/forms.responses.readonly",
-    //             ];
-
-    //         case "forms.write":
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/forms.body",
-    //             ];
-
-    //         default:
-    //             return [
-    //                 ...base,
-    //                 "https://www.googleapis.com/auth/spreadsheets",
-    //             ];
-    //     }
-    // },
     getAuthUrl({ state = "", scopes = [] }) {
-        const params = new URLSearchParams({
-            client_id: process.env.GOOGLE_CLIENT_ID,
-            redirect_uri: process.env.GOOGLE_REDIRECT_URI,
-            response_type: "code",
-            scope: scopes.join(" "),
-            access_type: "offline",
-            prompt: "consent",
-            state,
-        });
+        const params = new URLSearchParams({ client_id: GOOGLE_CLIENT_ID, redirect_uri: GOOGLE_REDIRECT_URI, response_type: "code", scope: scopes.join(" "), access_type: "offline", prompt: "consent", state, });
         return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
     },
     async getTokens(code) {
         if (!code || typeof code !== 'string') return { success: false, error: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
-            const { data } = await axios.post("https://oauth2.googleapis.com/token", {
-                code,
-                client_id: process.env.GOOGLE_CLIENT_ID,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET,
-                redirect_uri: process.env.GOOGLE_REDIRECT_URI,
-                grant_type: "authorization_code",
-            });
-            return { success: true, data: data };
+            const { data } = await axios.post("https://oauth2.googleapis.com/token", { code, client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET, redirect_uri: GOOGLE_REDIRECT_URI, grant_type: "authorization_code" });
+            console.log("google tokens:", JSON.stringify(data, null, 2));
+            const credentials = { tokenId: data.id_token, accessToken: data.access_token, expiresAt: new Date(Date.now() + (data.expires_in * 1000)), refreshToken: data.refresh_token, tokenType: data.token_type }
+            const scope = data.scope.split(" ")
+            return { success: true, credentials, scope };
         } catch (error) {
             return { success: false, error: this._handleGoogleError(error) };
         }
     },
-    async refreshToken(refreshToken) {
+    async refreshToken({ refreshToken }) {
         if (!refreshToken || typeof refreshToken !== 'string') return { success: false, error: { code: "missing_token", message: "A refresh token string is required.", status: 400 } };
         try {
-            const { data } = await axios.post("https://oauth2.googleapis.com/token", {
-                client_id: process.env.GOOGLE_CLIENT_ID,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET,
-                refresh_token: refreshToken,
-                grant_type: "refresh_token",
-            });
-            return { success: true, data: data };
+            const { data } = await axios.post("https://oauth2.googleapis.com/token", { client_id: GOOGLE_CLIENT_ID, client_secret: GOOGLE_CLIENT_SECRET, refresh_token: refreshToken, grant_type: "refresh_token" });
+            return { success: true, data: { tokenId: data.id_token, accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: new Date(Date.now() + (data.expires_in * 1000)), tokenType: data.token_type, refreshTokenExpiresAt: data.refresh_token_expires_in } };
         } catch (error) {
             return { success: false, error: this._handleGoogleError(error) };
         }
     },
-    async getUserInfo(accessToken) {
+    async getUserInfo({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get("https://www.googleapis.com/oauth2/v1/userinfo", { headers: { Authorization: `Bearer ${accessToken}` }, });
@@ -147,7 +39,7 @@ export default {
             return { success: false, error: this._handleGoogleError(error) };
         }
     },
-    async getTokenInfo(accessToken) {
+    async getTokenInfo({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get(`https://oauth2.googleapis.com/tokeninfo`, { params: { access_token: accessToken }, timeout: 5000, });
@@ -157,7 +49,7 @@ export default {
             return { success: false, error: this._handleGoogleError(error) };
         }
     },
-    async validateToken(accessToken) {
+    async validateToken({ accessToken }) {
         if (!accessToken || typeof accessToken !== 'string') return { success: false, error: { code: "missing_token", message: "An access token string is required.", status: 400 } };
         try {
             const { data } = await axios.get(`https://oauth2.googleapis.com/tokeninfo`, { params: { access_token: accessToken }, timeout: 5000, });
@@ -166,9 +58,6 @@ export default {
             return false;
         }
     },
-    /**
-     * Internal helper to categorize errors
-     */
     _handleGoogleError(error) {
         const response = error.response;
         switch (response?.status) {
