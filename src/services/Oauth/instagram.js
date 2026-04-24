@@ -15,6 +15,13 @@ export default {
             const params = new URLSearchParams({ code, client_id: IG_ClIENT_ID, client_secret: IG_CLIENT_Secret, redirect_uri: IG_REDIRECT_URI, grant_type: "authorization_code" });
             const shortLivedToken = await axios.post("https://api.instagram.com/oauth/access_token", params, { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
             console.log("instagram short lived token:", JSON.stringify(shortLivedToken.data, null, 2));
+            //  instagram short lived token: {
+            //        "access_token": "...access_token string...",
+            //        "user_id": "...user_id number...",
+            //        "permissions": [
+            //          "instagram_business_basic"
+            //        ]
+            //      }
             const longLivedToken = await axios.get("https://graph.instagram.com/access_token", { params: { grant_type: "ig_exchange_token", client_secret: IG_CLIENT_Secret, access_token: shortLivedToken.data.accessToken } });
             console.log("instagram long lived token:", JSON.stringify(longLivedToken.data, null, 2));
             const grantedScopes = await axios.get("https://graph.instagram.com/me/permissions", { params: { access_token: longLivedToken.data.access_token } });
