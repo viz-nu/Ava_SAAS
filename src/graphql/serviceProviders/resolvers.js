@@ -136,6 +136,7 @@ export const serviceProvidersResolvers = {
                 default:
                     throw new GraphQLError("Invalid auth type", { extensions: { code: 'INVALID_INPUT' } });
             }
+            console.log("authStrategy:", JSON.stringify(authStrategy, null, 2));
             return authStrategy;
         },
         createApiAuthenticator: async (_, { providerId, code, authType, existingAuthenticatorId = null, keys = {} }, context) => {
