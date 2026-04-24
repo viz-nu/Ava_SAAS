@@ -1,12 +1,12 @@
 import axios from "axios";
-const { wa_client_id, wa_client_secret, wa_redirect_uri } = process.env;
+const { wa_client_id, wa_client_secret, wa_redirect_uri, wa_config_id } = process.env;
 export default {
     name: "whatsapp",
     getConfig() {
-        return { clientId: wa_client_id, clientSecret: wa_client_secret, redirectUri: wa_redirect_uri };
+        return { clientId: wa_client_id, clientSecret: wa_client_secret, redirectUri: wa_redirect_uri, configId: wa_config_id };
     },
     getAuthUrl({ state = "", scopes = [] }) {
-        const params = new URLSearchParams({ client_id: wa_client_id, redirect_uri: wa_redirect_uri, response_type: "code", scope: scopes.join(","), state });
+        const params = new URLSearchParams({ client_id: wa_client_id, redirect_uri: wa_redirect_uri, config_id: wa_config_id, response_type: "code", scope: scopes.join(","), state });
         return `https://www.facebook.com/v23.0/dialog/oauth?${params}`;
     },
     async getTokens(code) {
