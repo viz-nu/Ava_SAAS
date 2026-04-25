@@ -91,7 +91,10 @@ export default {
             case 400: return { code: response.data?.error_type || "invalid_request", message: response.data?.error_message || "Bad request.", status: 400 };
             case 401: return { code: response.data?.error?.type || "invalid_token", message: response.data?.error?.message || "The token is expired or invalid.", status: 401 };
             case 429: return { code: "rate_limit_exceeded", message: "Too many requests to Instagram validation servers.", status: 429 };
-            default: return { code: "provider_error", message: "Unable to reach Instagram authentication servers.", status: response?.status || 503 };
+            default: {
+                console.error(error.response.data);
+                return { code: "provider_error", message: "Unable to reach Instagram authentication servers.", status: response?.status || 503 }
+            };
         }
     }
 }
