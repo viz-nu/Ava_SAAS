@@ -17,7 +17,7 @@ export default {
             // console.log("Short-lived token:", JSON.stringify(shortLived, null, 2)); // one hour valid
             const { data: longLived } = await axios.get("https://graph.instagram.com/access_token", { params: { grant_type: "ig_exchange_token", client_secret: IG_CLIENT_Secret, access_token: shortLived.access_token } });
             // console.log("Long-lived token:", JSON.stringify(longLived, null, 2)); // 60 days valid
-            const scope = shortLived.permissions.split(",");
+            const scope = shortLived.permissions;
             const { data: accountDetails } = await axios.get("https://graph.instagram.com/me", { params: { access_token: longLived.access_token, fields: "id,user_id,username,account_type,name,profile_picture_url,followers_count,follows_count,media_count" } });
             // console.log("Account details:", JSON.stringify(accountDetails, null, 2));
             const credentials = { accessToken: longLived.access_token, expiresAt: longLived.expires_in ? new Date(Date.now() + longLived.expires_in * 1000) : null, tokenType: longLived.token_type };
