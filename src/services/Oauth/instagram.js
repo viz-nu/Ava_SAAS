@@ -6,29 +6,49 @@ export default {
         return { clientId: IG_ClIENT_ID, clientSecret: IG_CLIENT_Secret, redirectUri: IG_REDIRECT_URI }
     },
     getAuthUrl({ state = "", scopes = [] }) {
-        const params = new URLSearchParams({ client_id: IG_ClIENT_ID, redirect_uri: IG_REDIRECT_URI, response_type: "code", scope: scopes.join(" "), state });
-        return `https://api.instagram.com/oauth/authorize?${params}`;
+        const params = new URLSearchParams({ client_id: IG_ClIENT_ID, redirect_uri: IG_REDIRECT_URI, response_type: "code", force_reauth: true, scope: scopes.join(" "), state });
+        return `https://www.instagram.com/oauth/authorize?${params}`;
     },
-    async getTokens({code}) {
+    async getTokens({ code }) {
         if (!code || typeof code !== 'string') return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
+            // Step 1: Short-lived token
             const params = new URLSearchParams({ code, client_id: IG_ClIENT_ID, client_secret: IG_CLIENT_Secret, redirect_uri: IG_REDIRECT_URI, grant_type: "authorization_code" });
-            const shortLivedToken = await axios.post("https://api.instagram.com/oauth/access_token", params, { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
-            console.log("instagram short lived token:", JSON.stringify(shortLivedToken.data, null, 2));
-            //  instagram short lived token: {
-            //        "access_token": "...access_token string...",
-            //        "user_id": "...user_id number...",
-            //        "permissions": [
-            //          "instagram_business_basic"
-            //        ]
-            //      }
-            const longLivedToken = await axios.get("https://graph.instagram.com/access_token", { params: { grant_type: "ig_exchange_token", client_secret: IG_CLIENT_Secret, access_token: shortLivedToken.data.accessToken } });
-            console.log("instagram long lived token:", JSON.stringify(longLivedToken.data, null, 2));
-            const grantedScopes = await axios.get("https://graph.instagram.com/me/permissions", { params: { access_token: longLivedToken.data.access_token } });
-            console.log("instagram granted scopes:", JSON.stringify(grantedScopes.data, null, 2));
-            const scope = grantedScopes.data.filter(item => item.status === "granted").map(item => item.permission);
-            const credentials = { accessToken: longLivedToken.data.access_token, expiresAt: longLivedToken.data.expires_in ? new Date(Date.now() + (longLivedToken.data.expires_in * 1000)) : null, tokenType: longLivedToken.data.token_type }
-            return { success: true, credentials, scope };
+            const { data: shortLived } = await axios.post("https://api.instagram.com/oauth/access_token", params, { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+            // {
+            //     "data": [
+            //         {
+            //             "access_token": "EAACEdEose0...",
+            //             "user_id": "1020...",                // Your app user's Instagram-scoped user ID
+            //             "permissions": "instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish"
+            //         }
+            //     ]
+            // }
+            console.log("Short-lived token:", JSON.stringify(shortLived, null, 2)); // one hour valid
+            // Step 2: Long-lived token
+            const { data: longLived } = await axios.get("https://graph.instagram.com/access_token", { params: { grant_type: "ig_exchange_token", client_secret: IG_CLIENT_Secret, access_token: shortLived.data[0].access_token } });
+            console.log("Long-lived token:", JSON.stringify(longLived, null, 2)); // 60 days valid
+            // {
+            //     "access_token":"EAACEdEose0...",
+            //     "token_type": "bearer",
+            //     "expires_in": 5183944  // Number of seconds until token expires
+            //   }
+
+
+            const scope = shortLived.data[0].permissions.split(",");
+            const { data: accountDetails } = await axios.get("https://graph.instagram.com/me", {
+                params: {
+                    access_token: longLived.access_token,
+                    fields: "id,user_id,username,account_type,name,profile_picture_url,followers_count,follows_count,media_count"
+                }
+            });
+            console.log("Account details:", JSON.stringify(accountDetails, null, 2));
+            const credentials = {
+                accessToken: longLived.access_token,
+                expiresAt: longLived.expires_in ? new Date(Date.now() + longLived.expires_in * 1000) : null,
+                tokenType: longLived.token_type
+            };
+            return { success: true, credentials, scope, accountDetails: accountDetails.data[0] };
         } catch (error) {
             return { success: false, tokenError: this._handleInstagramError(error) };
         }
