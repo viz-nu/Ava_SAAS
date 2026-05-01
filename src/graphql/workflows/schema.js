@@ -21,6 +21,7 @@ export const workflowTypeDefs = `#graphql
     type InbuiltNode {
         _id: ID!
         id: String
+        type: String
         ports: JSON
         core: JSON
         meta: JSON
