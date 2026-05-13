@@ -14,16 +14,11 @@ import sanitize from 'mongo-sanitize';
 import 'dotenv/config'
 // weighted imports
 import { emailConformation } from "./controllers/auth/register.js";
-import { getContextMain } from "./utils/openai.js";
-import { AgentModel } from "./models/Agent.js";
-import { Conversation } from "./models/Conversations.js";
 import { Message } from "./models/Messages.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendEmail, sendMail } from "./utils/sendEmail.js";
-import { createToolWrapper, generateMeetingUrl, knowledgeToolBaker } from "./utils/tools.js";
+import {  generateMeetingUrl } from "./utils/tools.js";
 import { DateTime } from "luxon";
-import { Agent, run, RunState, tool } from '@openai/agents';
-import { StreamEventHandler } from "./utils/streamHandler.js";
 import { Ticket } from "./models/Tickets.js";
 const whitelist = ["https://www.avakado.ai", "https://avakado.ai", "http://localhost:5174", "http://localhost:3000", "https://studio.apollographql.com","https://app.avakado.ai","https://api-builder-eight.vercel.app/"];
 export const corsOptions = {
