@@ -4,11 +4,11 @@ import graphqlFields from "graphql-fields";
 import { AgentModel } from "../../models/Agent.js";
 export const conversationResolvers = {
   Query: {
-    conversations: async (_, { limit = 10, page = 1, status, _id, channelIds, campaignIds, agentId, channel, from, to, userLocation, disconnectReason }, context, info) => {
+    conversations: async (_, { limit = 10, page = 1, status, id, channelIds, campaignIds, agentId, channel, from, to, userLocation, disconnectReason }, context, info) => {
       // add pagination support
       const skip = (page - 1) * limit;
       const filter = { business: context.user.business };
-      if (_id) filter._id = _id;
+      if (id) filter._id = id;
       if (status) filter["metadata.status"] = status;
       if (channel) filter.channel = channel;
       if (agentId) filter.agent = agentId;
@@ -23,6 +23,7 @@ export const conversationResolvers = {
       if (campaignIds) filter.campaign = { $in: campaignIds };
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
       const { rootFields, populateFields } = getSelectFields(requestedFields.data);
+      console.log("filter:", filter);
       const [conversations, totalDocuments] = await Promise.all([
         Conversation.find(filter).limit(limit).skip(skip).sort({ createdAt: -1 }).select(rootFields),
         Conversation.countDocuments(filter)
