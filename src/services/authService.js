@@ -72,7 +72,7 @@ class AuthService {
     }
 
     async register(user, ipAddress, userAgent) {
-        const { name, email, password, BusinessName, logoURL } = user;
+        const { name, email, password, BusinessName, logoURL="" } = user;
         if (!name || !email || !password || !BusinessName) {
             throw new GraphQLError("Missing required fields", { extensions: { code: "MISSING_FIELDS" } });
         }
