@@ -86,7 +86,7 @@ export const serviceProvidersResolvers = {
             return { data: apis, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         fetchApiAuthenticators: async (_, { provider, providerName, _id, page = 1, limit = 10 }, context) => {
-            const filter = {};
+            const filter = {business: context.user.business};
             if (provider) filter.provider = provider;
             if (_id) filter._id = _id;
             const skip = (page - 1) * limit;
