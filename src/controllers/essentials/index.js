@@ -44,7 +44,6 @@ export const uploadFile = errorWrapper(async (req, res) => {
     try {
         const business = await Business.findById(req.user.business);
         if (!business) return { statusCode: 404, message: "Business not found", data: null }
-        let folder_ID = business.docData.folder;
         const uploadResult = await Promise.all(
             req.files.map(async (file) => {
                 const uploadedFileResponse = await uploadFileToWorkDrive({

@@ -56,7 +56,6 @@ export const sharedTypeDefs = `#graphql
     createdBy: User
     """credits data"""
     credits: JSON
-    docData: JSON
     """Creation timestamp"""
     createdAt: DateTime
     """Last update timestamp"""

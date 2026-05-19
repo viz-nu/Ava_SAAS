@@ -32,7 +32,6 @@ const BusinessSchema = new Schema({
     },
     freeTrailClaimed: { type: Boolean, default: false },
     createdBy: { type: Schema.Types.ObjectId, ref: "Users" },
-    docData: Schema.Types.Mixed,
     // members: [{ type: Schema.Types.ObjectId, ref: "Users" }],
     documents: [{ type: Schema.Types.ObjectId, ref: "document" }],
     credits: {

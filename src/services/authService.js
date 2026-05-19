@@ -8,7 +8,6 @@ import crypto from 'crypto';
 import { GraphQLError } from 'graphql';
 import { Log } from "../models/Log.js";
 import { Business } from "../models/Business.js";
-import { createFolder } from "../utils/CRMintegrations.js";
 import { fireAndForgetAxios } from "../utils/fireAndForget.js";
 class AuthService {
     generateTokens(userId, expiresIn = '30d') {
@@ -86,14 +85,6 @@ class AuthService {
             const [newBusiness, newUser] = await Promise.all([Business.create([{ name: BusinessName, logoURL }], { session }), User.create([{ name, email, password: await bcrypt.hash(password, 12), role: "admin", isVerified: false, emailToken }], { session })]);
             const business = newBusiness[0];
             const userDoc = newUser[0];
-            const doc = await createFolder(business._id, process.env.DEFAULT_BUSINESS_FOLDER_ZOHO);
-            business.docData = {
-                folder: doc.id,
-                name: doc.attributes.name,
-                parent: doc.attributes.parent_id,
-                download_url: doc.attributes.download_url,
-                modified_by_zuid: doc.attributes.modified_by_zuid
-            };
             business.createdBy = userDoc._id;
             userDoc.business = business._id;
             await Promise.all([business.save({ session }), userDoc.save({ session }), Log.create([{ user: userDoc._id, business: business._id, level: "info", event: "email verification", category: "AUTHENTICATION", status: "SUCCESS", message: "Email verification sent", service: "auth", meta: { ipAddress, userAgent } }], { session })]);
