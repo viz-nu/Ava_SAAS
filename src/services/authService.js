@@ -72,31 +72,58 @@ class AuthService {
     }
 
     async register(user, ipAddress, userAgent) {
-        const session = await mongoose.startSession();
-
-        try {
-            session.startTransaction();
-            const { name, email, password, BusinessName, logoURL } = user;
-            if (!name || !email || !password || !BusinessName) throw new GraphQLError("Missing required fields", { extensions: { code: "MISSING_FIELDS" } });
-            const [existingBusiness, existingUser] = await Promise.all([Business.findOne({ name: BusinessName }).session(session), User.findOne({ email }).session(session)]);
-            if (existingBusiness) throw new GraphQLError("Business already exists", { extensions: { code: "BUSINESS_ALREADY_EXISTS" } });
-            if (existingUser) throw new GraphQLError("Email already exists", { extensions: { code: "EMAIL_ALREADY_EXISTS" } });
-            const emailToken = crypto.randomBytes(7).toString("hex");
-            const [newBusiness, newUser] = await Promise.all([Business.create([{ name: BusinessName, logoURL }], { session }), User.create([{ name, email, password: await bcrypt.hash(password, 12), role: "admin", isVerified: false, emailToken }], { session })]);
-            const business = newBusiness[0];
-            const userDoc = newUser[0];
-            business.createdBy = userDoc._id;
-            userDoc.business = business._id;
-            await Promise.all([business.save({ session }), userDoc.save({ session }), Log.create([{ user: userDoc._id, business: business._id, level: "info", event: "email verification", category: "AUTHENTICATION", status: "SUCCESS", message: "Email verification sent", service: "auth", meta: { ipAddress, userAgent } }], { session })]);
-            await session.commitTransaction();
-            this.sendRegistrationEmails(userDoc);
-            return { success: true, message: "Registration successful. Verification email sent." };
-        } catch (error) {
-            if (session.inTransaction()) await session.abortTransaction();
-            throw error;
-        } finally {
-            session.endSession();
+        const { name, email, password, BusinessName, logoURL } = user;
+        if (!name || !email || !password || !BusinessName) {
+            throw new GraphQLError("Missing required fields", { extensions: { code: "MISSING_FIELDS" } });
         }
+
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const emailToken = crypto.randomBytes(7).toString("hex");
+        let userDoc;
+
+        await mongoose.connection.transaction(async (session) => {
+            const existingBusiness = await Business.findOne({ name: BusinessName }).session(session);
+            if (existingBusiness) {
+                throw new GraphQLError("Business already exists", { extensions: { code: "BUSINESS_ALREADY_EXISTS" } });
+            }
+
+            const existingUser = await User.findOne({ email }).session(session);
+            if (existingUser) {
+                throw new GraphQLError("Email already exists", { extensions: { code: "EMAIL_ALREADY_EXISTS" } });
+            }
+
+            const [business] = await Business.create([{ name: BusinessName, logoURL }], { session });
+            const [createdUser] = await User.create([{
+                name,
+                email,
+                password: hashedPassword,
+                role: "admin",
+                isVerified: false,
+                emailToken,
+            }], { session });
+
+            business.createdBy = createdUser._id;
+            createdUser.business = business._id;
+
+            await business.save({ session });
+            await createdUser.save({ session });
+            await Log.create([{
+                user: createdUser._id,
+                business: business._id,
+                level: "info",
+                event: "email verification",
+                category: "AUTHENTICATION",
+                status: "SUCCESS",
+                message: "Email verification sent",
+                service: "auth",
+                meta: { ipAddress, userAgent },
+            }], { session });
+
+            userDoc = createdUser;
+        });
+
+        this.sendRegistrationEmails(userDoc);
+        return { success: true, message: "Registration successful. Verification email sent." };
     }
 
     sendRegistrationEmails(user) {
