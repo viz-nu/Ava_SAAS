@@ -6,6 +6,7 @@ const ActionSchema = new Schema({
     description: String,
     needsApproval: Boolean, // Knowledge fetching doesn't need approval
     parameters: Schema.Types.Mixed,
+    config: Schema.Types.Mixed,
     functionString: String,
     errorFunction: String,
     UI: Schema.Types.Mixed,

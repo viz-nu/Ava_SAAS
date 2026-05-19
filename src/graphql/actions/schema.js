@@ -14,6 +14,7 @@ export const actionTypeDefs = `#graphql
     """Whether the action requires approval before execution"""
     needsApproval: Boolean
     """JSON schema defining the action parameters"""
+    config: JSON
     parameters: JSON
     """JavaScript function code that implements the action"""
     functionString: String
@@ -41,6 +42,8 @@ export const actionTypeDefs = `#graphql
     needsApproval: Boolean
     """JSON schema defining the action parameters"""
     parameters: JSON
+    """JSON schema defining the action config"""
+    config: JSON
     """JavaScript function code that implements the action"""
     functionString: String
     """Error handling function code"""
