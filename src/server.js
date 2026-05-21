@@ -36,7 +36,7 @@ export const corsOptions = {
     optionsSuccessStatus: 200,
     preflightContinue: false
 };
-export const openCors = cors();
+export const openCors = cors(corsOptions);
 export const createApp = async () => {
     try {
         await initialize();
