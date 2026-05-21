@@ -6,6 +6,7 @@ import OauthMicrosoft from "../../services/Oauth/microsoft.js";
 import OauthTwilio from "../../services/Oauth/twilio.js";
 import OauthInstagram from "../../services/Oauth/instagram.js";
 import OauthWhatsapp from "../../services/Oauth/whatsapp.js";
+import OauthCalendly from "../../services/Oauth/calendly.js";
 import graphqlFields from "graphql-fields";
 import { getSelectFields } from "../../utils/graphqlTools.js";
 const PROVIDER_MAP = {
@@ -17,7 +18,8 @@ const PROVIDER_MAP = {
     'Google Forms': OauthGoogle,
     'Google Calendar': OauthGoogle,
     'Google Sheets': OauthGoogle,
-    'Microsoft Excel': OauthMicrosoft
+    'Microsoft Excel': OauthMicrosoft,
+    'Calendly': OauthCalendly
 };
 export const serviceProvidersResolvers = {
     Query: {

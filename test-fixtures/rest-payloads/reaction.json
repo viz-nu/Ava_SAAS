@@ -1,0 +1,10 @@
+{
+  "messageId": "{{MESSAGE_ID}}",
+  "reaction": "like",
+  "_meta": {
+    "method": "PUT",
+    "endpoint": "/reaction",
+    "allowedValues": ["neutral", "like", "dislike"],
+    "auth": "none (openCors)"
+  }
+}

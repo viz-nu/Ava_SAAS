@@ -1,0 +1,6 @@
+{
+  "operationName": "Me",
+  "query": "query Me { me { _id name email role scopes isVerified business { _id name logoURL credits } createdAt } }",
+  "variables": {},
+  "_meta": { "auth": "Bearer {{ACCESS_TOKEN}}", "scope": "user:read" }
+}

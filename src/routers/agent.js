@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { authMiddleware, requireScope, requireAnyScope, requireResourceOwnership } from "../middleware/auth.js";
+import { authMiddleware, requireScope, requireAnyScope, requireResourceOwnership } from "../../src/middleware/auth.js";
 import { createAgent, deleteAgent, getAllAgents, promptGenerator, updateAgent } from "../controllers/agent/index.js";
-import { AgentModel } from "../models/Agent.js";
+import { AgentModel } from "../../src/models/Agent.js";
 
 export const AgentsRouter = Router()
 

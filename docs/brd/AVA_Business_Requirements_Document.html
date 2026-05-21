@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>AVA Business Requirements Document</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/Users/viz/Campusroot/Ava_SAAS/docs/brd/brd-print.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">AVA Business Requirements Document</h1>
+</header>
+<h1 id="business-requirements-document-brd">Business Requirements
+Document (BRD)</h1>
+<h2 id="avakado-ai-agent-saas-platform-ava_saas">Avakado AI Agent SaaS
+Platform (AVA_SAAS)</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Product</strong></td>
+<td>Avakado (AVA) — Multi-tenant AI Agent SaaS</td>
+</tr>
+<tr>
+<td><strong>Codebase</strong></td>
+<td><code>ava_saas</code> backend (Node.js / Express / Apollo
+GraphQL)</td>
+</tr>
+<tr>
+<td><strong>Document version</strong></td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><strong>Generated from</strong></td>
+<td>Source code analysis (May 2026)</td>
+</tr>
+<tr>
+<td><strong>Primary endpoint</strong></td>
+<td><code>POST /graphql</code></td>
+</tr>
+<tr>
+<td><strong>Public URL</strong></td>
+<td>https://www.avakado.ai</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>Avakado is a <strong>multi-tenant SaaS platform</strong> that enables
+businesses to build, configure, deploy, and operate <strong>AI-powered
+conversational agents</strong> across multiple communication channels
+(web chat, WhatsApp, Telegram, email, SMS, voice, Instagram,
+Twilio).</p>
+<p>The platform combines:</p>
+<ul>
+<li><strong>Knowledge management</strong> (RAG) via collections sourced
+from websites, files, YouTube, and plain text</li>
+<li><strong>Custom agent configuration</strong> (prompts, models,
+appearance, voice, actions, workflows)</li>
+<li><strong>Omnichannel deployment</strong> with webhook-driven inbound
+messaging</li>
+<li><strong>Outbound campaigns</strong> and scheduled jobs for telephony
+(Twilio, Exotel, Tata Tele)</li>
+<li><strong>CRM-style lead management</strong> with templates and bulk
+import</li>
+<li><strong>Subscription billing</strong> via Razorpay with credit-based
+usage (LLM, knowledge, miscellaneous)</li>
+<li><strong>Third-party integrations</strong> (Zoho CRM, Twilio Connect,
+OAuth providers)</li>
+<li><strong>Support ticketing</strong> and in-app notifications</li>
+</ul>
+<p>This BRD is derived from the implemented backend (<code>src/</code>)
+and reflects <strong>what the system does today</strong>, not a future
+roadmap.</p>
+<hr />
+<h2 id="business-objectives">2. Business Objectives</h2>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 33%" />
+<col style="width: 54%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Objective</th>
+<th>Success Criteria</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BO-01</td>
+<td>Enable businesses to deploy branded AI agents without building
+infrastructure</td>
+<td>Tenant can register, create agent, attach knowledge, and go live on
+≥1 channel</td>
+</tr>
+<tr>
+<td>BO-02</td>
+<td>Centralize knowledge ingestion and retrieval for accurate agent
+responses</td>
+<td>Collections process website/file/YouTube sources into embedded
+chunks</td>
+</tr>
+<tr>
+<td>BO-03</td>
+<td>Support omnichannel customer engagement</td>
+<td>Agents operate on web, messaging, email, SMS, and voice
+channels</td>
+</tr>
+<tr>
+<td>BO-04</td>
+<td>Monetize via subscription plans and usage credits</td>
+<td>Plans, subscriptions, and per-business credit balances enforced</td>
+</tr>
+<tr>
+<td>BO-05</td>
+<td>Provide outbound sales/support automation</td>
+<td>Campaigns schedule outbound calls with agent context</td>
+</tr>
+<tr>
+<td>BO-06</td>
+<td>Integrate with external CRM and telephony systems</td>
+<td>Zoho, Twilio, Exotel, Tata Tele connectors available</td>
+</tr>
+<tr>
+<td>BO-07</td>
+<td>Maintain tenant isolation and role-based access</td>
+<td>All tenant data scoped to <code>business</code>; scopes gate GraphQL
+operations</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="stakeholders-user-roles">3. Stakeholders &amp; User Roles</h2>
+<h3 id="stakeholders">3.1 Stakeholders</h3>
+<table>
+<colgroup>
+<col style="width: 56%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr>
+<th>Stakeholder</th>
+<th>Interest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Business tenant (customer)</strong></td>
+<td>Configure agents, knowledge, channels, campaigns; view
+analytics</td>
+</tr>
+<tr>
+<td><strong>Platform operator (Avakado)</strong></td>
+<td>Manage plans, super-admin operations, marketplace templates</td>
+</tr>
+<tr>
+<td><strong>End user (consumer)</strong></td>
+<td>Interacts with deployed agents via channels (no direct platform
+login)</td>
+</tr>
+<tr>
+<td><strong>QA / Engineering</strong></td>
+<td>API contracts, test fixtures, integration verification</td>
+</tr>
+</tbody>
+</table>
+<h3 id="platform-user-roles">3.2 Platform User Roles</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 32%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Description</th>
+<th>Default Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>superAdmin</strong></td>
+<td>Platform-level administrator</td>
+<td><code>super:all</code> and full admin scopes</td>
+</tr>
+<tr>
+<td><strong>admin</strong></td>
+<td>Business owner / primary administrator</td>
+<td>Full CRUD on agents, collections, channels, integrations, workflows,
+billing upgrade</td>
+</tr>
+<tr>
+<td><strong>manager</strong></td>
+<td>Limited operational user</td>
+<td>Read-heavy: conversations, analytics, tickets; limited create on
+tickets</td>
+</tr>
+</tbody>
+</table>
+<p>Roles are assigned at registration (<code>admin</code> for business
+creator) or via <code>createUser</code> mutation.</p>
+<hr />
+<h2 id="functional-requirements">4. Functional Requirements</h2>
+<h3 id="authentication-onboarding">4.1 Authentication &amp;
+Onboarding</h3>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 39%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-AUTH-01</td>
+<td>User registration creates <strong>User + Business</strong>
+atomically</td>
+<td><code>register</code> mutation; MongoDB transaction</td>
+</tr>
+<tr>
+<td>FR-AUTH-02</td>
+<td>Email verification required before login</td>
+<td><code>isVerified</code> flag; verification email via
+<code>WEBHOOKS_URL</code></td>
+</tr>
+<tr>
+<td>FR-AUTH-03</td>
+<td>Login returns JWT access token, role, scopes, user profile</td>
+<td><code>login</code> mutation; cookies supported via middleware</td>
+</tr>
+<tr>
+<td>FR-AUTH-04</td>
+<td>Scope-based authorization on GraphQL fields</td>
+<td>Directives: <code>@requireScope</code>,
+<code>@requireBusinessAccess</code>,
+<code>@requireResourceOwnership</code></td>
+</tr>
+<tr>
+<td>FR-AUTH-05</td>
+<td>Public operations without auth</td>
+<td><code>login</code>, <code>register</code>,
+<code>ephemeralToken</code>, <code>fetchPublicPlans</code>,
+introspection</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Business rules:</strong></p>
+<ul>
+<li>Duplicate business name or email rejected at registration</li>
+<li>Password hashed with bcrypt (12 rounds)</li>
+<li>Access/refresh tokens: JWT, default 30-day expiry</li>
+</ul>
+<h3 id="business-tenant-management">4.2 Business (Tenant)
+Management</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-BIZ-01</td>
+<td>Each user belongs to one business</td>
+<td><code>User.business</code> → <code>Business</code></td>
+</tr>
+<tr>
+<td>FR-BIZ-02</td>
+<td>Business profile includes branding and contact</td>
+<td>name, logoURL, sector, tagline, facts, quickQuestions, address,
+description, contact</td>
+</tr>
+<tr>
+<td>FR-BIZ-03</td>
+<td>Credit wallet per business</td>
+<td><code>llmCredits</code>, <code>knowledgeCredits</code>,
+<code>miscellaneousCredits</code>, <code>balance</code>, active
+subscription plan</td>
+</tr>
+<tr>
+<td>FR-BIZ-04</td>
+<td>Usage analytics tracked</td>
+<td>engagement overview, conversation analytics, credit usage breakdown
+(chat, knowledge, analysis)</td>
+</tr>
+<tr>
+<td>FR-BIZ-05</td>
+<td>Conversation date retention</td>
+<td><code>MAX_DAYS</code> default 45; pruning of old daily counts</td>
+</tr>
+</tbody>
+</table>
+<h3 id="ai-agent-management">4.3 AI Agent Management</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-AGENT-01</td>
+<td>Create/update/delete agents per business</td>
+<td>CRUD mutations with <code>agent:*</code> scopes</td>
+</tr>
+<tr>
+<td>FR-AGENT-02</td>
+<td>Agent configuration</td>
+<td>appearance (color boxes), personalInfo (name, systemPrompt,
+quickQuestions, welcomeMessage, model, temperature,
+VoiceAgentSessionConfig)</td>
+</tr>
+<tr>
+<td>FR-AGENT-03</td>
+<td>Agent associations</td>
+<td>collections[], workflow, channels[], actions[]</td>
+</tr>
+<tr>
+<td>FR-AGENT-04</td>
+<td>Public/featured agents</td>
+<td><code>isPublic</code>, <code>isFeatured</code> flags for
+marketplace</td>
+</tr>
+<tr>
+<td>FR-AGENT-05</td>
+<td>Voice realtime sessions</td>
+<td><code>ephemeralToken</code> (OpenAI or Gemini provider) — public
+operation</td>
+</tr>
+<tr>
+<td>FR-AGENT-06</td>
+<td>Prompt generation helper</td>
+<td><code>generatePrompt</code> mutation for AI-assisted prompt
+building</td>
+</tr>
+<tr>
+<td>FR-AGENT-07</td>
+<td>Analysis metrics</td>
+<td><code>analysisMetrics</code> JSON on agent</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Supported voice models (from schema):</strong> OpenAI
+realtime models, voices (alloy, ash, coral, etc.), turn detection
+(server_vad, semantic_vad).</p>
+<h3 id="knowledge-collections-rag">4.4 Knowledge Collections (RAG)</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-COLL-01</td>
+<td>Collection types by source</td>
+<td><code>website</code>, <code>youtube</code>, <code>file</code>,
+<code>text</code></td>
+</tr>
+<tr>
+<td>FR-COLL-02</td>
+<td>Processing status lifecycle</td>
+<td><code>loading</code> → <code>active</code> or
+<code>failed</code></td>
+</tr>
+<tr>
+<td>FR-COLL-03</td>
+<td>Website ingestion</td>
+<td>Firecrawl batch scrape; webhook callback on completion</td>
+</tr>
+<tr>
+<td>FR-COLL-04</td>
+<td>File ingestion</td>
+<td>Presigned upload to Cloudflare R2
+(<code>ava-client-documents</code>); LlamaParse parsing via
+<code>source_url</code></td>
+</tr>
+<tr>
+<td>FR-COLL-05</td>
+<td>Chunking strategies</td>
+<td><code>recursiveStructural</code>, <code>recursiveSemantic</code>
+with tunable JSON</td>
+</tr>
+<tr>
+<td>FR-COLL-06</td>
+<td>Parser tiers</td>
+<td><code>fast</code>, <code>cost_effective</code>,
+<code>agentic</code>, <code>agentic_plus</code></td>
+</tr>
+<tr>
+<td>FR-COLL-07</td>
+<td>Parser output expansion</td>
+<td>text, items, markdown, metadata, images_content_metadata,
+xlsx_content_metadata, output_pdf_content_metadata</td>
+</tr>
+<tr>
+<td>FR-COLL-08</td>
+<td>File storage operations</td>
+<td><code>getUploadUrl</code>, <code>getDownloadUrl</code>,
+<code>deleteUploadedFileFromStorage</code>,
+<code>getListOfUploadedFiles</code></td>
+</tr>
+<tr>
+<td>FR-COLL-09</td>
+<td>Direct upload (Multer)</td>
+<td>PDF and TXT up to 50MB (middleware exists; route wiring
+optional)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Business rule:</strong> Knowledge processing consumes
+<code>knowledgeCredits</code>; embeddings and summarization costs
+tracked in business analytics.</p>
+<h3 id="custom-actions-agent-tools">4.5 Custom Actions (Agent
+Tools)</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-ACT-01</td>
+<td>Define executable JavaScript functions</td>
+<td><code>functionString</code>, <code>errorFunction</code></td>
+</tr>
+<tr>
+<td>FR-ACT-02</td>
+<td>Parameter schema</td>
+<td><code>parameters</code> JSON; <code>config</code> JSON</td>
+</tr>
+<tr>
+<td>FR-ACT-03</td>
+<td>Execution controls</td>
+<td><code>async</code>, <code>needsApproval</code> flags</td>
+</tr>
+<tr>
+<td>FR-ACT-04</td>
+<td>UI rendering config</td>
+<td><code>UI</code> JSON for action presentation</td>
+</tr>
+<tr>
+<td>FR-ACT-05</td>
+<td>Public actions</td>
+<td><code>isPublic</code> for marketplace sharing</td>
+</tr>
+</tbody>
+</table>
+<h3 id="communication-channels">4.6 Communication Channels</h3>
+<table>
+<colgroup>
+<col style="width: 12%" />
+<col style="width: 40%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Channel Types</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-CHAN-01</td>
+<td>Create channel per type</td>
+<td>email, whatsapp, telegram, web, phone, sms, instagram, twilio</td>
+</tr>
+<tr>
+<td>FR-CHAN-02</td>
+<td>Channel configuration</td>
+<td><code>config</code> JSON, <code>systemPrompt</code>,
+<code>UIElements</code>, optional <code>workflow</code> link</td>
+</tr>
+<tr>
+<td>FR-CHAN-03</td>
+<td>Webhook URL per channel</td>
+<td>Auto-generated for inbound message routing</td>
+</tr>
+<tr>
+<td>FR-CHAN-04</td>
+<td>OAuth integrations</td>
+<td>Google, Microsoft, Instagram, WhatsApp, Twilio Connect under
+<code>src/services/Oauth/</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="conversations-messages">4.7 Conversations &amp; Messages</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-CONV-01</td>
+<td>Store conversation sessions</td>
+<td>Linked to agent, channel, optional campaign, workflow state</td>
+</tr>
+<tr>
+<td>FR-CONV-02</td>
+<td>Conversation statuses</td>
+<td>initiated, active, interrupted, inactive, disconnected, noAnswer,
+busy, failed, completed, inProgress</td>
+</tr>
+<tr>
+<td>FR-CONV-03</td>
+<td>Metadata tracking</td>
+<td>totalMessages, reactions (like/dislike/neutral), userLocation,
+socket info, browserUrl</td>
+</tr>
+<tr>
+<td>FR-CONV-04</td>
+<td>Transcripts &amp; extracted data</td>
+<td><code>transcripts</code>, <code>extractedData</code> JSON
+fields</td>
+</tr>
+<tr>
+<td>FR-CONV-05</td>
+<td>Message history</td>
+<td><code>fetchMessages</code> by conversationId with pagination</td>
+</tr>
+<tr>
+<td>FR-CONV-06</td>
+<td>Message reactions (REST)</td>
+<td><code>PUT /reaction</code> — neutral, like, dislike</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note:</strong> Conversations and messages have
+<strong>queries only</strong> (no GraphQL mutations); updates occur via
+webhooks and internal services.</p>
+<h3 id="workflows">4.8 Workflows</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-WF-01</td>
+<td>Visual workflow graphs</td>
+<td><code>nodes</code> and <code>connections</code> JSON</td>
+</tr>
+<tr>
+<td>FR-WF-02</td>
+<td>Inbuilt node library</td>
+<td>Reusable node templates (ports, core, meta)</td>
+</tr>
+<tr>
+<td>FR-WF-03</td>
+<td>Test individual nodes</td>
+<td><code>testWorkflowNode</code> mutation</td>
+</tr>
+<tr>
+<td>FR-WF-04</td>
+<td>Channel/workflow binding</td>
+<td>Channels and agents can reference workflows</td>
+</tr>
+</tbody>
+</table>
+<h3 id="campaigns-scheduled-jobs">4.9 Campaigns &amp; Scheduled
+Jobs</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-CAMP-01</td>
+<td>Campaign entity</td>
+<td>name, agent, communicationChannels[], leads[], schedule, cps,
+instructions, nodes/edges</td>
+</tr>
+<tr>
+<td>FR-CAMP-02</td>
+<td>Job scheduling</td>
+<td>External Bull/Agenda service via <code>BULL_URL</code></td>
+</tr>
+<tr>
+<td>FR-CAMP-03</td>
+<td>Job types</td>
+<td><code>outboundCall</code> with payload (channel, agent, to,
+PreContext, retries, CPS)</td>
+</tr>
+<tr>
+<td>FR-CAMP-04</td>
+<td>Job statuses</td>
+<td>scheduled, active, completed, failed, canceled, delayed,
+waiting</td>
+</tr>
+<tr>
+<td>FR-CAMP-05</td>
+<td>Immediate outbound call</td>
+<td><code>makeAnOutboundCall</code> mutation</td>
+</tr>
+<tr>
+<td>FR-CAMP-06</td>
+<td>Exotel campaign setup</td>
+<td><code>exotelCampaignSetup</code> with contacts and schedule</td>
+</tr>
+<tr>
+<td>FR-CAMP-07</td>
+<td>Tata Tele testing</td>
+<td><code>testTataTele</code> mutation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lead-management-crm">4.10 Lead Management (CRM)</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-LEAD-01</td>
+<td>Lead templates with dynamic fields</td>
+<td><code>fields</code> JSON schema per template</td>
+</tr>
+<tr>
+<td>FR-LEAD-02</td>
+<td>Lead records</td>
+<td><code>data</code> JSON conforming to template; notes, tags, status,
+origin</td>
+</tr>
+<tr>
+<td>FR-LEAD-03</td>
+<td>Bulk import</td>
+<td><code>bulkCreateLeads</code> mutation</td>
+</tr>
+<tr>
+<td>FR-LEAD-04</td>
+<td>Faceted filtering</td>
+<td><code>fetchLeadFacets</code> for filter UI</td>
+</tr>
+</tbody>
+</table>
+<h3 id="integrations">4.11 Integrations</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-INT-01</td>
+<td>zoho</td>
+<td>CRM OAuth, WorkDrive file upload</td>
+</tr>
+<tr>
+<td>FR-INT-02</td>
+<td>twilio</td>
+<td>SMS, voice, phone numbers, Connect app</td>
+</tr>
+<tr>
+<td>FR-INT-03</td>
+<td>exotel</td>
+<td>India telephony campaigns</td>
+</tr>
+<tr>
+<td>FR-INT-04</td>
+<td>tataTele</td>
+<td>Tata Telephony testing</td>
+</tr>
+<tr>
+<td>FR-INT-05</td>
+<td>whatsapp</td>
+<td>WhatsApp Business API</td>
+</tr>
+</tbody>
+</table>
+<p>Operations: <code>createIntegration</code>,
+<code>fetchIntegration</code>, <code>deAuthorizeIntegration</code>.</p>
+<h3 id="twilio-operations-extended">4.12 Twilio Operations
+(Extended)</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Account</td>
+<td>Account details, balance</td>
+</tr>
+<tr>
+<td>Phone numbers</td>
+<td>List available, list owned, buy, update, release</td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td>Send SMS/MMS, list messages, SMS status</td>
+</tr>
+<tr>
+<td>Voice</td>
+<td>Outbound test call, AI outbound call with agent context</td>
+</tr>
+<tr>
+<td>Recordings</td>
+<td>List call recordings, transcriptions</td>
+</tr>
+<tr>
+<td>Usage</td>
+<td>Usage records (calls, SMS), timely usage, pricing by country</td>
+</tr>
+</tbody>
+</table>
+<h3 id="service-provider-marketplace">4.13 Service Provider
+Marketplace</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-SP-01</td>
+<td>External API provider registry</td>
+<td>Providers with basicScopes, icon, color</td>
+</tr>
+<tr>
+<td>FR-SP-02</td>
+<td>API definitions</td>
+<td>schemas (input/config/output/error), requestTemplate, auth
+types</td>
+</tr>
+<tr>
+<td>FR-SP-03</td>
+<td>Authenticators</td>
+<td>OAuth2, API key, bearer, JWT, HMAC, mTLS, etc.</td>
+</tr>
+<tr>
+<td>FR-SP-04</td>
+<td>Auth strategies</td>
+<td><code>createAuthStrategy</code>,
+<code>createApiAuthenticator</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="billing-subscriptions">4.14 Billing &amp; Subscriptions</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-PAY-01</td>
+<td>Plan types</td>
+<td>FREE, BASE, TOPUP</td>
+</tr>
+<tr>
+<td>FR-PAY-02</td>
+<td>Plan credits</td>
+<td>llm, knowledge, miscellaneous per plan</td>
+</tr>
+<tr>
+<td>FR-PAY-03</td>
+<td>Public plan listing</td>
+<td><code>fetchPublicPlans</code> (no auth)</td>
+</tr>
+<tr>
+<td>FR-PAY-04</td>
+<td>Subscription lifecycle</td>
+<td><code>startPayment</code> (Razorpay),
+<code>cancelSubscription</code></td>
+</tr>
+<tr>
+<td>FR-PAY-05</td>
+<td>Super-admin plan management</td>
+<td><code>createAVAPlan</code>, <code>updateAVAPlan</code>,
+<code>deleteAVAPlan</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="support-tickets">4.15 Support Tickets</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-TKT-01</td>
+<td>Ticket creation (REST)</td>
+<td><code>POST /raise-ticket</code> — business, issueSummary, channel,
+priority, contactDetails</td>
+</tr>
+<tr>
+<td>FR-TKT-02</td>
+<td>Ticket management (GraphQL)</td>
+<td>fetch, update with email response, delete</td>
+</tr>
+<tr>
+<td>FR-TKT-03</td>
+<td>Priorities</td>
+<td>low, medium, high</td>
+</tr>
+<tr>
+<td>FR-TKT-04</td>
+<td>Statuses</td>
+<td>pending, responded, resolved</td>
+</tr>
+</tbody>
+</table>
+<h3 id="notifications">4.16 Notifications</h3>
+<table>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 50%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Requirement</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-NOT-01</td>
+<td>In-app notifications</td>
+<td>head, body, type, attachments JSON</td>
+</tr>
+<tr>
+<td>FR-NOT-02</td>
+<td>Seen/unseen status</td>
+<td>update and delete operations</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rest-utility-endpoints">4.17 REST Utility Endpoints</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>GET</td>
+<td>Health check</td>
+</tr>
+<tr>
+<td><code>/reaction</code></td>
+<td>PUT</td>
+<td>Message reaction update</td>
+</tr>
+<tr>
+<td><code>/send-invite</code></td>
+<td>POST</td>
+<td>iCal meeting invites (AVA or custom SMTP)</td>
+</tr>
+<tr>
+<td><code>/send-mail</code></td>
+<td>POST</td>
+<td>Outbound email</td>
+</tr>
+<tr>
+<td><code>/contact-us</code></td>
+<td>POST</td>
+<td>Contact form to internal team</td>
+</tr>
+<tr>
+<td><code>/raise-ticket</code></td>
+<td>POST</td>
+<td>Create support ticket</td>
+</tr>
+<tr>
+<td><code>/webhook/firecrawl/*</code></td>
+<td>*</td>
+<td>Crawl completion callbacks</td>
+</tr>
+<tr>
+<td><code>/webhook/telegram/*</code></td>
+<td>*</td>
+<td>Telegram bot events</td>
+</tr>
+<tr>
+<td><code>/webhook/whatsapp/*</code></td>
+<td>*</td>
+<td>WhatsApp inbound</td>
+</tr>
+<tr>
+<td><code>/webhook/instagram/*</code></td>
+<td>*</td>
+<td>Instagram inbound</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="non-functional-requirements">5. Non-Functional Requirements</h2>
+<table>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 37%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr>
+<th>ID</th>
+<th>Category</th>
+<th>Requirement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFR-01</td>
+<td>Security</td>
+<td>Helmet headers, mongo-sanitize on inputs, CORS whitelist, JWT
+auth</td>
+</tr>
+<tr>
+<td>NFR-02</td>
+<td>Multi-tenancy</td>
+<td><code>@requireBusinessAccess</code> enforces business-scoped
+data</td>
+</tr>
+<tr>
+<td>NFR-03</td>
+<td>API format</td>
+<td>GraphQL responses wrapped:
+<code>{ success, message, data }</code></td>
+</tr>
+<tr>
+<td>NFR-04</td>
+<td>Payload size</td>
+<td>JSON body limit 50MB</td>
+</tr>
+<tr>
+<td>NFR-05</td>
+<td>Observability</td>
+<td>Morgan HTTP logging; GraphQL error logging</td>
+</tr>
+<tr>
+<td>NFR-06</td>
+<td>Real-time</td>
+<td>Socket.io client for status updates to frontend rooms</td>
+</tr>
+<tr>
+<td>NFR-07</td>
+<td>Async processing</td>
+<td>External job queue (<code>BULL_URL</code>) for URL processing and
+job sync</td>
+</tr>
+<tr>
+<td>NFR-08</td>
+<td>Scalability</td>
+<td>Stateless API; MongoDB persistence; R2 object storage</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="data-model-summary">6. Data Model Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Key Relationships</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Business</td>
+<td>owns agents, collections, channels, credits, analytics</td>
+</tr>
+<tr>
+<td>User</td>
+<td>belongs to business; has role and scopes</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>→ collections, workflow, channels, actions, business</td>
+</tr>
+<tr>
+<td>Collection</td>
+<td>→ business; content sources with processing status</td>
+</tr>
+<tr>
+<td>Channel</td>
+<td>→ business, workflow; type-specific config</td>
+</tr>
+<tr>
+<td>Conversation</td>
+<td>→ agent, channel, campaign, workflow</td>
+</tr>
+<tr>
+<td>Message</td>
+<td>→ conversation, business</td>
+</tr>
+<tr>
+<td>Action</td>
+<td>→ business; JS function tools</td>
+</tr>
+<tr>
+<td>Workflow</td>
+<td>→ business; nodes/connections graph</td>
+</tr>
+<tr>
+<td>Campaign</td>
+<td>→ agent, channels, leads</td>
+</tr>
+<tr>
+<td>Job</td>
+<td>→ campaign; scheduled outbound calls</td>
+</tr>
+<tr>
+<td>Lead / LeadTemplate</td>
+<td>→ business</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>→ business; OAuth tokens in config</td>
+</tr>
+<tr>
+<td>Plan / Subscription</td>
+<td>→ business credits</td>
+</tr>
+<tr>
+<td>Ticket</td>
+<td>support requests</td>
+</tr>
+<tr>
+<td>Notification</td>
+<td>user notifications</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="external-dependencies">7. External Dependencies</h2>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MongoDB</td>
+<td>Primary database</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>Chat, embeddings, summarization, realtime voice</td>
+</tr>
+<tr>
+<td>Google Gemini</td>
+<td>Alternative voice provider</td>
+</tr>
+<tr>
+<td>LlamaCloud / LlamaParse</td>
+<td>Document parsing</td>
+</tr>
+<tr>
+<td>Firecrawl</td>
+<td>Website scraping</td>
+</tr>
+<tr>
+<td>Cloudflare R2</td>
+<td>Document storage (<code>ava-client-documents</code>)</td>
+</tr>
+<tr>
+<td>Twilio</td>
+<td>SMS/voice telephony</td>
+</tr>
+<tr>
+<td>Exotel / Tata Tele</td>
+<td>India telephony</td>
+</tr>
+<tr>
+<td>Razorpay</td>
+<td>Payment gateway</td>
+</tr>
+<tr>
+<td>Zoho CRM</td>
+<td>CRM integration</td>
+</tr>
+<tr>
+<td>WhatsApp / Telegram / Instagram APIs</td>
+<td>Channel webhooks</td>
+</tr>
+<tr>
+<td>LocationIQ</td>
+<td>Reverse geocoding</td>
+</tr>
+<tr>
+<td>Nodemailer</td>
+<td>Email delivery</td>
+</tr>
+<tr>
+<td>WEBHOOKS_URL service</td>
+<td>Email verification, auxiliary triggers</td>
+</tr>
+<tr>
+<td>BULL_URL</td>
+<td>Job queue worker</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="authorization-model">8. Authorization Model</h2>
+<h3 id="directives">8.1 Directives</h3>
+<ul>
+<li><code>@requireScope(scope)</code> — user must have scope or
+<code>super:all</code></li>
+<li><code>@requireAnyScope(scopes)</code> — any one scope</li>
+<li><code>@requireAllScopes(scopes)</code> — all scopes</li>
+<li><code>@requireBusinessAccess</code> — operation limited to user’s
+business tenant</li>
+<li><code>@requireResourceOwnership</code> — creator or business
+ownership check</li>
+</ul>
+<h3 id="scope-categories-abbreviated">8.2 Scope Categories
+(abbreviated)</h3>
+<p>Authentication, business, agent, collection, channel, action,
+conversation, ticket, analytics, file, template, admin, super, webhook,
+subscription, notification, integration, workflow.</p>
+<p>Full scope list and role mappings are defined in
+<code>src/models/User.js</code> (<code>ScopesEnum</code>,
+<code>RoleScopes</code>).</p>
+<hr />
+<h2 id="user-journeys">9. User Journeys</h2>
+<h3 id="business-onboarding">9.1 Business Onboarding</h3>
+<pre class="mermaid"><code>flowchart LR
+  A[Register] --&gt; B[Verify Email]
+  B --&gt; C[Login]
+  C --&gt; D[Create Collection]
+  D --&gt; E[Create Agent]
+  E --&gt; F[Create Channel]
+  F --&gt; G[Deploy / Go Live]</code></pre>
+<h3 id="inbound-conversation">9.2 Inbound Conversation</h3>
+<pre class="mermaid"><code>flowchart LR
+  W[Webhook Event] --&gt; C[Create/Update Conversation]
+  C --&gt; M[Store Messages]
+  M --&gt; A[Agent LLM + RAG]
+  A --&gt; R[Response to Channel]</code></pre>
+<h3 id="outbound-campaign">9.3 Outbound Campaign</h3>
+<pre class="mermaid"><code>flowchart LR
+  L[Import Leads] --&gt; CP[Create Campaign]
+  CP --&gt; J[Schedule Jobs]
+  J --&gt; T[Telephony Integration]
+  T --&gt; CV[Conversation + Transcript]</code></pre>
+<hr />
+<h2 id="constraints-assumptions">10. Constraints &amp; Assumptions</h2>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 57%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CORS</td>
+<td>Whitelisted origins only (avakado.ai, localhost, Apollo Studio)</td>
+</tr>
+<tr>
+<td>Zoho GraphQL module</td>
+<td>Present in codebase but <strong>not mounted</strong> in active
+schema</td>
+</tr>
+<tr>
+<td>File upload route</td>
+<td>Multer middleware exists; not wired to Express routes in current
+<code>server.js</code></td>
+</tr>
+<tr>
+<td>Manager role</td>
+<td>Read-heavy; cannot create agents or collections</td>
+</tr>
+<tr>
+<td>Credits</td>
+<td>Plan activation and credit deduction logic tied to business model
+methods</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="out-of-scope-current-implementation">11. Out of Scope (Current
+Implementation)</h2>
+<ul>
+<li>Native mobile SDK</li>
+<li>Multi-business membership per user</li>
+<li>GraphQL mutations for conversations/messages (webhook-driven
+only)</li>
+<li>Password reset flow (<code>forgotPassword</code> listed public but
+resolver commented)</li>
+<li>Zoho-specific GraphQL module (disabled)</li>
+</ul>
+<hr />
+<h2 id="acceptance-criteria-platform-level">12. Acceptance Criteria
+(Platform-Level)</h2>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 78%" />
+</colgroup>
+<thead>
+<tr>
+<th>#</th>
+<th>Criterion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>New business can register and receive verification email</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Verified admin can login and receive scoped JWT</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Admin can create collection from website URL and file upload
+path</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Admin can create agent bound to collection and channel</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Inbound webhook creates conversation and stores messages</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Admin can view conversations and messages with pagination</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Admin can configure Twilio integration and place test outbound
+call</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Admin can create campaign with leads and schedule outbound job</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Public plans visible without authentication</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Authenticated admin can start Razorpay subscription</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Support ticket can be raised via REST and managed via GraphQL</td>
+</tr>
+<tr>
+<td>12</td>
+<td>All tenant queries return only business-scoped data</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="glossary">13. Glossary</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 66%" />
+</colgroup>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Agent</strong></td>
+<td>Configured AI assistant with prompt, model, knowledge, and channel
+bindings</td>
+</tr>
+<tr>
+<td><strong>Collection</strong></td>
+<td>Knowledge base container with one or more content sources</td>
+</tr>
+<tr>
+<td><strong>Channel</strong></td>
+<td>Communication endpoint (web widget, WhatsApp number, etc.)</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td>Custom tool/function the agent can invoke</td>
+</tr>
+<tr>
+<td><strong>Workflow</strong></td>
+<td>Visual automation graph attached to agents or channels</td>
+</tr>
+<tr>
+<td><strong>Campaign</strong></td>
+<td>Outbound outreach configuration with leads and schedule</td>
+</tr>
+<tr>
+<td><strong>Job</strong></td>
+<td>Scheduled task (e.g., outbound call) processed by external
+queue</td>
+</tr>
+<tr>
+<td><strong>Scope</strong></td>
+<td>Fine-grained permission string gating GraphQL operations</td>
+</tr>
+<tr>
+<td><strong>Credits</strong></td>
+<td>Usage units for LLM, knowledge processing, and misc operations</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>This document was auto-generated from the Ava_SAAS codebase. For
+API operation details, see
+<code>docs/graphql/AVA_GraphQL_API_Reference.md</code>. For test
+artifacts, see <code>test-fixtures/</code>.</em></p>
+</body>
+</html>
