@@ -166,9 +166,9 @@ export const channelResolvers = {
                             break;
                         case "tataTele":
                             if (inboundSetup) {
-                                // const tataTele = new TataTeleService(integration.secrets.apiKey, integration.secrets.apiToken)
-                                // const inboundPhoneNumber = await tataTele.assignPhoneNumberToFlow(PhoneNumberSid)
-                                // console.log("updated inbound phone number", inboundPhoneNumber)
+                                const tataTele = new TataTeleService(integration.secrets.apiKey, integration.secrets.apiToken)
+                                const inboundPhoneNumber = await tataTele.assignPhoneNumberToFlow(PhoneNumberSid)
+                                console.log("updated inbound phone number", inboundPhoneNumber)
                             }
                             break;
                     }

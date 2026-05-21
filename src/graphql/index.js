@@ -137,7 +137,34 @@ export const registerApollo = async (app, httpServer) => {
       if (error.message.includes('Context creation failed')) return new GraphQLError('Authentication service unavailable', { extensions: { code: 'AUTH_SERVICE_UNAVAILABLE' } });
       return new GraphQLError(error.message, { extensions: { code: error.code || error.extensions?.code }, });
     },
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), ApolloServerPluginLandingPageProductionDefault({ embed: true })],
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), ApolloServerPluginLandingPageProductionDefault({ embed: true }),
+    {
+      async requestDidStart(requestContext) {
+        return {
+          async willSendResponse(ctx) {
+            let rootOperation = null;
+            let operationName = ctx.operationName || null;
+            let rootFields = [];
+            if (ctx.document) {
+              for (const def of ctx.document.definitions) {
+                if (def.kind === Kind.OPERATION_DEFINITION) {
+                  // 1️⃣ query / mutation / subscription
+                  rootOperation = def.operation;
+                  // 2️⃣ operation name
+                  operationName = def.name?.value || 'Anonymous';
+                  // 3️⃣ root fields (main resolvers)
+                  rootFields = def.selectionSet.selections.filter(sel => sel.kind === Kind.FIELD).map(field => field.name.value);
+                }
+              }
+            }
+            // query: ctx.request.query,
+            // variables: ctx.request.variables,
+            console.log(`userId: ${ctx.contextValue?.user?.id} - ${rootOperation} -> ${operationName} => ${rootFields}`);
+          }
+        };
+      }
+    }
+    ],
   });
   await apolloServer.start();
 
