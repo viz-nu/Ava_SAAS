@@ -13,7 +13,7 @@ import { webhookRouter } from "./webhooks/index.js";
 import sanitize from 'mongo-sanitize';
 import 'dotenv/config'
 // weighted imports
-// import { emailConformation } from "./controllers/auth/register.js";
+import { emailConformation } from "./controllers/auth/register.js";
 import { Message } from "./models/Messages.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendEmail, sendMail } from "./utils/sendEmail.js";
