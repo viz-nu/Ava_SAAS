@@ -142,14 +142,17 @@ export const serviceProvidersResolvers = {
             return authStrategy;
         },
         createApiAuthenticator: async (_, { providerId, code, authType, existingAuthenticatorId = null, keys = {} }, context) => {
+            console.log("keys:", JSON.stringify({providerId, code, authType, existingAuthenticatorId, keys }, null, 2));
             const provider = await Providers.findById(providerId);
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             if (!code) throw new GraphQLError("Code not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
+            console.log("oauthProvider:", JSON.stringify(oauthProvider, null, 2));
             if (code) keys.code = code;
             const { success, credentials, scope, accountDetails, config, tokenError = {} } = await oauthProvider.getTokens(keys);
             if (!success) throw new GraphQLError(tokenError.message, { extensions: { code: tokenError.code } });
+            console.log("credentials:", JSON.stringify(credentials, null, 2));
             if (existingAuthenticatorId) {
                 const update = { $set: { credentials, config, accountDetails } };
                 if (scope?.length > 0) update.$addToSet = { scope: { $each: scope } };
@@ -157,7 +160,9 @@ export const serviceProvidersResolvers = {
                 if (!existingAuthenticator) throw new GraphQLError("Authenticator not found", { extensions: { code: 'INVALID_INPUT' } });
                 return existingAuthenticator;
             }
+            console.log("ApiAuthenticators.create:", JSON.stringify({ provider: providerId, authType, credentials, config, accountDetails, scope, createdBy: context.user._id, business: context.user.business }, null, 2));
             return await ApiAuthenticators.create({ provider: providerId, authType, credentials, config, accountDetails, scope, createdBy: context.user._id, business: context.user.business });
+
         },
         createApi: async (_, { providerId, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
             const provider = await Providers.findById(providerId);
