@@ -21,7 +21,6 @@ export const userResolvers = {
             const { projection, nested } = flattenFields(requestedFields);
             const user = await User.findById(context.user._id);
             if (projection.business) await Business.populate(user, { path: 'business' });
-            console.log("projection:", JSON.stringify(projection, null, 2));
             return user
         },
         users: async (_, { id, limit = 10, role, isVerified }, context, info) => {

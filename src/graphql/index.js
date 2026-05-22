@@ -15,7 +15,7 @@ import { expressMiddleware } from '@as-integrations/express5';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
 import { authForGraphQL } from '../middleware/auth.js';
 import 'dotenv/config'
-import { GraphQLError } from 'graphql';
+import { GraphQLError, Kind } from 'graphql';
 import { corsOptions, openCors } from '../server.js';
 import cors from 'cors'
 import { ticketResolvers } from './tickets/resolver.js';
@@ -159,7 +159,7 @@ export const registerApollo = async (app, httpServer) => {
             }
             // query: ctx.request.query,
             // variables: ctx.request.variables,
-            console.log(`userId: ${ctx.contextValue?.user?.id} - ${rootOperation} -> ${operationName} => ${rootFields}`);
+            console.log(`userId: ${ctx.contextValue?.user?._id} - ${rootOperation} -> ${operationName} => ${rootFields}`);
           }
         };
       }
