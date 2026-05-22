@@ -110,14 +110,14 @@ export const agentResolvers = {
         createAgent: async (_, { agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let { appearance, personalInfo, actions = [], channels = [], collections = [], workflow = [], isPublic, isFeatured, analysisMetrics } = agent;
+            let { appearance, personalInfo, actions = [], channels = [], collections = [], workflow, isPublic, isFeatured, analysisMetrics } = agent;
             const [foundChannels, foundCollections, foundActions, foundWorkflow] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(actions.map(id => Action.findOne({ _id: id, business: context.user.business }, "_id"))),
-                Promise.all(workflow.map(id => Workflow.findOne({ _id: id, business: context.user.business }, "_id"))),
+                workflow ? Workflow.findOne({ _id: workflow, business: context.user.business }, "_id") : null,
             ]);
-            if (foundWorkflow.length !== workflow.length) throw new GraphQLError("Workflow not found", { extensions: { code: "WORKFLOW_NOT_FOUND" } });
+            if (workflow && !foundWorkflow) throw new GraphQLError("Workflow not found", { extensions: { code: "WORKFLOW_NOT_FOUND" } });
             if (foundChannels.length !== channels.length) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             if (foundCollections.length !== collections.length) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
@@ -133,14 +133,14 @@ export const agentResolvers = {
         updateAgent: async (_, { id, agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let { actions = [], channels = [], collections = [], workflow = [] } = agent;
+            let { actions = [], channels = [], collections = [], workflow  } = agent;
             const [foundChannels, foundCollections, foundActions, foundWorkflow] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(actions.map(id => Action.findOne({ _id: id, business: context.user.business }, "_id"))),
-                Promise.all(workflow.map(id => Workflow.findOne({ _id: id, business: context.user.business }, "_id"))),
+                workflow ? Workflow.findOne({ _id: workflow, business: context.user.business }, "_id") : null,
             ]);
-            if (foundWorkflow.length !== workflow.length) throw new GraphQLError("Workflow not found", { extensions: { code: "WORKFLOW_NOT_FOUND" } });
+            if (workflow && !foundWorkflow) throw new GraphQLError("Workflow not found", { extensions: { code: "WORKFLOW_NOT_FOUND" } });
             if (foundChannels.length !== channels.length) throw new GraphQLError("Channel not found", { extensions: { code: "CHANNEL_NOT_FOUND" } });
             if (foundCollections.length !== collections.length) throw new GraphQLError("Collection not found", { extensions: { code: "COLLECTION_NOT_FOUND" } });
             if (foundActions.length !== actions.length) throw new GraphQLError("Action not found", { extensions: { code: "ACTION_NOT_FOUND" } });
