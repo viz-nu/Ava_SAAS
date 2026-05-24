@@ -12,6 +12,7 @@ const ChannelBaseSchema = new Schema(
         business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
         provider: { type: Schema.Types.ObjectId, ref: 'Providers' },
         apiAuthenticator: { type: Schema.Types.ObjectId, ref: 'ApiAuthenticators' },
+        config: { type: Schema.Types.Mixed, default: {} },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         webhookUrl: String,
         systemPrompt: String,

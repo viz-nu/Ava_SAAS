@@ -29,12 +29,13 @@ export default {
             return { success: false, error: this._handleTelegramError(error) };
         }
     },
-    async setWebhook({ apiAuthenticator, webhookUrl }) {
+    async setWebhook({ apiAuthenticator, providerName, channelId }) {
+        let webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`
         const { apiToken } = apiAuthenticator.credentials;
         try {
             const client = new Telegraf(apiToken);
             await client.telegram.setWebhook(webhookUrl);
-            return { success: true };
+            return { success: true, webhookUrl };
         } catch (error) {
             return { success: false, error: this._handleTelegramError(error) };
         }

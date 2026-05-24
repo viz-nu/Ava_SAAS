@@ -23,8 +23,8 @@ type Channel {
   createdAt: DateTime
   """Last update timestamp"""
   updatedAt: DateTime
-  # """Channel-specific configuration settings"""
-  # config: JSON
+   """Channel-specific configuration settings"""
+   config: JSON
 }
 
 
@@ -54,6 +54,8 @@ input ChannelInput {
   isPublic: Boolean
   """Custom UI configuration elements"""
   UIElements: JSON
+  """Channel-specific configuration settings"""
+  config: JSON
 }
 
 type Mutation {

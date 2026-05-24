@@ -48,14 +48,16 @@ export const channelResolvers = {
             const serviceProvider = PROVIDER_MAP[provider.name];
             if (!serviceProvider) throw new Error('ServiceProvider not found');
             const channel = await Channel.create({ name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements })
-            await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, webhookUrl: `${process.env.WEBHOOKS_URL}webhook/${provider.name}/${channel._id}` });
+            const { webhookUrl } = await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id });
+            channel.webhookUrl = webhookUrl;
+            await channel.save();
             await Business.populate(channel, { path: 'business', select: populateFields.business });
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
             await Providers.populate(channel, { path: 'provider', select: populateFields.provider });
             return channel;
         },
         async updateChannel(_, { id, input }, context) {
-            const channel = await Channel.findById(id);
+            let channel = await Channel.findById(id);
             if (!channel) throw new Error('Channel not found');
             const { name, apiAuthenticator, systemPrompt, isPublic, UIElements } = input;
             const apiAuthenticatorDoc = await ApiAuthenticators.findById(apiAuthenticator);
@@ -64,8 +66,8 @@ export const channelResolvers = {
             if (!provider) throw new Error('Provider not found');
             const serviceProvider = PROVIDER_MAP[provider.name];
             if (!serviceProvider) throw new Error('ServiceProvider not found');
-            await Channel.findByIdAndUpdate(id, { name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements }, { new: true });
-            await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, webhookUrl: `${process.env.WEBHOOKS_URL}webhook/${provider.name}/${channel._id}` });
+            const { webhookUrl } = await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: id });
+            channel = await Channel.findByIdAndUpdate(id, { name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements, webhookUrl }, { new: true });
             await Business.populate(channel, { path: 'business', select: populateFields.business });
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
             await Providers.populate(channel, { path: 'provider', select: populateFields.provider });
