@@ -1,20 +1,5 @@
 import { model, Schema } from 'mongoose';
-import OauthWhatsapp from '../services/Oauth/whatsapp.js';
-import OauthInstagram from '../services/Oauth/instagram.js';
-import OauthTwilio from '../services/Oauth/twilio.js';
-import OauthGoogle from '../services/Oauth/google.js';
-import OauthMicrosoft from '../services/Oauth/microsoft.js';
-const PROVIDER_MAP = {
-    "Whatsapp": OauthWhatsapp,
-    "Instagram": OauthInstagram,
-    "Twilio": OauthTwilio,
-    'Gmail': OauthGoogle,
-    'Google Drive': OauthGoogle,
-    'Google Forms': OauthGoogle,
-    'Google Calendar': OauthGoogle,
-    'Google Sheets': OauthGoogle,
-    'Microsoft Excel': OauthMicrosoft
-};
+import { PROVIDER_MAP } from '../utils/setup.js';
 const baseOpts = { _id: false };      // subdocs don’t need their own _id
 const docOpts = { timestamps: true, discriminatorKey: 'authType' };
 const ApiAuthenticationSchema = new Schema({
@@ -46,10 +31,14 @@ const oauth2Schema = new Schema({
 const apiKeySchema = new Schema({
     credentials: {
         apiKey: String,
+        apiToken: String
     },
     config: {
         in: { type: String, enum: ['header', 'query'], default: 'header' },
-        name: { type: String, default: 'x-api-key' }
+        name: { type: String, default: 'x-api-key' },
+        AccountSid: String,
+        subdomain: String,
+        region: String
     }
 }, baseOpts);
 

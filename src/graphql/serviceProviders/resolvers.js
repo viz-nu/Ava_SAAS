@@ -1,26 +1,9 @@
 import { GraphQLError } from "graphql";
 import { ApiAuthenticators } from "../../models/apiAuthenticator.js";
 import { Api, Providers } from "../../models/ExternalServiceProviders.js";
-import OauthGoogle from "../../services/Oauth/google.js";
-import OauthMicrosoft from "../../services/Oauth/microsoft.js";
-import OauthTwilio from "../../services/Oauth/twilio.js";
-import OauthInstagram from "../../services/Oauth/instagram.js";
-import OauthWhatsapp from "../../services/Oauth/whatsapp.js";
-import OauthCalendly from "../../services/Oauth/calendly.js";
+import { PROVIDER_MAP } from "../../utils/setup.js";
 import graphqlFields from "graphql-fields";
 import { getSelectFields } from "../../utils/graphqlTools.js";
-const PROVIDER_MAP = {
-    "Whatsapp": OauthWhatsapp,
-    "Instagram": OauthInstagram,
-    "Twilio": OauthTwilio,
-    'Gmail': OauthGoogle,
-    'Google Drive': OauthGoogle,
-    'Google Forms': OauthGoogle,
-    'Google Calendar': OauthGoogle,
-    'Google Sheets': OauthGoogle,
-    'Microsoft Excel': OauthMicrosoft,
-    'Calendly': OauthCalendly
-};
 export const serviceProvidersResolvers = {
     Query: {
         fetchProviders: async (_, { name, description, icon, color, _id, page = 1, limit = 10 }, context) => {
@@ -88,7 +71,7 @@ export const serviceProvidersResolvers = {
             return { data: apis, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
         fetchApiAuthenticators: async (_, { provider, providerName, _id, page = 1, limit = 10 }, context) => {
-            const filter = {business: context.user.business};
+            const filter = { business: context.user.business };
             if (provider) filter.provider = provider;
             if (_id) filter._id = _id;
             const skip = (page - 1) * limit;
@@ -141,15 +124,11 @@ export const serviceProvidersResolvers = {
             // console.log("authStrategy:", JSON.stringify(authStrategy, null, 2));
             return authStrategy;
         },
-        createApiAuthenticator: async (_, { providerId, code, authType, existingAuthenticatorId = null, keys = {} }, context) => {
-            console.log("keys:", JSON.stringify({providerId, code, authType, existingAuthenticatorId, keys }, null, 2));
+        createApiAuthenticator: async (_, { providerId, authType, existingAuthenticatorId = null, keys = {} }, context) => {
             const provider = await Providers.findById(providerId);
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            if (!code) throw new GraphQLError("Code not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            console.log("oauthProvider:", JSON.stringify(oauthProvider, null, 2));
-            if (code) keys.code = code;
             const { success, credentials, scope, accountDetails, config, tokenError = {} } = await oauthProvider.getTokens(keys);
             if (!success) throw new GraphQLError(tokenError.message, { extensions: { code: tokenError.code } });
             if (existingAuthenticatorId) {
@@ -159,9 +138,7 @@ export const serviceProvidersResolvers = {
                 if (!existingAuthenticator) throw new GraphQLError("Authenticator not found", { extensions: { code: 'INVALID_INPUT' } });
                 return existingAuthenticator;
             }
-            console.log("ApiAuthenticators.create:", JSON.stringify({ provider: providerId, authType, credentials, config, accountDetails, scope, createdBy: context.user._id, business: context.user.business }, null, 2));
             return await ApiAuthenticators.create({ provider: providerId, authType, credentials, config, accountDetails, scope, createdBy: context.user._id, business: context.user.business });
-
         },
         createApi: async (_, { providerId, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
             const provider = await Providers.findById(providerId);

@@ -83,8 +83,6 @@ type Ticket {
     notifierEmail: String
     """Brief description of the issue"""
     issueSummary: String
-    """Communication channel used"""
-    channel: ChannelTypeEnum
     """Ticket priority level"""
     priority: priorityEnum
     """Current ticket status"""
@@ -108,7 +106,7 @@ type Query {
     @param status - Filter by current status
     @param id - Find specific ticket by ID
     """
-    fetchTickets(notifierEmail: String channel: ChannelTypeEnum priority: priorityEnum status: statusEnum id:ID): [Ticket] @requireScope(scope: "ticket:read")
+    fetchTickets(notifierEmail: String priority: priorityEnum status: statusEnum id:ID): [Ticket] @requireScope(scope: "ticket:read")
 }
 
 type Mutation {

@@ -7,10 +7,8 @@ type Channel {
   name: String!
   """ID of the business that owns this channel"""
     business: Business
-  """ID of the workflow that this channel is associated with"""
-  workflow: Workflow
-  """Type of communication channel (email, whatsapp, etc)"""
-  type: ChannelTypeEnum!
+  provider: Provider
+  apiAuthenticator: ApiAuthenticator
   """Current status of the channel (active, inactive, etc)"""
   status: String
   """URL for receiving webhook notifications"""
@@ -25,29 +23,11 @@ type Channel {
   createdAt: DateTime
   """Last update timestamp"""
   updatedAt: DateTime
-  """Channel-specific configuration settings"""
-  config: JSON
+  # """Channel-specific configuration settings"""
+  # config: JSON
 }
 
-"""Supported communication channel types"""
-enum ChannelTypeEnum {
-    """Email communication channel"""
-    email
-    """WhatsApp messaging channel"""
-    whatsapp
-    """Telegram bot channel"""
-    telegram
-    """Web chat/widget channel"""
-    web
-    """Voice call channel"""
-    phone
-    """SMS text messaging channel"""
-    sms
-    """Instagram messaging channel"""
-    instagram
-    """Twilio integration channel"""
-    twilio
-}
+
 type ChannelPagination {
   data: [Channel]
   metaData: PaginationMetaData
@@ -56,21 +36,18 @@ type ChannelPagination {
 type Query {
   """Get channels matching the specified filters
   @param _id - Optional channel ID to fetch a specific channel
-  @param type - Filter by channel type
+  @parm provider - Filter by provider ID
+  @parm apiAuthenticator - Filter by api authenticator ID
   @param status - Filter by channel status"""
-  getChannels(_id: ID, type: ChannelTypeEnum, status: String, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read")
+  getChannels(_id: ID, provider: ID, apiAuthenticator: ID, status: String, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read")
 }
 
 """Input type for creating/updating channels"""
 input ChannelInput {
   """Display name of the channel"""
   name: String
-  """ID of the workflow that this channel is associated with"""
-  workflow: ID
-  """Type of communication channel (required)"""
-  type: ChannelTypeEnum!
-  """Channel-specific configuration settings"""
-  config: JSON
+  """ID of the api authenticator that this channel is associated with"""
+  apiAuthenticator: ID
   """Base prompt that defines how the agent behaves"""
   systemPrompt: String
   """Whether the channel is publicly accessible"""

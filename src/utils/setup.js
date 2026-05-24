@@ -2,7 +2,13 @@ import { RecursiveCharacterTextSplitter, MarkdownTextSplitter } from "langchain/
 import { EmbeddingFunct, getSummary } from "./openai.js";
 import { Data } from "../models/Data.js";
 import { encoding_for_model } from "tiktoken";
-
+import OauthWhatsapp from "../services/Oauth/whatsapp.js";
+import OauthInstagram from "../services/Oauth/instagram.js";
+import OauthTwilio from "../services/Oauth/twilio.js";
+import OauthGoogle from "../services/Oauth/google.js";
+import OauthMicrosoft from "../services/Oauth/microsoft.js";
+import OauthCalendly from "../services/Oauth/calendly.js";
+import OauthTelegram from "../services/ApiKey/telegram.js";
 export const digest = async (text, url, collectionId, extraMetaData = {}, topicsSoFar = [], contentType = "text") => {
     let splitter
     switch (contentType) {
@@ -43,3 +49,17 @@ export const digest = async (text, url, collectionId, extraMetaData = {}, topics
     }
     return topicsSoFar
 }
+
+export const PROVIDER_MAP = {
+    "Whatsapp": OauthWhatsapp,
+    "Instagram": OauthInstagram,
+    "Twilio": OauthTwilio,
+    'Gmail': OauthGoogle,
+    'Google Drive': OauthGoogle,
+    'Google Forms': OauthGoogle,
+    'Google Calendar': OauthGoogle,
+    'Google Sheets': OauthGoogle,
+    'Microsoft Excel': OauthMicrosoft,
+    'Calendly': OauthCalendly,
+    'Telegram': OauthTelegram
+};
