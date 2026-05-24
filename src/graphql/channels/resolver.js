@@ -16,16 +16,16 @@ import { User } from '../../models/User.js';
 import { ApiAuthenticators } from "../../models/apiAuthenticator.js";
 import { Providers } from '../../models/ExternalServiceProviders.js';
 import { PROVIDER_MAP } from '../../utils/setup.js';
-const { wa_client_id, wa_client_secret, SERVER_URL, IG_CLIENT_Secret, IG_ClIENT_ID, TWILIO_AUTH_TOKEN } = process.env;
 export const channelResolvers = {
     Query: {
-        async getChannels(_, { limit = 10, page = 1, id, provider, apiAuthenticator, status }, context, info) {
+        async getChannels(_, { limit = 10, page = 1, id, provider, apiAuthenticator, status, type }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const filter = { business: context.user.business };
             if (id) filter._id = id;
             if (status) filter.status = status;
             if (provider) filter.provider = provider;
+            if (type) filter.type = type;
             if (apiAuthenticator) filter.apiAuthenticator = apiAuthenticator;
             const channels = await Channel.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await Channel.countDocuments(filter);
@@ -38,7 +38,7 @@ export const channelResolvers = {
     },
     Mutation: {
         async createChannel(_, { input }, context) {
-            const { name, apiAuthenticator, systemPrompt, isPublic, UIElements } = input;
+            const { name, apiAuthenticator, systemPrompt, isPublic, UIElements, type, config = {} } = input;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const apiAuthenticatorDoc = await ApiAuthenticators.findById(apiAuthenticator);
@@ -47,9 +47,9 @@ export const channelResolvers = {
             if (!provider) throw new Error('Provider not found');
             const serviceProvider = PROVIDER_MAP[provider.name];
             if (!serviceProvider) throw new Error('ServiceProvider not found');
-            const channel = await Channel.create({ name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements })
+            const channel = await Channel.create({ name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements, type })
             const { webhookUrl } = await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id });
-            channel.webhookUrl = webhookUrl;
+            channel.config = { ...config, webhookUrl };
             await channel.save();
             await Business.populate(channel, { path: 'business', select: populateFields.business });
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
@@ -59,15 +59,12 @@ export const channelResolvers = {
         async updateChannel(_, { id, input }, context) {
             let channel = await Channel.findById(id);
             if (!channel) throw new Error('Channel not found');
-            const { name, apiAuthenticator, systemPrompt, isPublic, UIElements } = input;
-            const apiAuthenticatorDoc = await ApiAuthenticators.findById(apiAuthenticator);
-            if (!apiAuthenticatorDoc) throw new Error('ApiAuthenticator not found');
-            const provider = await Providers.findById(apiAuthenticator.provider);
-            if (!provider) throw new Error('Provider not found');
-            const serviceProvider = PROVIDER_MAP[provider.name];
-            if (!serviceProvider) throw new Error('ServiceProvider not found');
-            const { webhookUrl } = await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: id });
-            channel = await Channel.findByIdAndUpdate(id, { name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements, webhookUrl }, { new: true });
+            const { name, systemPrompt, isPublic, UIElements } = input;
+            if (name !== undefined) channel.name = name;
+            if (systemPrompt !== undefined) channel.systemPrompt = systemPrompt;
+            if (isPublic !== undefined) channel.isPublic = isPublic;
+            if (UIElements !== undefined) channel.UIElements = UIElements;
+            await channel.save();
             await Business.populate(channel, { path: 'business', select: populateFields.business });
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
             await Providers.populate(channel, { path: 'provider', select: populateFields.provider });

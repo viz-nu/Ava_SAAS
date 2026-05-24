@@ -24,7 +24,17 @@ type Channel {
   """Last update timestamp"""
   updatedAt: DateTime
    """Channel-specific configuration settings"""
-   config: JSON
+   config: JSON,
+   type: ChannelTypeEnum
+}
+enum ChannelTypeEnum {
+  whatsapp
+  telegram
+  web
+  phone
+  instagram
+  sms
+  email
 }
 
 
@@ -38,8 +48,9 @@ type Query {
   @param _id - Optional channel ID to fetch a specific channel
   @parm provider - Filter by provider ID
   @parm apiAuthenticator - Filter by api authenticator ID
-  @param status - Filter by channel status"""
-  getChannels(_id: ID, provider: ID, apiAuthenticator: ID, status: String, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read")
+  @param status - Filter by channel status
+  @param type - Filter by channel type"""
+  getChannels(_id: ID, provider: ID, apiAuthenticator: ID, status: String, type: ChannelTypeEnum, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read")
 }
 
 """Input type for creating/updating channels"""
@@ -56,6 +67,8 @@ input ChannelInput {
   UIElements: JSON
   """Channel-specific configuration settings"""
   config: JSON
+  """Channel type"""
+  type: ChannelTypeEnum
 }
 
 type Mutation {

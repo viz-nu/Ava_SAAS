@@ -1,10 +1,4 @@
-// models/channel.js
 
-// const { TWILIO_AUTH_TOKEN, DOMAIN, ConnectedAppSidTwilio } = process.env;
-// const baseOpts = { _id: false };      // subdocs don’t need their own _id
-// const docOpts = { timestamps: true, discriminatorKey: 'type' };
-
-/* ───────────────────────────── Base Channel ───────────────────────────── */
 import { Schema, model } from 'mongoose';
 const ChannelBaseSchema = new Schema(
     {
@@ -12,6 +6,7 @@ const ChannelBaseSchema = new Schema(
         business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
         provider: { type: Schema.Types.ObjectId, ref: 'Providers' },
         apiAuthenticator: { type: Schema.Types.ObjectId, ref: 'ApiAuthenticators' },
+        type: { type: String, enum: ["whatsapp", "telegram", "web", "phone", "instagram", "sms", "email"] },
         config: { type: Schema.Types.Mixed, default: {} },
         status: { type: String, default: 'disabled' },   // enabled | disabled | error
         webhookUrl: String,
