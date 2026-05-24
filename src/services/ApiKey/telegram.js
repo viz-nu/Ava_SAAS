@@ -29,7 +29,7 @@ export default {
             return { success: false, error: this._handleTelegramError(error) };
         }
     },
-    async setWebhook({ apiAuthenticator, providerName, channelId }) {
+    async setupChannel({ apiAuthenticator, providerName, channelId }) {
         let webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`
         const { apiToken } = apiAuthenticator.credentials;
         try {
@@ -39,6 +39,7 @@ export default {
         } catch (error) {
             return { success: false, error: this._handleTelegramError(error) };
         }
+
     },
     _handleTelegramError(error) {
         const response = error.response;

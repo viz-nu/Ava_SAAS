@@ -42,14 +42,15 @@ export const channelResolvers = {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const apiAuthenticatorDoc = await ApiAuthenticators.findById(apiAuthenticator);
-            if (!apiAuthenticatorDoc) throw new Error('ApiAuthenticator not found');
+            if (!apiAuthenticatorDoc) throw new GraphQLError('ApiAuthenticator not found', { extensions: { code: 'INVALID_INPUT' } });
             const provider = await Providers.findById(apiAuthenticator.provider);
-            if (!provider) throw new Error('Provider not found');
+            if (!provider) throw new GraphQLError('Provider not found', { extensions: { code: 'INVALID_INPUT' } });
             const serviceProvider = PROVIDER_MAP[provider.name];
-            if (!serviceProvider) throw new Error('ServiceProvider not found');
+            if (!serviceProvider) throw new GraphQLError('ServiceProvider not found', { extensions: { code: 'INVALID_INPUT' } });
             const channel = await Channel.create({ name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements, type })
-            const { webhookUrl } = await serviceProvider.setWebhook({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id });
-            channel.config = { ...config, webhookUrl };
+            const { success, ...restConfigurations } = await serviceProvider.setupChannel({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id });
+            if (!success) throw new GraphQLError('Failed to setup channel', { extensions: { code: 'INVALID_INPUT' } });
+            channel.config = { ...config, ...restConfigurations };
             await channel.save();
             await Business.populate(channel, { path: 'business', select: populateFields.business });
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
@@ -58,7 +59,7 @@ export const channelResolvers = {
         },
         async updateChannel(_, { id, input }, context) {
             let channel = await Channel.findById(id);
-            if (!channel) throw new Error('Channel not found');
+            if (!channel) throw new GraphQLError('Channel not found', { extensions: { code: 'INVALID_INPUT' } });
             const { name, systemPrompt, isPublic, UIElements } = input;
             if (name !== undefined) channel.name = name;
             if (systemPrompt !== undefined) channel.systemPrompt = systemPrompt;
@@ -72,6 +73,7 @@ export const channelResolvers = {
         },
         async deleteChannel(_, { id }, context) {
             const channel = await Channel.findOne({ _id: id, business: context.user.business });
+            if (!channel) throw new GraphQLError('Channel not found', { extensions: { code: 'INVALID_INPUT' } });
             switch (channel.type) {
                 case "telegram": {
                     const bot = new Telegraf(channel.secrets?.botToken);
