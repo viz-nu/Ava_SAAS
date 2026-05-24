@@ -62,7 +62,7 @@ type ApiAuthenticatorPagination {
     metaData: PaginationMetaData
 }
 type ApiAuthenticator {
-  id: ID!
+  _id: ID!
   provider: Provider
   accountDetails: JSON
   scope: [String]
