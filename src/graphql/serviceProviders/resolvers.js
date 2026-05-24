@@ -78,7 +78,6 @@ export const serviceProvidersResolvers = {
                 const result = await ApiAuthenticators.aggregate(pipeline);
                 const data = result[0]?.data || [];
                 const totalDocuments = result[0]?.totalCount[0]?.count || 0;
-                console.log("data:", JSON.stringify(data, null, 2));
                 return { data, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
             }
             const apiAuthenticators = await ApiAuthenticators.find(filter).skip(skip).limit(limit).populate('provider');

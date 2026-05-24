@@ -43,7 +43,7 @@ export const channelResolvers = {
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             const apiAuthenticatorDoc = await ApiAuthenticators.findById(apiAuthenticator);
             if (!apiAuthenticatorDoc) throw new GraphQLError('ApiAuthenticator not found', { extensions: { code: 'INVALID_INPUT' } });
-            const provider = await Providers.findById(apiAuthenticator.provider);
+            const provider = await Providers.findById(apiAuthenticatorDoc.provider);
             if (!provider) throw new GraphQLError('Provider not found', { extensions: { code: 'INVALID_INPUT' } });
             const serviceProvider = PROVIDER_MAP[provider.name];
             if (!serviceProvider) throw new GraphQLError('ServiceProvider not found', { extensions: { code: 'INVALID_INPUT' } });
