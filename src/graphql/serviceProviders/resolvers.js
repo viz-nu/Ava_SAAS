@@ -152,7 +152,6 @@ export const serviceProvidersResolvers = {
             if (code) keys.code = code;
             const { success, credentials, scope, accountDetails, config, tokenError = {} } = await oauthProvider.getTokens(keys);
             if (!success) throw new GraphQLError(tokenError.message, { extensions: { code: tokenError.code } });
-            console.log("credentials:", JSON.stringify(credentials, null, 2));
             if (existingAuthenticatorId) {
                 const update = { $set: { credentials, config, accountDetails } };
                 if (scope?.length > 0) update.$addToSet = { scope: { $each: scope } };
