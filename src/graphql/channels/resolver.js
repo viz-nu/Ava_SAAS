@@ -37,7 +37,7 @@ export const channelResolvers = {
         },
     },
     Mutation: {
-        async createChannel(_, { input }, context) {
+        async createChannel(_, { input }, context, info) {
             const { name, apiAuthenticator, systemPrompt, isPublic, UIElements, type, config = {} } = input;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
@@ -57,7 +57,9 @@ export const channelResolvers = {
             await Providers.populate(channel, { path: 'provider', select: populateFields.provider });
             return channel;
         },
-        async updateChannel(_, { id, input }, context) {
+        async updateChannel(_, { id, input }, context, info) {
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
             let channel = await Channel.findById(id);
             if (!channel) throw new GraphQLError('Channel not found', { extensions: { code: 'INVALID_INPUT' } });
             const { name, systemPrompt, isPublic, UIElements } = input;
