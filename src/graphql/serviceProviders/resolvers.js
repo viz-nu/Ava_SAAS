@@ -6,14 +6,12 @@ import graphqlFields from "graphql-fields";
 import { getSelectFields } from "../../utils/graphqlTools.js";
 export const serviceProvidersResolvers = {
     Query: {
-        fetchProviders: async (_, { name, description, icon, color, _id, page = 1, limit = 10 }, context) => {
+        fetchProviders: async (_, { name, description, _id, page = 1, limit = 10 }, context) => {
             const filter = {};
-            if (name) filter.name = name;
-            if (description) filter.description = description;
-            if (icon) filter.icon = icon;
-            if (color) filter.color = color;
+            if (name) filter.name = { $regex: name, $options: 'i' };
+            if (description) filter.description = { $regex: description, $options: 'i' };
             if (_id) filter._id = _id;
-            const providers = await Providers.find(filter).skip((page - 1) * limit).limit(limit);
+            const providers = await Providers.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit);
             const totalDocuments = await Providers.countDocuments(filter);
             return { data: providers, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
