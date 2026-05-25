@@ -48,7 +48,7 @@ export const channelResolvers = {
             const serviceProvider = PROVIDER_MAP[provider.name];
             if (!serviceProvider) throw new GraphQLError('ServiceProvider not found', { extensions: { code: 'INVALID_INPUT' } });
             const channel = await Channel.create({ name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements, type })
-            const { success, ...restConfigurations } = await serviceProvider.setupChannel({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id });
+            const { success, ...restConfigurations } = await serviceProvider.setupChannel({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id, config });
             if (!success) throw new GraphQLError('Failed to setup channel', { extensions: { code: 'INVALID_INPUT' } });
             channel.config = { ...config, ...restConfigurations };
             await channel.save();
@@ -143,72 +143,6 @@ export const channelResolvers = {
 //         }
 //         await channel.save()
 //         await channel.updateStatus("success")
-//         break;
-//     case "telegram":
-
-//         break;
-//     case "whatsapp":
-//         const { whatsappCode, phone_number_id, waba_id, business_id } = config
-//         const API_VERSION = 'v23.0';
-//         if (!whatsappCode || !phone_number_id || !waba_id || !business_id || whatsappCode.trim === "") return new GraphQLError("whatsappCode/phone_number_id/waba_id/business_id not found", { extensions: { code: 'INVALID_INPUT' } });
-//         try {
-//             const { data } = await axios.get(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${wa_client_id}&client_secret=${wa_client_secret}&code=${whatsappCode}`);
-//             channel.secrets = { permanentAccessToken: data.access_token, phoneNumberPin: Math.floor(Math.random() * 900000) + 100000, verificationToken: randomBytes(9).toString('hex') }
-//             channel.webhookUrl = `https://chat.avakado.ai/webhook/whatsapp/${phone_number_id}`//`${SERVER_URL}webhook/whatsapp/${phone_number_id}`
-//             channel.config = { phone_number_id, waba_id, business_id }
-//         } catch (error) {
-//             if (error.response) {
-//                 console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
-//             } else if (error.request) {
-//                 console.error("The request was made but no response was received");
-//                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-//                 // http.ClientRequest in node.js
-//                 console.error({ request: error.request });
-//             } else {
-//                 console.error('Error', error.message);
-//             }
-//             console.error(error.config);
-//             return new GraphQLError("Error exchanging code for token", { extensions: { code: 'INVALID_INPUT' } });
-//         }
-//         await channel.save()
-//         await channel.updateStatus("fetched access token")
-//         try {
-//             await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": channel.webhookUrl, "verify_token": channel.secrets.verificationToken }, { headers: { 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
-//         } catch (error) {
-//             if (error.response) {
-//                 console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
-//             } else if (error.request) {
-//                 console.error("The request was made but no response was received");
-//                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-//                 // http.ClientRequest in node.js
-//                 console.error({ request: error.request });
-//             } else {
-//                 console.error('Error', error.message);
-//             }
-//             console.error(error.config);
-//             return new GraphQLError("Error setting webhook", { extensions: { code: 'INVALID_INPUT' } });
-//         }
-//         await channel.updateStatus("bot webhook set")
-//         try {
-//             await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': channel.secrets.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${channel.secrets.permanentAccessToken}` } });
-//         } catch (error) {
-//             if (error.response) {
-//                 console.error({ data: error.response.data, status: error.response.status, headers: error.response.headers });
-//             } else if (error.request) {
-//                 console.error("The request was made but no response was received");
-//                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-//                 // http.ClientRequest in node.js
-//                 console.error({ request: error.request });
-//             } else {
-//                 console.error('Error', error.message);
-//             }
-//             console.error(error.config);
-//             return new GraphQLError("Error registering phone number", { extensions: { code: 'INVALID_INPUT' } });
-//         }
-//         await channel.save()
-//         await channel.updateStatus("bot messaging_product set")
-//         break;
-//     case "web":
 //         break;
 //     case "phone":
 //         const { integrationId, phoneNumber = "", PhoneNumberSid = "", exotelVoiceAppletId, inboundSetup = false } = config;

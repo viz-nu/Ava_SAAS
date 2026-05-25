@@ -9,7 +9,7 @@ export default {
         const params = new URLSearchParams({ client_id: wa_client_id, redirect_uri: wa_redirect_uri, config_id: wa_config_id, response_type: "code", scope: scopes.join(","), state });
         return `https://www.facebook.com/v23.0/dialog/oauth?${params}`;
     },
-    async getTokens({code}) {
+    async getTokens({ code }) {
         if (!code || typeof code !== "string") return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
             const shortLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { code, client_id: wa_client_id, client_secret: wa_client_secret, redirect_uri: wa_redirect_uri, } });
@@ -31,6 +31,40 @@ export default {
             };
         } catch (error) {
             return { success: false, tokenError: this._handleWhatsAppError(error) };
+        }
+    },
+    async setupChannel({ apiAuthenticator, providerName, channelId, config }) {
+        const API_VERSION = 'v23.0';
+        const { phone_number_id, waba_id, business_id } = config;
+        config.webhookUrl = webhookUrl;
+        config.verificationToken = `LeanOn_${channelId}`;
+        config.phoneNumberPin = Math.floor(Math.random() * 900000) + 100000;
+        let webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`
+        const { expiresAt, accessToken, tokenType } = apiAuthenticator.credentials;
+        if (!expiresAt || !accessToken || !tokenType) return { success: false, error: { code: "missing_credentials", message: "Missing credentials.", status: 400 } };
+        if (expiresAt < Date.now()) {
+            const { success, data } = await this.refreshToken(accessToken);
+            if (!success) return { success: false, error: data };
+            apiAuthenticator.credentials.accessToken = data.access_token;
+            apiAuthenticator.credentials.expiresAt = data.expires_in ? new Date(Date.now() + (data.expires_in * 1000)) : null;
+            apiAuthenticator.credentials.tokenType = data.token_type;
+            await apiAuthenticator.save();
+        }
+        try {
+            console.log("settingUp webhooks")
+            await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": config.webhookUrl, "verify_token": config.verificationToken }, { headers: { 'Authorization': `Bearer ${accessToken}` } }).then(res => {
+                console.log("webhook set", res.data);
+            }).catch(err => {
+                console.error("error setting webhook", err);
+            });
+            await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': config.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` } }).then(res => {
+                console.log("phone number registered", res.data);
+            }).catch(err => {
+                console.error("error registering phone number", err);
+            });
+            return { success: true, config };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
         }
     },
     async refreshToken(accessToken) {
