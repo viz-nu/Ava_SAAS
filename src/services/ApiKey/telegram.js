@@ -35,7 +35,7 @@ export default {
         try {
             const client = new Telegraf(apiToken);
             await client.telegram.setWebhook(webhookUrl);
-            return { success: true, webhookUrl };
+            return { success: true, config: { webhookUrl } };
         } catch (error) {
             return { success: false, error: this._handleTelegramError(error) };
         }
