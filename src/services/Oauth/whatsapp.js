@@ -3,7 +3,7 @@ const { wa_client_id, wa_client_secret, wa_redirect_uri, wa_config_id } = proces
 export default {
     name: "whatsapp",
     getConfig() {
-        return { clientId: wa_client_id, clientSecret: wa_client_secret, redirectUri: wa_redirect_uri, configId: wa_config_id };
+        return { clientId: wa_client_id, clientSecret: wa_client_secret };
     },
     getAuthUrl({ state = "", scopes = [] }) {
         const params = new URLSearchParams({ client_id: wa_client_id, redirect_uri: wa_redirect_uri, config_id: wa_config_id, response_type: "code", scope: scopes.join(","), state });
@@ -34,6 +34,13 @@ export default {
                 return null;
             });
             const scope = grantedScopes?.data?.filter(item => item.status === "granted")?.map(item => item.permission) || [];
+
+            const { data: accountDetails } = await axios.get("https://graph.facebook.com/v23.0/me", {
+                params: {
+                    fields: "id,name,first_name,last_name,middle_name,name_format,picture,short_name",
+                },
+                headers: { Authorization: `Bearer ${longLivedToken.access_token}` },
+            });
             return {
                 success: true,
                 credentials: {
@@ -41,6 +48,8 @@ export default {
                     expiresAt: null,
                     tokenType: longLivedToken.token_type
                 },
+                accountDetails,
+                config: this.getConfig(),
                 scope
             };
         } catch (error) {
@@ -104,7 +113,7 @@ export default {
         try {
             const { data } = await axios.get("https://graph.facebook.com/v23.0/me", {
                 params: {
-                    fields: "id,name,granular_scopes",
+                    fields: "id,name",
                 },
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
