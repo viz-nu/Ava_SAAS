@@ -174,7 +174,14 @@ export const agentResolvers = {
             return aiResponse.choices[0].message.content.trim();
         },
         startDemo: async (_, { leadName, leadEmail, leadPhone, leadDepartment, leadSource, organizationId, organizationName, organizationIndustry, kind }, context) => {
-            const newDemo = await DemonstrationModel.create({ lead: { name: leadName, email: leadEmail, phone: leadPhone, department: leadDepartment, source: leadSource }, organization: { id: organizationId, name: organizationName, industry: organizationIndustry }, kind });
+            console.log("startDemo", leadName, leadEmail, leadPhone, leadDepartment, leadSource, organizationId, organizationName, organizationIndustry, kind);
+            const newDemo = await DemonstrationModel.create({ lead: { name: leadName, email: leadEmail, phone: leadPhone, department: leadDepartment, source: leadSource }, organization: { id: organizationId, name: organizationName, industry: organizationIndustry }, kind }).then(demo => {
+                console.log("demo created", demo);
+                return demo;
+            }).catch(error => {
+                console.error("error creating demo", error);
+                throw new GraphQLError("Error creating demo", { extensions: { code: "ERROR_CREATING_DEMO" } });
+            });
             return newDemo;
         },
         endDemo: async (_, { _id, transcripts, miscellaneous }, context) => {
