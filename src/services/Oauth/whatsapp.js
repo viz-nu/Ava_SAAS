@@ -12,13 +12,28 @@ export default {
     async getTokens({ code }) {
         if (!code || typeof code !== "string") return { success: false, tokenError: { code: "missing_code", message: "A code string is required.", status: 400 } };
         try {
-            const shortLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { code, client_id: wa_client_id, client_secret: wa_client_secret, redirect_uri: wa_redirect_uri, } });
-            console.log("whatsapp short lived token:", JSON.stringify(shortLivedToken.data, null, 2));
-            const longLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { grant_type: "fb_exchange_token", client_id: wa_client_id, client_secret: wa_client_secret, fb_exchange_token: shortLivedToken.data.accessToken } });
-            console.log("whatsapp long lived token:", JSON.stringify(longLivedToken.data, null, 2));
-            const grantedScopes = await axios.get("https://graph.facebook.com/v23.0/me/permissions", { params: { access_token: longLivedToken.data.access_token } });
-            console.log("whatsapp granted scopes:", JSON.stringify(grantedScopes.data, null, 2));
-            const scope = grantedScopes.data.filter(item => item.status === "granted").map(item => item.permission);
+            const shortLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { code, client_id: wa_client_id, client_secret: wa_client_secret } }).then(res => {
+                console.log("whatsapp short lived token:", JSON.stringify(res.data, null, 2));
+                return res.data;
+            }).catch(err => {
+                console.error("error getting short lived token", err);
+                return null;
+            });
+            const longLivedToken = await axios.get("https://graph.facebook.com/v23.0/oauth/access_token", { params: { grant_type: "fb_exchange_token", client_id: wa_client_id, client_secret: wa_client_secret, fb_exchange_token: shortLivedToken.access_token } }).then(res => {
+                console.log("whatsapp long lived token:", JSON.stringify(res.data, null, 2));
+                return res.data;
+            }).catch(err => {
+                console.error("error getting long lived token", err);
+                return null;
+            });
+            const grantedScopes = await axios.get("https://graph.facebook.com/v23.0/me/permissions", { params: { access_token: longLivedToken.access_token } }).then(res => {
+                console.log("whatsapp granted scopes:", JSON.stringify(res.data, null, 2));
+                return res.data;
+            }).catch(err => {
+                console.error("error getting granted scopes", err);
+                return null;
+            });
+            const scope = grantedScopes.filter(item => item.status === "granted").map(item => item.permission);
 
             return {
                 success: true,
