@@ -59,10 +59,9 @@ export default {
     async setupChannel({ apiAuthenticator, providerName, channelId, config }) {
         const API_VERSION = 'v23.0';
         const { phone_number_id, waba_id, business_id } = config;
-        config.webhookUrl = webhookUrl;
+        config.webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`;
         config.verificationToken = `LeanOn_${channelId}`;
         config.phoneNumberPin = Math.floor(Math.random() * 900000) + 100000;
-        let webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`
         const { expiresAt, accessToken, tokenType } = apiAuthenticator.credentials;
         if (!expiresAt || !accessToken || !tokenType) return { success: false, error: { code: "missing_credentials", message: "Missing credentials.", status: 400 } };
         if (expiresAt < Date.now()) {
