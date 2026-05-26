@@ -38,9 +38,9 @@ export default {
             return {
                 success: true,
                 credentials: {
-                    accessToken: longLivedToken.data.access_token,
-                    expiresAt: longLivedToken.data.expires_in ? new Date(Date.now() + (longLivedToken.data.expires_in * 1000)) : null,
-                    tokenType: longLivedToken.data.token_type
+                    accessToken: longLivedToken.access_token,
+                    expiresAt: null,
+                    tokenType: longLivedToken.token_type
                 },
                 scope
             };
@@ -178,7 +178,10 @@ export default {
             case 400: return { code: fbError?.code || "invalid_request", message: fbError?.message || "Bad request.", status: 400 };
             case 401: return { code: fbError?.type || "invalid_token", message: fbError?.message || "The token is expired or invalid.", status: 401 };
             case 429: return { code: "rate_limit_exceeded", message: "Too many requests to Meta servers.", status: 429 };
-            default: return { code: "provider_error", message: "Unable to reach Meta authentication servers.", status: response?.status || 503 };
+            default: {
+                console.error(error)
+                return { code: "provider_error", message: "Unable to reach Meta authentication servers.", status: response?.status || 503 };
+            }
         }
     },
 };
