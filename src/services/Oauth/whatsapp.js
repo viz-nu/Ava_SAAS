@@ -63,8 +63,8 @@ export default {
         config.verificationToken = `LeanOn_${channelId}`;
         config.phoneNumberPin = Math.floor(Math.random() * 900000) + 100000;
         const { expiresAt, accessToken, tokenType } = apiAuthenticator.credentials;
-        if (!expiresAt || !accessToken || !tokenType) return { success: false, error: { code: "missing_credentials", message: "Missing credentials.", status: 400 } };
-        if (expiresAt < Date.now()) {
+        if (!accessToken || !tokenType) return { success: false, error: { code: "missing_credentials", message: "Missing credentials.", status: 400 } };
+        if (expiresAt && expiresAt < Date.now()) {
             const { success, data } = await this.refreshToken(accessToken);
             if (!success) return { success: false, error: data };
             apiAuthenticator.credentials.accessToken = data.access_token;
