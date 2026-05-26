@@ -86,6 +86,7 @@ export default {
             });
             return { success: true, config };
         } catch (error) {
+            console.error("error setting up whatsapp channel", error);
             return { success: false, error: this._handleWhatsAppError(error) };
         }
     },
