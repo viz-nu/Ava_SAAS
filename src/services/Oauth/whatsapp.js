@@ -33,8 +33,7 @@ export default {
                 console.error("error getting granted scopes", err);
                 return null;
             });
-            const scope = grantedScopes.filter(item => item.status === "granted").map(item => item.permission);
-
+            const scope = grantedScopes?.data?.filter(item => item.status === "granted")?.map(item => item.permission) || [];
             return {
                 success: true,
                 credentials: {
