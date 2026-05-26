@@ -10,6 +10,7 @@ import { User } from '../../models/User.js';
 import axios from 'axios';
 import { GoogleGenAI } from "@google/genai";
 import { Workflow } from '../../models/Workflow.js';
+import { DemonstrationModel } from '../../models/Demonstarations.js';
 export const agentResolvers = {
     Query: {
         agents: async (_, { limit = 10, page = 1, isPublic, isFeatured, id }, context, info) => {
@@ -104,7 +105,8 @@ export const agentResolvers = {
                 console.error("Session Creation Error:", error.message);
                 throw new GraphQLError(error.message || "Failed to create session", { extensions: { code: "SESSION_CREATION_FAILED" } });
             }
-        }
+        },
+
     },
     Mutation: {
         createAgent: async (_, { agent }, context, info) => {
@@ -133,7 +135,7 @@ export const agentResolvers = {
         updateAgent: async (_, { id, agent }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            let { actions = [], channels = [], collections = [], workflow  } = agent;
+            let { actions = [], channels = [], collections = [], workflow } = agent;
             const [foundChannels, foundCollections, foundActions, foundWorkflow] = await Promise.all([
                 Promise.all(channels.map(id => Channel.findOne({ _id: id, business: context.user.business }, "_id"))),
                 Promise.all(collections.map(id => Collection.findOne({ _id: id, business: context.user.business }, "_id"))),
@@ -170,6 +172,14 @@ export const agentResolvers = {
             // note usage
             console.log("prompt gen response", JSON.stringify(aiResponse, null, 2));
             return aiResponse.choices[0].message.content.trim();
+        },
+        startDemo: async (_, { leadName, leadEmail, leadPhone, leadDepartment, leadSource, organizationId, organizationName, organizationIndustry, kind }, context) => {
+            const newDemo = await DemonstrationModel.create({ lead: { name: leadName, email: leadEmail, phone: leadPhone, department: leadDepartment, source: leadSource }, organization: { id: organizationId, name: organizationName, industry: organizationIndustry }, kind });
+            return newDemo;
+        },
+        endDemo: async (_, { _id, transcripts, miscellaneous }, context) => {
+            const updatedDemo = await DemonstrationModel.findByIdAndUpdate(_id, { demoEndedAt: new Date(), transcripts, miscellaneous }, { new: true });
+            return updatedDemo;
         }
     }
 }; 

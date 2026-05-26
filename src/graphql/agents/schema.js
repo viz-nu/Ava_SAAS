@@ -113,6 +113,29 @@ type AgentPagination {
     data: [Agent]
     metaData: PaginationMetaData
 }
+
+type Demonstration {
+  _id: ID
+  lead: JSON
+  organization: JSON
+  transcripts: JSON
+  miscellaneous: JSON
+  kind: String
+  demoEndedAt: DateTime
+}
+  input DemonstrationInput {
+leadName: String
+leadEmail: String
+leadPhone: String
+leadDepartment: String
+leadSource: String
+organizationId: String
+organizationName: String
+organizationIndustry: String
+kind: String
+  }
+
+
   type Query {
     """ Get all agents for the user's business
         @param limit - Maximum number of agents to return
@@ -142,5 +165,7 @@ type AgentPagination {
     """ Test prompt generation for an agent
         @param prompt - Test prompt to generate from """
     generatePrompt(prompt: String!): String @requireScope(scope: "agent:manage_prompts") @requireBusinessAccess
+    startDemo(input: DemonstrationInput!): Demonstration 
+    endDemo(_id: ID!, transcripts: JSON, miscellaneous: JSON): Demonstration 
   }
 `; 
