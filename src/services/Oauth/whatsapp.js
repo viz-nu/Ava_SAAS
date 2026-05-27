@@ -1,5 +1,16 @@
 import axios from "axios";
 const { wa_client_id, wa_client_secret, wa_redirect_uri, wa_config_id } = process.env;
+
+
+const API_VERSION = "v23.0";
+const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
+
+function authHeaders(accessToken) {
+    return { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+}
+
+
+
 export default {
     name: "whatsapp",
     getConfig() {
@@ -179,6 +190,490 @@ export default {
             return false;
         }
     },
+
+
+
+    /** ----------------------------
+     *  Messaging — Text & Rich Media
+     * -----------------------------*/
+
+    // Send a plain text message
+    async sendTextMessage({ accessToken, phoneNumberId, to, body, previewUrl = false }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "text",
+                text: { preview_url: previewUrl, body },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Send an image, video, audio, document, or sticker message
+    // mediaType: "image" | "video" | "audio" | "document" | "sticker"
+    async sendMediaMessage({ accessToken, phoneNumberId, to, mediaType, mediaId, link, caption, filename }) {
+        try {
+            const mediaPayload = {};
+            if (mediaId) mediaPayload.id = mediaId;
+            else if (link) mediaPayload.link = link;
+            if (caption) mediaPayload.caption = caption;
+            if (filename) mediaPayload.filename = filename; // for documents only
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: mediaType,
+                [mediaType]: mediaPayload,
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Send a location pin
+    async sendLocationMessage({ accessToken, phoneNumberId, to, latitude, longitude, name, address }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "location",
+                location: { latitude, longitude, name, address },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Send a contact card
+    async sendContactMessage({ accessToken, phoneNumberId, to, contacts }) {
+        // contacts: array of contact objects per the WhatsApp API spec
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "contacts",
+                contacts,
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // React to a message with an emoji
+    async sendReaction({ accessToken, phoneNumberId, to, messageId, emoji }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "reaction",
+                reaction: { message_id: messageId, emoji },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Mark an incoming message as read
+    async markMessageAsRead({ accessToken, phoneNumberId, messageId }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                status: "read",
+                message_id: messageId,
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Messaging — Interactive
+     * -----------------------------*/
+
+    // Send a list message (menu of up to 10 rows across sections)
+    async sendListMessage({ accessToken, phoneNumberId, to, header, body, footer, buttonLabel, sections }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "interactive",
+                interactive: {
+                    type: "list",
+                    ...(header && { header: { type: "text", text: header } }),
+                    body: { text: body },
+                    ...(footer && { footer: { text: footer } }),
+                    action: { button: buttonLabel, sections },
+                },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Send reply buttons (up to 3 quick-reply buttons)
+    async sendReplyButtons({ accessToken, phoneNumberId, to, body, footer, buttons }) {
+        // buttons: [{ id: "btn_1", title: "Yes" }, ...]
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "interactive",
+                interactive: {
+                    type: "button",
+                    body: { text: body },
+                    ...(footer && { footer: { text: footer } }),
+                    action: { buttons: buttons.map(b => ({ type: "reply", reply: { id: b.id, title: b.title } })) },
+                },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Send a CTA URL button
+    async sendCtaUrlButton({ accessToken, phoneNumberId, to, body, buttonText, url }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "interactive",
+                interactive: {
+                    type: "cta_url",
+                    body: { text: body },
+                    action: { name: "cta_url", parameters: { display_text: buttonText, url } },
+                },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Messaging — Templates
+     * -----------------------------*/
+
+    // Send a pre-approved template message
+    async sendTemplateMessage({ accessToken, phoneNumberId, to, templateName, languageCode = "en_US", components = [] }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/messages`, {
+                messaging_product: "whatsapp",
+                recipient_type: "individual",
+                to,
+                type: "template",
+                template: { name: templateName, language: { code: languageCode }, components },
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Message Templates — CRUD
+     * -----------------------------*/
+
+    // List all message templates for a WABA
+    async listTemplates({ accessToken, wabaId, fields = "name,status,category,language,components", limit = 20 }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${wabaId}/message_templates`, {
+                params: { fields, limit },
+                headers: authHeaders(accessToken),
+            });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Create a new message template
+    async createTemplate({ accessToken, wabaId, name, category, language, components, allowCategoryChange = false }) {
+        // category: "AUTHENTICATION" | "MARKETING" | "UTILITY"
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${wabaId}/message_templates`, {
+                name, category, language, components,
+                ...(allowCategoryChange && { allow_category_change: true }),
+            }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Edit an existing template (only REJECTED or PAUSED templates can be fully edited;
+    // APPROVED templates allow limited component edits)
+    async updateTemplate({ accessToken, templateId, components }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${templateId}`, { components }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Delete a template by name (deletes all language variants)
+    async deleteTemplate({ accessToken, wabaId, templateName, templateId }) {
+        try {
+            const { data } = await axios.delete(`${BASE_URL}/${wabaId}/message_templates`, {
+                params: { name: templateName, ...(templateId && { hsm_id: templateId }) },
+                headers: authHeaders(accessToken),
+            });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Phone Numbers
+     * -----------------------------*/
+
+    // List all phone numbers registered under a WABA
+    async listPhoneNumbers({ accessToken, wabaId, fields = "id,display_phone_number,verified_name,quality_rating,platform_type,throughput,status" }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${wabaId}/phone_numbers`, {
+                params: { fields },
+                headers: authHeaders(accessToken),
+            });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Get details of a single phone number
+    async getPhoneNumber({ accessToken, phoneNumberId, fields = "id,display_phone_number,verified_name,quality_rating,platform_type,throughput,status,name_status,new_name_status,decision,requested_verified_name,rejection_reason" }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${phoneNumberId}`, {
+                params: { fields },
+                headers: authHeaders(accessToken),
+            });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Request a display name change for a phone number
+    async requestPhoneNumberNameReview({ accessToken, phoneNumberId, verifiedName }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}`, { verified_name: verifiedName }, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Deregister a phone number from the WhatsApp Business API
+    async deregisterPhoneNumber({ accessToken, phoneNumberId }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/deregister`, {}, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Business Profile
+     * -----------------------------*/
+
+    // Get the public business profile shown to WhatsApp users
+    async getBusinessProfile({ accessToken, phoneNumberId, fields = "about,address,description,email,profile_picture_url,websites,vertical" }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${phoneNumberId}/whatsapp_business_profile`, {
+                params: { fields },
+                headers: authHeaders(accessToken),
+            });
+            return { success: true, data: data?.data?.[0] || data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Update the business profile (about, address, description, email, websites, vertical)
+    async updateBusinessProfile({ accessToken, phoneNumberId, profile }) {
+        // profile: { about, address, description, email, websites: [], vertical }
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/whatsapp_business_profile`,
+                { messaging_product: "whatsapp", ...profile },
+                { headers: authHeaders(accessToken) }
+            );
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Media
+     * -----------------------------*/
+
+    // Upload media to Meta's servers — returns a reusable media_id
+    async uploadMedia({ accessToken, phoneNumberId, fileBuffer, mimeType, filename }) {
+        try {
+            const FormData = (await import("form-data")).default;
+            const form = new FormData();
+            form.append("messaging_product", "whatsapp");
+            form.append("type", mimeType);
+            form.append("file", fileBuffer, { contentType: mimeType, filename });
+            const { data } = await axios.post(`${BASE_URL}/${phoneNumberId}/media`, form, {
+                headers: { ...form.getHeaders(), Authorization: `Bearer ${accessToken}` },
+            });
+            return { success: true, data }; // data.id is the media_id
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Get metadata (url, mime_type, file_size) for an uploaded media object
+    async getMediaUrl({ accessToken, mediaId }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${mediaId}`, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Download media content by URL (use the URL returned by getMediaUrl)
+    async downloadMedia({ accessToken, mediaUrl }) {
+        try {
+            const response = await axios.get(mediaUrl, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+                responseType: "arraybuffer",
+            });
+            return { success: true, buffer: response.data, contentType: response.headers["content-type"] };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Delete an uploaded media object
+    async deleteMedia({ accessToken, mediaId }) {
+        try {
+            const { data } = await axios.delete(`${BASE_URL}/${mediaId}`, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Analytics & Insights
+     * -----------------------------*/
+
+    // Retrieve per-template or per-phone analytics (sent, delivered, read counts)
+    async getAnalytics({ accessToken, wabaId, startDate, endDate, granularity = "DAILY", phoneNumbers = [], templateIds = [] }) {
+        // startDate / endDate: Unix timestamps (seconds)
+        // granularity: "HALF_HOUR" | "DAY" | "MONTH"
+        try {
+            const params = {
+                fields: `analytics.start(${startDate}).end(${endDate}).granularity(${granularity})${phoneNumbers.length ? `.phone_numbers(${JSON.stringify(phoneNumbers)})` : ""}{sent,delivered,read,failed_delivery_count}`,
+            };
+            const { data } = await axios.get(`${BASE_URL}/${wabaId}`, { params, headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Get per-template conversation analytics
+    async getTemplateAnalytics({ accessToken, wabaId, startDate, endDate, templateIds = [] }) {
+        try {
+            const templateFilter = templateIds.length ? `.template_ids(${JSON.stringify(templateIds)})` : "";
+            const params = {
+                fields: `template_analytics.start(${startDate}).end(${endDate})${templateFilter}{template_id,status,category,sent,delivered,read,clicked}`,
+            };
+            const { data } = await axios.get(`${BASE_URL}/${wabaId}`, { params, headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  WABA Account
+     * -----------------------------*/
+
+    // Fetch WhatsApp Business Account details
+    async getWABADetails({ accessToken, wabaId, fields = "id,name,currency,timezone_id,message_template_namespace,account_review_status,ban_state,business_verification_status" }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${wabaId}`, { params: { fields }, headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // List all WABAs the access token has access to, under a Business portfolio
+    async listWABAs({ accessToken, businessId, fields = "id,name,timezone_id,message_template_namespace" }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${businessId}/owned_whatsapp_business_accounts`, {
+                params: { fields },
+                headers: authHeaders(accessToken),
+            });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    /** ----------------------------
+     *  Webhooks
+     * -----------------------------*/
+
+    // List current webhook subscriptions for a WABA
+    async getWebhookSubscriptions({ accessToken, wabaId }) {
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${wabaId}/subscribed_apps`, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Update (or re-point) the webhook URL for a WABA
+    async updateWebhook({ accessToken, wabaId, webhookUrl, verifyToken }) {
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${wabaId}/subscribed_apps`,
+                { override_callback_uri: webhookUrl, verify_token: verifyToken },
+                { headers: authHeaders(accessToken) }
+            );
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+    // Unsubscribe the app from WABA webhooks
+    async deleteWebhookSubscription({ accessToken, wabaId }) {
+        try {
+            const { data } = await axios.delete(`${BASE_URL}/${wabaId}/subscribed_apps`, { headers: authHeaders(accessToken) });
+            return { success: true, data };
+        } catch (error) {
+            return { success: false, error: this._handleWhatsAppError(error) };
+        }
+    },
+
+
     _handleWhatsAppError(error) {
         const response = error.response;
         const fbError = response?.data?.error;

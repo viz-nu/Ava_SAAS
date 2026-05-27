@@ -4,7 +4,7 @@ import { Data } from "../models/Data.js";
 import { encoding_for_model } from "tiktoken";
 import OauthWhatsapp from "../services/Oauth/whatsapp.js";
 import OauthInstagram from "../services/Oauth/instagram.js";
-import OauthTwilio from "../services/Oauth/twilio.js";
+import OauthTelegram from "../services/ApiKey/twilio.js";
 import OauthGoogle from "../services/Oauth/google.js";
 import OauthMicrosoft from "../services/Oauth/microsoft.js";
 import OauthCalendly from "../services/Oauth/calendly.js";

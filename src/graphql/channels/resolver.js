@@ -162,15 +162,7 @@ export const channelResolvers = {
 //                 }
 //                 break;
 //             case "twilio":
-//                 if (inboundSetup) {
-//                     const twilio = new TwilioService(integration.config.AccountSid, integration.secrets.AuthToken)
-//                     const inboundPhoneNumber = await twilio.updatePhoneNumber(PhoneNumberSid, {
-//                         voiceUrl: `https://sockets.avakado.ai/twilio-redirect`,
-//                         smsUrl: `https://sockets.avakado.ai/twilio-redirect`,
-//                     })
-//                     console.log("updated inbound phone number", inboundPhoneNumber)
-//                 }
-//                 break;
+
 //             case "tataTele":
 //                 if (inboundSetup) {
 //                     const tataTele = new TataTeleService(integration.secrets.apiKey, integration.secrets.apiToken)

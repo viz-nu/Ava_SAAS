@@ -133,15 +133,6 @@ export class TwilioService {
         return await this.client.pricing.v1[twilioService].countries(country).fetch();
     }
 
-    /** ----------------------------
-     *  Deauthorize App (Disconnect)
-     * -----------------------------*/
-
-    // CONNECT APPS
-    // async deauthorizeConnectApp(connectAppSid) {
-    //     return await this.client.authorizedConnectApps(connectAppSid).remove();
-    // } // doesnt work
-
     // TRANSCRIPTIONS
     async listTranscriptions(options) {
         return await this.client.transcriptions.list(options);
