@@ -1,55 +1,12 @@
-import { RecursiveCharacterTextSplitter, MarkdownTextSplitter } from "langchain/text_splitter";
-import { EmbeddingFunct, getSummary } from "./openai.js";
-import { Data } from "../models/Data.js";
-import { encoding_for_model } from "tiktoken";
 import OauthWhatsapp from "../services/Oauth/whatsapp.js";
 import OauthInstagram from "../services/Oauth/instagram.js";
 import OauthTelegram from "../services/ApiKey/twilio.js";
 import OauthGoogle from "../services/Oauth/google.js";
 import OauthMicrosoft from "../services/Oauth/microsoft.js";
 import OauthCalendly from "../services/Oauth/calendly.js";
-import OauthTelegram from "../services/ApiKey/telegram.js";
-export const digest = async (text, url, collectionId, extraMetaData = {}, topicsSoFar = [], contentType = "text") => {
-    let splitter
-    switch (contentType) {
-        case "text":
-            splitter = new RecursiveCharacterTextSplitter({
-                chunkSize: 1000,
-                chunkOverlap: 100
-            });
-            break;
-        case "markdown":
-            splitter = new MarkdownTextSplitter({
-                chunkSize: 1000, // Ideal chunk size
-                chunkOverlap: 100, // To maintain context
-            });
-            break;
-        default:
-            return []
-    }
-    const chunks = await splitter.splitText(text)
-    for (let i = 0; i < chunks.length; i++) {
-        const { result, summary, newTopics, topics, tokenUsage } = await getSummary(chunks[i], topicsSoFar)
-        if (result) {
-            let { model, data, usage } = await EmbeddingFunct(summary)
-            await Data.insertOne({
-                collection: collectionId, content: chunks[i], chunkNumber: i + 1, summary, newTopics, embeddingVector: data[0].embedding, metadata: {
-                    tokensUsed: usage.total_tokens, url: url, tokenUsage: {
-                        embeddingTokens: usage.total_tokens,
-                        embeddingModel: model,
-                        summarizationInputTokens: tokenUsage.input,
-                        summarizationOutputTokens: tokenUsage.output,
-                        summarizationTotalTokens: tokenUsage.total,
-                        summarizationModel: tokenUsage.model
-                    }
-                }
-            })
-            topicsSoFar = topics
-        }
-    }
-    return topicsSoFar
-}
-
+import OauthExotel from "../services/ApiKey/exotel.js";
+import OauthTataTele from "../services/ApiKey/tatatele.js";
+import OauthTwilio from "../services/ApiKey/twilio.js";
 export const PROVIDER_MAP = {
     "Whatsapp": OauthWhatsapp,
     "Instagram": OauthInstagram,
@@ -61,5 +18,8 @@ export const PROVIDER_MAP = {
     'Google Sheets': OauthGoogle,
     'Microsoft Excel': OauthMicrosoft,
     'Calendly': OauthCalendly,
-    'Telegram': OauthTelegram
+    'Telegram': OauthTelegram,
+    // 'Avakado.ai': OauthAvakado,
+    'Exotel': OauthExotel,
+    'Tata Tele': OauthTataTele,
 };

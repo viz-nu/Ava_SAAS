@@ -4,8 +4,6 @@ import { AgentModel } from '../../models/Agent.js';
 import { User } from '../../models/User.js';
 import graphqlFields from 'graphql-fields';
 import { flattenFields, getSelectFields } from '../../utils/graphqlTools.js';
-import { processURLS } from "../../utils/websiteHelpers.js";
-import { processYT } from "../../utils/ytHelper.js";
 import { Business } from '../../models/Business.js';
 import { sendMessageToRoom } from '../../utils/socketIoClient.js';
 import { cloudflareIntegration } from '../../services/cloudflare.js';
