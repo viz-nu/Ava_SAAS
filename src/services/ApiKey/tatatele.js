@@ -26,7 +26,7 @@ export default {
 
     // Validates the static bearer token by fetching live/active calls (lightweight endpoint).
     // ExpectedKeysFromQuery: ['apiToken']
-    async getTokens({ apiToken }) {
+    async getTokens({ apiToken, apiKey }) {
         if (!apiToken || typeof apiToken !== "string") {
             return { success: false, tokenError: { code: "missing_apiToken", message: "apiToken is required.", status: 400 } };
         }
@@ -36,7 +36,7 @@ export default {
             });
             return {
                 success: true,
-                credentials: { apiToken },
+                credentials: { apiToken, apiKey },
                 accountDetails,
                 config: {},
                 scope: [],

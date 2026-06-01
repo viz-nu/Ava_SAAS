@@ -57,7 +57,6 @@ export const serviceProvidersResolvers = {
                         }
                     }
                 ];
-                console.log("pipeline:", JSON.stringify(pipeline, null, 2));
                 const result = await Api.aggregate(pipeline);
                 const data = result[0]?.data || [];
                 const totalDocuments = result[0]?.totalCount[0]?.count || 0;
