@@ -23,7 +23,7 @@ export default {
         return { authToken: TWILIO_AUTH_TOKEN, };
     },
     getAuthUrl({ state = "" } = {}) {
-        const params = new URLSearchParams({ redirectTo: TWILIO_REDIRECT_URI, ...(state && { state }), });
+        const params = new URLSearchParams({ redirectUri: TWILIO_REDIRECT_URI, ...(state && { state }), });
         return { ExpectedKeysFromQuery: ['AccountSid'], AuthUrl: `https://www.twilio.com/authorize/${TWILIO_CONNECT_APP_SID}?${params}` }
     },
     async getTokens({ AccountSid }) {
