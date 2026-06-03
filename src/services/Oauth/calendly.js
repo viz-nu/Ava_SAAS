@@ -43,8 +43,6 @@ export default {
                 }).toString(),
                 { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
             );
-
-            console.log(data);
             // calendlyTokens: {
             //   "access_token":  "...access_token...",
             //   "token_type":    "Bearer",
@@ -59,6 +57,9 @@ export default {
                 tokenType: data.token_type,
                 expiresAt: new Date(Date.now() + data.expires_in * 1000),
                 refreshToken: data.refresh_token,
+                scope:data.scope,
+                owner:data.owner,
+                organization:data.organization,
                 // Calendly refresh tokens are single-use (OAuth 2.1 rotation).
                 // Always overwrite the stored refresh token with the new one returned
                 // from every successful POST /oauth/token call. Never reuse an old one.
