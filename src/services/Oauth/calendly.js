@@ -44,6 +44,7 @@ export default {
                 { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
             );
 
+            console.log(data);
             // calendlyTokens: {
             //   "access_token":  "...access_token...",
             //   "token_type":    "Bearer",
