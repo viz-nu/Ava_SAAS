@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 const { wa_client_id, wa_client_secret, wa_redirect_uri } = process.env;
 
 const API_VERSION = "v23.0";
@@ -11,7 +11,7 @@ const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
  * Fixes applied:
  * ✓ Extends BaseOAuthProvider
  * ✓ Changed tokenError → error in getTokens
- * ✓ Fixed refreshToken() parameter: accepts {refreshToken} not just accessToken
+ * ✓ refreshToken() uses accessToken (Meta long-lived token exchange, no refresh_token)
  * ✓ ADDED missing redirectUri to getConfig()
  * ✓ Standardized response structure
  * ✓ Added null safety in error handling
@@ -154,27 +154,20 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
         }
     }
 
-    async refreshToken({ refreshToken }) {
-        // FIX #2: Parameter signature now consistent with other providers
-        // Note: WhatsApp doesn't actually support refresh (long-lived tokens),
-        // but this follows OAuth convention. If called, it will fail appropriately.
-        const validation = this._validateStringParam(
-            refreshToken,
-            "refreshToken"
-        );
+    async refreshToken({ accessToken }) {
+        // Meta has no refresh_token — extend validity by re-exchanging the long-lived access token
+        const validation = this._validateStringParam(accessToken, "accessToken");
         if (validation) return validation;
 
-        // WhatsApp uses long-lived tokens, so "refresh" means re-exchange
-        // This is typically not needed, but provided for compatibility
         try {
             const { data } = await axios.get(
-                "https://graph.facebook.com/v23.0/oauth/access_token",
+                `${BASE_URL}/oauth/access_token`,
                 {
                     params: {
                         grant_type: "fb_exchange_token",
                         client_id: wa_client_id,
                         client_secret: wa_client_secret,
-                        fb_exchange_token: refreshToken,
+                        fb_exchange_token: accessToken,
                     },
                 }
             );

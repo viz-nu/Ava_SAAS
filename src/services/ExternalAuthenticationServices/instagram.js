@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 
 const { IG_CLIENT_ID, IG_CLIENT_SECRET, IG_REDIRECT_URI } = process.env;
 const API_VERSION = "v23.0";
@@ -367,16 +367,16 @@ export default class OauthInstagram extends BaseOAuthProvider {
 
 /**
  * MESSAGING APIs (NOT IN OAUTH CLASS)
- * 
+ *
  * These are separated from OAuth for good reason:
  * - They're not auth-related
  * - They require both accessToken AND phoneNumberId/pageId (not part of OAuth flow)
  * - They're optional operations, not required for every integration
- * 
+ *
  * Example:
  * const messagingAPI = new InstagramMessagingAPI(credentials);
  * await messagingAPI.sendTextMessage({ recipientId, text });
- * 
+ *
  * This separation:
  * ✓ Keeps OAuth class focused on authentication
  * ✓ Prevents caller confusion (they know where to find each API)

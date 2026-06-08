@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 
 const {
     CALENDLY_CLIENT_ID,
@@ -69,17 +69,17 @@ export default class OauthCalendly extends BaseOAuthProvider {
                 }
             );
 
-            if (!data?.access_token) {
+            if (!data?.access_token || !data?.refresh_token) {
                 return this._errorResponse(
                     "malformed_response",
-                    "OAuth provider returned incomplete token data.",
+                    "OAuth provider returned incomplete token data (missing access or refresh token).",
                     502
                 );
             }
 
             const credentials = {
                 accessToken: data.access_token,
-                refreshToken: data.refresh_token || null,
+                refreshToken: data.refresh_token,
                 tokenType: data.token_type || "Bearer",
                 expiresAt: data.expires_in
                     ? new Date(Date.now() + data.expires_in * 1000)
@@ -132,10 +132,10 @@ export default class OauthCalendly extends BaseOAuthProvider {
                 }
             );
 
-            if (!data?.access_token) {
+            if (!data?.access_token || !data?.refresh_token) {
                 return this._errorResponse(
                     "malformed_response",
-                    "OAuth provider returned incomplete refresh response.",
+                    "OAuth provider returned incomplete refresh response (missing access or refresh token).",
                     502
                 );
             }
@@ -145,7 +145,7 @@ export default class OauthCalendly extends BaseOAuthProvider {
             // Caller should prompt user to re-authorize.
             const refreshed = {
                 accessToken: data.access_token,
-                refreshToken: data.refresh_token || null, // NEW token (single-use)
+                refreshToken: data.refresh_token, // NEW token (single-use)
                 tokenType: data.token_type || "Bearer",
                 expiresAt: data.expires_in
                     ? new Date(Date.now() + data.expires_in * 1000)

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 // Smartflo / Tata Tele Business Services — CPaaS provider
 // Auth: Bearer token generated from the Smartflo portal (API Connect → API Tokens).
 // Portal-generated tokens never expire. API-generated tokens expire in 60 min.
@@ -17,7 +17,7 @@ export default class OauthTataTele extends BaseOAuthProvider {
         return {};
     }
     // Smartflo does not use OAuth. Tokens are manually generated in the Smartflo portal.
-    // The UI should collect: apiToken (the bearer token from API Connect → API Tokens).
+    // The UI should collect: apiToken and apiKey from API Connect → API Tokens.
     getAuthUrl({ state = "" }) {
         return {
             AuthUrl: `https://www.avakado.ai/integrate/tatatele?state=${state}`, ExpectedKeysFromQuery: {
@@ -39,11 +39,12 @@ export default class OauthTataTele extends BaseOAuthProvider {
     }
 
     // Validates the static bearer token by fetching live/active calls (lightweight endpoint).
-    // ExpectedKeysFromQuery: ['apiToken']
+    // ExpectedKeysFromQuery: ['apiToken', 'apiKey']
     async getTokens({ apiToken, apiKey }) {
-        if (!apiToken || typeof apiToken !== "string") {
-            return this._errorResponse("missing_apiToken", "apiToken is required.", 400);
-        }
+        const tokenValidation = this._validateStringParam(apiToken, "apiToken");
+        if (tokenValidation) return tokenValidation;
+        const keyValidation = this._validateStringParam(apiKey, "apiKey");
+        if (keyValidation) return keyValidation;
         try {
             const { data: accountDetails } = await axios.get(`${BASE_URL}/v1/live_calls`, {
                 headers: authHeaders(apiToken),
@@ -103,7 +104,7 @@ export default class OauthTataTele extends BaseOAuthProvider {
 
     async getTokenInfo({ apiToken }) {
         if (!apiToken || typeof apiToken !== "string") {
-                return this._errorResponse("missing_token", "apiToken is required.", 400);
+            return this._errorResponse("missing_token", "apiToken is required.", 400);
         }
         try {
             await axios.get(`${BASE_URL}/v1/live_calls`, { headers: authHeaders(apiToken) });
@@ -114,13 +115,8 @@ export default class OauthTataTele extends BaseOAuthProvider {
     }
 
     async validateToken({ apiToken }) {
-        if (!apiToken || typeof apiToken !== "string") return false;
-        try {
-            await axios.get(`${BASE_URL}/v1/live_calls`, { headers: authHeaders(apiToken) });
-            return true;
-        } catch {
-            return false;
-        }
+        // Portal-generated tokens do not expire — no refresh flow
+        return Boolean(apiToken && typeof apiToken === "string");
     }
 
     _handleError(error) {

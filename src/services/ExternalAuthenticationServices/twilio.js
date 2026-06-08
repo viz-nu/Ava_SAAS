@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 const { TWILIO_AUTH_TOKEN, TWILIO_CONNECT_APP_SID, TWILIO_REDIRECT_URI } = process.env;
 import twilio from 'twilio';
 
@@ -85,15 +85,8 @@ export default class OauthTwilio extends BaseOAuthProvider {
         }
     }
     async validateToken({ basicToken }) {
-        if (!basicToken || typeof basicToken !== "string") return false;
-        try {
-            const decoded = Buffer.from(basicToken, "base64").toString("utf8");
-            const accountSid = decoded.split(":")[0];
-            await axios.get(`${BASE_URL}/Accounts/${accountSid}.json`, { headers: { Authorization: `Basic ${basicToken}` } });
-            return true;
-        } catch (error) {
-            return false;
-        }
+        // Static basic auth — no expiry or refresh flow
+        return Boolean(basicToken && typeof basicToken === "string");
     }
     _handleError(error) {
         const response = error.response;

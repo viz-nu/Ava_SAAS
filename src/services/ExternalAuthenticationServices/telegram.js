@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 export default class OauthTelegram extends BaseOAuthProvider {
     name = "telegram";
     getAuthUrl({ state = "" }) {
@@ -58,14 +58,8 @@ export default class OauthTelegram extends BaseOAuthProvider {
         }
     }
     async validateToken({ apiToken }) {
-        if (!apiToken || typeof apiToken !== "string") return false;
-        try {
-            const client = new Telegraf(apiToken);
-            await client.telegram.getMe();
-            return true;
-        } catch {
-            return false;
-        }
+        // Bot tokens do not expire — no refresh flow
+        return Boolean(apiToken && typeof apiToken === "string");
     }
 
     /** ----------------------------

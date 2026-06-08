@@ -1,6 +1,6 @@
 import axios from "axios";
 import jwt from "jsonwebtoken";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 
 const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI } = process.env;
 
@@ -46,13 +46,21 @@ export default class OauthGoogle extends BaseOAuthProvider {
         if (validation) return validation;
 
         try {
-            const { data } = await axios.post("https://oauth2.googleapis.com/token", {
-                code,
-                client_id: GOOGLE_CLIENT_ID,
-                client_secret: GOOGLE_CLIENT_SECRET,
-                redirect_uri: GOOGLE_REDIRECT_URI,
-                grant_type: "authorization_code",
-            });
+            const { data } = await axios.post(
+                "https://oauth2.googleapis.com/token",
+                new URLSearchParams({
+                    code,
+                    client_id: GOOGLE_CLIENT_ID,
+                    client_secret: GOOGLE_CLIENT_SECRET,
+                    redirect_uri: GOOGLE_REDIRECT_URI,
+                    grant_type: "authorization_code",
+                }).toString(),
+                {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                }
+            );
 
             // FIX #2: Validate response has required fields
             if (!data?.access_token) {
@@ -102,11 +110,7 @@ export default class OauthGoogle extends BaseOAuthProvider {
                 config: this.getConfig(),
             });
         } catch (error) {
-            return this._errorResponse(
-                "token_exchange_failed",
-                "Failed to exchange authorization code for tokens.",
-                error.response?.status || 503
-            );
+            return this._handleError(error);
         }
     }
 
@@ -116,12 +120,20 @@ export default class OauthGoogle extends BaseOAuthProvider {
         if (validation) return validation;
 
         try {
-            const { data } = await axios.post("https://oauth2.googleapis.com/token", {
-                client_id: GOOGLE_CLIENT_ID,
-                client_secret: GOOGLE_CLIENT_SECRET,
-                refresh_token: refreshToken,
-                grant_type: "refresh_token",
-            });
+            const { data } = await axios.post(
+                "https://oauth2.googleapis.com/token",
+                new URLSearchParams({
+                    client_id: GOOGLE_CLIENT_ID,
+                    client_secret: GOOGLE_CLIENT_SECRET,
+                    refresh_token: refreshToken,
+                    grant_type: "refresh_token",
+                }).toString(),
+                {
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                }
+            );
 
             if (!data?.access_token) {
                 return this._errorResponse(
@@ -163,11 +175,24 @@ export default class OauthGoogle extends BaseOAuthProvider {
                 }
             );
 
-            // FIX: Validate response
-            const dataValidation = this._validateResponseData(data, "Google");
-            if (dataValidation) return dataValidation;
+            if (!data?.id) {
+                return this._errorResponse(
+                    "malformed_response",
+                    "Invalid response from Google.",
+                    502
+                );
+            }
 
-            return this._successResponse(data);
+            return this._successResponse({
+                id: data.id,
+                email: data.email,
+                name: data.name,
+                given_name: data.given_name,
+                family_name: data.family_name,
+                picture: data.picture,
+                email_verified: data.verified_email,
+                locale: data.locale,
+            });
         } catch (error) {
             return this._handleError(error);
         }

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BaseOAuthProvider } from "./base.js";
+import BaseOAuthProvider from "./base.js";
 const SUBDOMAIN_MAP = {
     singapore: "api.exotel.com",       // my.exotel.com accounts
     mumbai: "api.in.exotel.com",       // my.mum1.exotel.com accounts
@@ -66,7 +66,14 @@ export default class OauthExotel extends BaseOAuthProvider {
                 `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
                 { headers: { Authorization: basicAuth(apiKey, apiToken) } }
             );
-            return this._successResponse({ apiKey, apiToken, accountSid, subdomain }, { accountDetails, config: {}, scope: [] });
+            return this._successResponse(
+                { apiKey, apiToken, accountSid, subdomain },
+                {
+                    accountDetails,
+                    config: { AccountSid: accountSid, subdomain, region },
+                    scope: [],
+                }
+            );
 
         } catch (error) {
             return this._handleError(error);
@@ -139,17 +146,9 @@ export default class OauthExotel extends BaseOAuthProvider {
         }
     }
 
-    async validateToken({ apiKey, apiToken, accountSid, subdomain = SUBDOMAIN_MAP.singapore }) {
-        if (!apiKey || !apiToken || !accountSid) return false;
-        try {
-            await axios.get(
-                `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
-                { headers: { Authorization: basicAuth(apiKey, apiToken) } }
-            );
-            return true;
-        } catch {
-            return false;
-        }
+    async validateToken({ apiKey, apiToken, accountSid }) {
+        // Static credentials — no expiry or refresh flow
+        return Boolean(apiKey && apiToken && accountSid);
     }
 
     _handleError(error) {
