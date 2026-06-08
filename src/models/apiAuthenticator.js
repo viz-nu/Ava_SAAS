@@ -1,6 +1,5 @@
 import { model, Schema } from 'mongoose';
-import { PROVIDER_MAP, providerSupportsRefresh } from '#resources/services/ProviderMap.js';
-
+import { PROVIDER_MAP, providerSupportsRefresh } from '../utils/setup.js';
 const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 const baseOpts = { _id: false };      // subdocs don’t need their own _id
 const docOpts = { timestamps: true, discriminatorKey: 'authType' };
