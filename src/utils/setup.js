@@ -1,14 +1,15 @@
-import OauthWhatsapp from "../services/Oauth/whatsapp.js";
-import OauthInstagram from "../services/Oauth/instagram.js";
-import OauthTelegram from "../services/ApiKey/twilio.js";
-import OauthGoogle from "../services/Oauth/google.js";
-import OauthMicrosoft from "../services/Oauth/microsoft.js";
-import OauthCalendly from "../services/Oauth/calendly.js";
-import OauthExotel from "../services/ApiKey/exotel.js";
-import OauthTataTele from "../services/ApiKey/tatatele.js";
-import OauthTwilio from "../services/ApiKey/twilio.js";
+import OauthCalendly from "../services/ExternalAuthenticationServices/calendly.js";
+import OauthExotel from "../services/ExternalAuthenticationServices/exotel.js";
+import OauthGoogle from "../services/ExternalAuthenticationServices/google.js";
+import OauthInstagram from "../services/ExternalAuthenticationServices/instagram.js";
+import OauthMicrosoft from "../services/ExternalAuthenticationServices/microsoft.js";
+import OauthTataTele from "../services/ExternalAuthenticationServices/tatatele.js";
+import OauthTelegram from "../services/ExternalAuthenticationServices/telegram.js";
+import OauthTwilio from "../services/ExternalAuthenticationServices/twilio.js";
+import OauthWhatsApp from "../services/ExternalAuthenticationServices/whatsapp.js";
+
 export const PROVIDER_MAP = {
-    "Whatsapp": OauthWhatsapp,
+    "Whatsapp": OauthWhatsApp,
     "Instagram": OauthInstagram,
     "Twilio": OauthTwilio,
     'Gmail': OauthGoogle,

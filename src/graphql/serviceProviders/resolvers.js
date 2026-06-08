@@ -102,23 +102,13 @@ export const serviceProvidersResolvers = {
         createAuthStrategy: async (_, { apiId, state = "" }, context) => {
             const api = await Api.findById(apiId).populate('provider');
             if (!api) throw new GraphQLError("Api not found", { extensions: { code: 'INVALID_INPUT' } });
-            const oauthProvider = PROVIDER_MAP[api.provider.name];
-            if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
+            const providerService = PROVIDER_MAP[api.provider.name];
+            if (!providerService) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             const scopes = [...new Set([...api.provider.basicScopes, ...api.requiredScopes])];
             if (!scopes) throw new GraphQLError("Scopes not found", { extensions: { code: 'INVALID_INPUT' } });
-            let authStrategy = {};
-            switch (api.schemas.auth) {
-                case 'oauth2':
-                    authStrategy = { authType: api.schemas.auth, authUrl: oauthProvider.getAuthUrl({ state, scopes }), scopes: scopes, providerId: api.provider._id }
-                    break;
-                case 'basic':
-                    const { ExpectedKeysFromQuery, AuthUrl } = oauthProvider.getAuthUrl({ state });
-                    authStrategy = { authType: api.schemas.auth, authUrl: AuthUrl, scopes: [], providerId: api.provider._id, misc: { requiredKeysFromQuery: ExpectedKeysFromQuery } }
-                    break;
-                default:
-                    throw new GraphQLError("Invalid auth type", { extensions: { code: 'INVALID_INPUT' } });
-            }
-            // console.log("authStrategy:", JSON.stringify(authStrategy, null, 2));
+            const { ExpectedKeysFromQuery = null, AuthUrl, error = null } = providerService.getAuthUrl({ state })
+            if (error) throw new GraphQLError(error.message, { extensions: { code: error.code } });
+            let authStrategy = { authType: api.schemas.auth, authUrl: AuthUrl, scopes: scopes, providerId: api.provider._id, misc: { requiredKeysFromQuery: ExpectedKeysFromQuery } }
             return authStrategy;
         },
         createApiAuthenticator: async (_, { providerId, authType, existingAuthenticatorId = null, keys = {} }, context) => {
@@ -126,8 +116,8 @@ export const serviceProvidersResolvers = {
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            const { success, credentials, scope, accountDetails, config, tokenError = {} } = await oauthProvider.getTokens(keys);
-            if (!success) throw new GraphQLError(tokenError.message, { extensions: { code: tokenError.code } });
+            const { success, data: credentials, scope, accountDetails, config, error } = await oauthProvider.getTokens(keys);
+            if (!success) throw new GraphQLError(error.message, { extensions: { code: error.code } });
             if (existingAuthenticatorId) {
                 const update = { $set: { credentials, config, accountDetails } };
                 if (scope?.length > 0) update.$addToSet = { scope: { $each: scope } };

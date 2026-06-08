@@ -125,10 +125,7 @@ ApiAuthenticationSchema.methods.getSecrets = function () {
     return { credentials: this.credentials, config: this.config };
 };
 ApiAuthenticationSchema.methods.getCredentials = async function () {
-    await this.populate('provider');
-    const serviceProvider = PROVIDER_MAP[this.provider.name];
-    if (!serviceProvider) throw new Error('Unsupported provider');
-    return await serviceProvider.credentials(this.credentials);
+    return this.credentials
 }
 ApiAuthenticationSchema.methods.refreshToken = async function () {
     await this.populate('provider');
