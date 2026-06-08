@@ -153,7 +153,32 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             return this._handleError(error);
         }
     }
-
+    async setupChannel({ apiAuthenticator, providerName, channelId, config }) {
+        const API_VERSION = 'v23.0';
+        const { phone_number_id, waba_id, business_id } = config;
+        config.webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`;
+        config.verificationToken = `LeanOn_${channelId}`;
+        config.phoneNumberPin = Math.floor(Math.random() * 900000) + 100000;
+        const { accessToken, tokenType } = apiAuthenticator.credentials;
+        if (!accessToken || !tokenType) return this._errorResponse("missing_credentials", "Missing credentials.", 400);
+        try {
+            console.log("settingUp webhooks")
+            await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": config.webhookUrl, "verify_token": config.verificationToken }, { headers: { 'Authorization': `Bearer ${accessToken}` } }).then(res => {
+                console.log("webhook set", res.data);
+            }).catch(err => {
+                console.error("error setting webhook", err);
+            });
+            await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': config.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` } }).then(res => {
+                console.log("phone number registered", res.data);
+            }).catch(err => {
+                console.error("error registering phone number", err);
+            });
+            return this._successResponse(config, { config: config, scope: [] });
+        } catch (error) {
+            console.error("error setting up whatsapp channel", error);
+            return this._handleError(error);
+        }
+    }
     async refreshToken({ accessToken }) {
         // Meta has no refresh_token — extend validity by re-exchanging the long-lived access token
         const validation = this._validateStringParam(accessToken, "accessToken");
