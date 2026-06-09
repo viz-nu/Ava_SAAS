@@ -4,7 +4,6 @@ const { wa_client_id, wa_client_secret, wa_redirect_uri } = process.env;
 
 const API_VERSION = "v23.0";
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
-
 /**
  * FIXED: WhatsApp OAuth Provider
  * 
@@ -154,29 +153,106 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
         }
     }
     async setupChannel({ apiAuthenticator, providerName, channelId, config }) {
-        const API_VERSION = 'v23.0';
-        const { phone_number_id, waba_id, business_id } = config;
-        config.webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`;
+        const { phone_number_id, waba_id } = config;
+
+        if (!phone_number_id || !waba_id) {
+            return this._errorResponse("missing_config", "phone_number_id and waba_id are required.", 400);
+        }
+        const accessToken = apiAuthenticator?.credentials?.accessToken;
+        if (!accessToken) {
+            return this._errorResponse("missing_credentials", "Missing access token.", 400);
+        }
+
+        const base = (process.env.WEBHOOKS_URL || "").replace(/\/?$/, "/");
+        config.webhookUrl = `${base}webhook/${providerName}/${channelId}`;
         config.verificationToken = `LeanOn_${channelId}`;
-        config.phoneNumberPin = Math.floor(Math.random() * 900000) + 100000;
-        const { accessToken, tokenType } = apiAuthenticator.credentials;
-        if (!accessToken || !tokenType) return this._errorResponse("missing_credentials", "Missing credentials.", 400);
+        config.phoneNumberPin = String(Math.floor(100000 + Math.random() * 900000));
+
+        const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } };
+        const steps = {};
+
+        // CRITICAL — route this WABA's webhooks to us
+        steps.subscription = await this._safeStep("subscription", () =>
+            axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, {
+                override_callback_uri: config.webhookUrl,
+                verify_token: config.verificationToken,
+            }, auth)
+        );
+
+        // CRITICAL — register number ("already registered" is success)
+        steps.registration = await this._safeStep("registration", () =>
+            axios.post(`${BASE_URL}/${phone_number_id}/register`, {
+                messaging_product: "whatsapp",
+                pin: config.phoneNumberPin,
+            }, auth),
+            { okErrorCodes: [133016] }
+        );
+
+        // OPTIONAL — calling fails gracefully on sub-2000-tier numbers
+        steps.calling = await this._safeStep("calling", () =>
+            axios.post(`${BASE_URL}/${phone_number_id}/settings`, {
+                calling: {
+                    status: "ENABLED",
+                    call_icon_visibility: "DEFAULT",
+                    callback_permission_status: "ENABLED",
+                    audio: { additional_codecs: ["PCMU", "PCMA"] },
+                },
+            }, auth),
+            { optional: true }
+        );
+
+        // capabilities live INSIDE config so they persist via ...restConfigurations
+        config.capabilities = {
+            messaging: steps.subscription.ok && steps.registration.ok,
+            calling: steps.calling.ok,
+        };
+
+        if (!config.capabilities.messaging) {
+            // fatal: build a readable message; full detail already logged by _safeStep
+            const failed = Object.values(steps)
+                .filter(s => !s.ok && !s.optional)
+                .map(s => `${s.name}(code=${s.code ?? "?"}, trace=${s.fbtrace_id ?? "?"})`)
+                .join("; ");
+            return this._errorResponse(
+                "channel_setup_incomplete",
+                `Core messaging setup failed: ${failed}`,
+                502
+            );
+        }
+
+        // success: matches _successResponse(data, { config }) -> { success, data, config }
+        return this._successResponse(config, { config });
+    }
+    /**
+ * Runs one setup step in isolation. Never throws.
+ * - optional: failure won't fail the channel (e.g. calling on a low-tier number)
+ * - okErrorCodes: Meta error codes to treat as success (idempotency, e.g. "already registered")
+ */
+    async _safeStep(name, fn, { optional = false, okErrorCodes = [] } = {}) {
         try {
-            console.log("settingUp webhooks")
-            await axios.post(`https://graph.facebook.com/${API_VERSION}/${waba_id}/subscribed_apps`, { "override_callback_uri": config.webhookUrl, "verify_token": config.verificationToken }, { headers: { 'Authorization': `Bearer ${accessToken}` } }).then(res => {
-                console.log("webhook set", res.data);
-            }).catch(err => {
-                console.error("error setting webhook", err);
-            });
-            await axios.post(`https://graph.facebook.com/${API_VERSION}/${phone_number_id}/register`, { 'messaging_product': 'whatsapp', 'pin': config.phoneNumberPin }, { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` } }).then(res => {
-                console.log("phone number registered", res.data);
-            }).catch(err => {
-                console.error("error registering phone number", err);
-            });
-            return this._successResponse(config, { config: config, scope: [] });
+            const res = await fn();
+            return { ok: true, name, data: res.data };
         } catch (error) {
-            console.error("error setting up whatsapp channel", error);
-            return this._handleError(error);
+            const fbError = error?.response?.data?.error || {};
+            const code = fbError.code;
+
+            // Idempotency: some "errors" mean "already in the desired state"
+            if (okErrorCodes.includes(code)) {
+                return { ok: true, name, idempotent: true, note: fbError.message };
+            }
+
+            const detail = {
+                ok: false,
+                name,
+                optional,
+                httpStatus: error?.response?.status ?? null,
+                code: code ?? null,
+                subcode: fbError.error_subcode ?? null,
+                message: fbError.message || error.message,
+                fbtrace_id: fbError.fbtrace_id ?? null, // give this to Meta support if needed
+            };
+            console.error(`[setupChannel:${name}] failed`, detail);
+            return detail;
         }
     }
     async refreshToken({ accessToken }) {
@@ -326,7 +402,47 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             return false;
         }
     }
+    async teardownChannel({ apiAuthenticator, config }) {
+        const { phone_number_id, waba_id } = config || {};
+        const accessToken = apiAuthenticator?.credentials?.accessToken;
+        if (!accessToken) {
+            return this._errorResponse("missing_credentials", "Missing access token.", 400);
+        }
 
+        const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } };
+        const steps = {};
+
+        // 1) Disable calling first (stops new call webhooks). Optional — number may have none.
+        if (phone_number_id) {
+            steps.disableCalling = await this._safeStep("disableCalling", () =>
+                axios.post(`${BASE_URL}/${phone_number_id}/settings`, {
+                    calling: { status: "DISABLED" },
+                }, auth),
+                { optional: true }
+            );
+
+            // 2) Deregister the number. Tolerate "not registered".
+            steps.deregister = await this._safeStep("deregister", () =>
+                axios.post(`${BASE_URL}/${phone_number_id}/deregister`, {}, auth),
+                { optional: true }
+            );
+        }
+
+        // 3) Unsubscribe our app from this WABA — stops ALL webhooks for it.
+        if (waba_id) {
+            steps.unsubscribe = await this._safeStep("unsubscribe", () =>
+                axios.delete(`${BASE_URL}/${waba_id}/subscribed_apps`, auth),
+                { optional: true }
+            );
+        }
+
+        const teardown = Object.fromEntries(
+            Object.entries(steps).map(([k, v]) => [k, v.ok])
+        );
+
+        // Always success: report what cleaned up, but never block channel deletion.
+        return this._successResponse({ teardown }, { config: { ...config, teardown } });
+    }
     _handleError(error) {
         // FIX: Handle case where response is null/undefined (network error)
         const response = error.response;

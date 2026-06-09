@@ -17,10 +17,11 @@ import { emailConformation } from "./controllers/auth/register.js";
 import { Message } from "./models/Messages.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendEmail, sendMail } from "./utils/sendEmail.js";
-import {  generateMeetingUrl } from "./utils/tools.js";
+import { generateMeetingUrl } from "./utils/tools.js";
 import { DateTime } from "luxon";
 import { Ticket } from "./models/Tickets.js";
-const whitelist = ["https://www.avakado.ai", "https://api-builder-eight.vercel.app","https://avakado.ai", "http://localhost:5174", "http://localhost:3000", "https://studio.apollographql.com","https://app.avakado.ai","https://api-builder-eight.vercel.app/"];
+import { ensureWhatsAppWebhookSubscription } from './utils/whatsapp-app-bootstrap.js';
+const whitelist = ["https://www.avakado.ai", "https://api-builder-eight.vercel.app", "https://avakado.ai", "http://localhost:5174", "http://localhost:3000", "https://studio.apollographql.com", "https://app.avakado.ai", "https://api-builder-eight.vercel.app/"];
 export const corsOptions = {
     origin: (origin, callback) => (!origin || whitelist.indexOf(origin) !== -1) ? callback(null, true) : callback(new Error('Not allowed by CORS')),
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
@@ -162,7 +163,7 @@ export const createApp = async () => {
         // app.use("/api/v1", cors(corsOptions), indexRouter);
         // Apollo setup
         try {
-           await registerApollo(app, server); 
+            await registerApollo(app, server);
         } catch (error) {
             console.error("error with Apollo setup", error);
             throw error;
@@ -180,7 +181,12 @@ export const createApp = async () => {
             console.error("error with Route does not exist", error);
             throw error;
         }
-
+        try {
+            await ensureWhatsAppWebhookSubscription();
+        } catch (error) {
+            console.error("error with WhatsApp webhook subscription", error);
+            throw error;
+        }
         return { app, server };
     } catch (error) {
         console.error("failed to start server", error);

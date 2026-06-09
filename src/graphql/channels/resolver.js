@@ -71,6 +71,15 @@ export const channelResolvers = {
         async deleteChannel(_, { id }, context) {
             const channel = await Channel.findOne({ _id: id, business: context.user.business });
             if (!channel) throw new GraphQLError('Channel not found', { extensions: { code: 'INVALID_INPUT' } });
+
+            // const { success, config: restConfigurations } = await serviceProvider.teardownChannel({
+            //     apiAuthenticator: apiAuthenticatorDoc,
+            //     config: channel.config,
+            // });
+            // // proceed with delete regardless; restConfigurations.teardown shows what Meta cleaned up
+            // await channel.deleteOne();
+
+
             switch (channel.type) {
                 case "telegram": {
                     const bot = new Telegraf(channel.secrets?.botToken);

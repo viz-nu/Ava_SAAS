@@ -30,13 +30,7 @@ const oauth2CredentialsSchema = new Schema({
 
 const oauth2Schema = new Schema({
     credentials: oauth2CredentialsSchema,
-    config: {
-        clientId: String,
-        clientSecret: String,
-        authUrl: String,
-        tokenUrl: String,
-        redirectUri: String
-    }
+    config: Schema.Types.Mixed
 }, baseOpts);
 
 // apiKey: Exotel, Tata Tele, Telegram
@@ -49,13 +43,14 @@ const apiKeyCredentialsSchema = new Schema({
 
 const apiKeySchema = new Schema({
     credentials: apiKeyCredentialsSchema,
-    config: {
-        in: { type: String, enum: ['header', 'query'], default: 'header' },
-        name: { type: String, default: 'x-api-key' },
-        AccountSid: String,
-        subdomain: String,
-        region: String
-    }
+    config:Schema.Types.Mixed
+    // {
+    //     in: { type: String, enum: ['header', 'query'], default: 'header' },
+    //     name: { type: String, default: 'x-api-key' },
+    //     AccountSid: String,
+    //     subdomain: String,
+    //     region: String
+    // }
 }, baseOpts);
 
 const basicSchema = new Schema({
