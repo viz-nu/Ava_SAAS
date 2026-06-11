@@ -166,7 +166,7 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
         const base = (process.env.WEBHOOKS_URL || "").replace(/\/?$/, "/");
         config.webhookUrl = `${base}webhook/${providerName}/${channelId}`;
         config.verificationToken = `LeanOn_${channelId}`;
-        config.phoneNumberPin = String(Math.floor(100000 + Math.random() * 900000));
+        config.phoneNumberPin = "000000";
 
         const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } };
         const steps = {};

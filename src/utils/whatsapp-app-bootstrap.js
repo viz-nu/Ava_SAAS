@@ -31,7 +31,6 @@ export async function ensureWhatsAppWebhookSubscription() {
         const missing = REQUIRED_FIELDS.filter(f => !current.has(f));
 
         if (waba && missing.length === 0) {
-            console.log("[bootstrap] webhook fields already complete:", [...current]);
             return { ok: true, changed: false, fields: [...current] };
         }
 
