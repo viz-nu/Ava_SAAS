@@ -1,21 +1,218 @@
+
+// ─── Type Definitions ─────────────────────────────────────────────────────────
+
 export const messageTypeDefs = `#graphql
-enum reactionEnum {
-    neutral
-    like
-    dislike
-}
-"""A message in a conversation"""
-type message {
+
+  """Who sent the message"""
+  enum SenderTypeEnum {
+    Lead
+    agent
+    user
+    system
+  }
+
+  """Type of message content"""
+  enum MessageTypeEnum {
+    text
+    image
+    audio
+    voice
+    video
+    document
+    file
+    sticker
+    location
+    contacts
+    interactive
+    button
+    order
+    unknown
+  }
+
+  """Nature of the message event"""
+  enum MessageKindEnum {
+    message
+    postback
+    system
+  }
+
+  """Delivery status timeline for a message"""
+  type MessageStatusTimeline {
+    initiated: DateTime
+    sent: DateTime
+    delivered: DateTime
+    read: DateTime
+    failed: DateTime
+  }
+
+  """Sender identity on a message"""
+  type MessageSender {
+    type: SenderTypeEnum
+    id: String
+    name: String
+  }
+
+  """A single emoji reaction on a message"""
+  type MessageReaction {
+    emoji: String
+    by: String
+    at: DateTime
+  }
+
+  """A message in a conversation"""
+  type Message {
     _id: ID!
-    conversationId: Conversation
-    business: Business
-    query: String
-    response: String
-    reaction: reactionEnum
+    """Conversation this message belongs to"""
+    conversation: Conversation
+    business: ID
+    """Provider-side message ID"""
+    externalMessageId: String
+    """inbound | outbound"""
+    direction: String
+    """Who sent this message"""
+    sender: MessageSender
+    """Content type"""
+    type: MessageTypeEnum
+    """Event kind"""
+    kind: MessageKindEnum
+    """Raw message content (body, location, interactive payload, etc.)"""
+    content: JSON
+    """Message this is a reply to"""
+    repliedTo: ID
+    """Emoji reactions on this message"""
+    reactions: [MessageReaction]
+    """Delivery status timestamps"""
+    statusTimeline: MessageStatusTimeline
+    """Miscellaneous provider data"""
+    misc: JSON
+    """Delivery/processing errors"""
+    errors: [JSON]
+    """Whether this is an internal agent note (not sent to lead)"""
+    isInternalNote: Boolean
+    """Whether this message has been included in a summary"""
+    isSummarized: Boolean
     createdAt: DateTime
     updatedAt: DateTime
-}
-type Query {
-    fetchMessages(conversationId: ID! limit: Int page: Int): [message] @requireScope(scope: "conversation:read") @requireBusinessAccess
-}         
+  }
+
+  type MessagePagination {
+    data: [Message]
+    metaData: PaginationMetaData
+  }
+
+  # ─── Call Sessions ───────────────────────────────────────────────────────────
+
+  """Status of a call session"""
+  enum CallSessionStatusEnum {
+    initiated
+    ringing
+    in_progress
+    completed
+    failed
+    busy
+    no_answer
+    canceled
+  }
+
+  """Recording state for a call session"""
+  enum RecordingStatusEnum {
+    none
+    pending
+    stored
+    failed
+  }
+
+  """A single transcript segment from a call"""
+  type Transcript {
+    speaker: SenderTypeEnum
+    transcript: String
+    """Millisecond offset from call start"""
+    startMs: Int
+    endMs: Int
+    """Recognition confidence score"""
+    confidence: Float
+    """Transcription provider (whisper, deepgram, etc.)"""
+    source: String
+    usage: JSON
+  }
+
+  """Recording details for a call session"""
+  type CallRecording {
+    status: RecordingStatusEnum
+    key: String
+    url: String
+  }
+
+  """Status timestamps for a call session"""
+  type CallStatusTimeline {
+    initiatedAt: DateTime
+    ringingAt: DateTime
+    in_progressAt: DateTime
+    completedAt: DateTime
+    failedAt: DateTime
+    busyAt: DateTime
+    no_answerAt: DateTime
+    canceledAt: DateTime
+    durationSec: Int
+  }
+
+  """A phone/voice call session linked to a conversation"""
+  type CallSession {
+    _id: ID!
+    """Conversation this call belongs to"""
+    conversation: Conversation
+    business: ID
+    """Channel used for this call"""
+    channel: ID
+    """Provider-side call ID"""
+    externalCallSessionId: String
+    """inbound | outbound"""
+    direction: String
+    status: CallSessionStatusEnum
+    statusTimeline: CallStatusTimeline
+    recording: CallRecording
+    """Ordered transcript segments"""
+    transcripts: [Transcript]
+    """Raw provider call details"""
+    callDetails: JSON
+    """Ordered log of call events"""
+    sequenceOfEvents: [JSON]
+    createdAt: DateTime
+    updatedAt: DateTime
+  }
+
+  type CallSessionPagination {
+    data: [CallSession]
+    metaData: PaginationMetaData
+  }
+
+  # ─── Queries ─────────────────────────────────────────────────────────────────
+
+  type Query {
+    """
+    Fetch paginated messages for a conversation.
+    @param conversationId - Filter by conversation (required for scoped fetch)
+    @param limit          - Results per page (default: 20)
+    @param page           - Page number (default: 1)
+    """
+    fetchMessages(
+      conversationId: ID
+      limit: Int
+      page: Int
+    ): MessagePagination @requireScope(scope: "conversation:read") @requireBusinessAccess
+
+    """
+    Fetch paginated call sessions for a conversation.
+    @param conversationId - Filter by conversation
+    @param status         - Filter by call status
+    @param limit          - Results per page (default: 20)
+    @param page           - Page number (default: 1)
+    """
+    fetchCallSessions(
+      conversationId: ID
+      status: CallSessionStatusEnum
+      limit: Int
+      page: Int
+    ): CallSessionPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
+  }
 `;
