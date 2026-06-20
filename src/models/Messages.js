@@ -1,24 +1,34 @@
 import { model, Schema } from 'mongoose';
-
 const MessagesSchema = new Schema({
-    conversationId: { type: Schema.Types.ObjectId, ref: 'conversation' },
+    conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
-    query: String,
-    response: String,
-    reaction: { type: String, default: "neutral", enum: ["neutral", "like", "dislike"] },
-    embeddingTokens: {
-        model: String,
-        usage: { type: Schema.Types.Mixed }
+    externalMessageId: String,
+    direction: String,
+    sender: {
+        type: { type: String, enum: ["Lead", "agent", "user", "system"], default: "Lead" },
+        id: String,
+        name: String,
+        ref: { type: Schema.Types.ObjectId, refPath: "sender.refModel" },
+        refModel: { type: String, enum: ["Lead", "Agent", "User"] },
     },
-    responseTokens: {
-        model: String,
-        usage: { type: Schema.Types.Mixed }
+    type: {
+        type: String,
+        enum: ["text", "image", "audio", "voice", "video", "document", "file", "sticker",
+            "location", "contacts", "interactive", "button", "order", "unknown"],
+        default: "text",
     },
-    triggeredActions: Array,
-    context: Array,
-    Actions: Array,
-    analysis: Array,
-    actionTokens: Object,
+    kind: { type: String, enum: ["message", "postback", "system"], default: "message" },
+    content: { type: Schema.Types.Mixed, default: {} }, // { body } | location | interactive | …
+    repliedTo: { type: Schema.Types.ObjectId, ref: "Message" },
+    reactions: { type: [{ emoji: String, by: String, at: Date }], default: [], _id: false },
+    statusTimeline: {
+        initiated: Date, sent: Date, delivered: Date, read: Date, failed: Date
+    },
+    misc: { type: Schema.Types.Mixed, default: {} },
+    errors: [{ type: Schema.Types.Mixed, default: [] }],
+    isInternalNote: { type: Boolean, default: false },
+    isSummarized: { type: Boolean, default: false },
+    // readByContact: { type: Boolean, default: We false }
 }, {
     timestamps: true
 });
