@@ -1,39 +1,59 @@
 import { Conversation } from "../../models/Conversations.js";
-import { flattenFields, getSelectFields } from "../../utils/graphqlTools.js";
+import { getSelectFields } from "../../utils/graphqlTools.js";
 import graphqlFields from "graphql-fields";
 import { AgentModel } from "../../models/Agent.js";
+import { ChannelModel } from "../../models/Channel.js";
+import { CampaignModel } from "../../models/Campaign.js";
+import { LeadModel } from "../../models/Lead.js";
 export const conversationResolvers = {
   Query: {
-    conversations: async (_, { limit = 10, page = 1, status, id, channelIds, campaignIds, agentId, channel, from, to, userLocation, disconnectReason }, context, info) => {
-      // add pagination support
+    conversations: async (_, { limit = 10, page = 1, status, id, channelIds, campaignIds, agentIds, leadIds, from, to, priority }, context, info) => {
       const skip = (page - 1) * limit;
       const filter = { business: context.user.business };
       if (id) filter._id = id;
-      if (status) filter["metadata.status"] = status;
-      if (channel) filter.channel = channel;
-      if (agentId) filter.agent = agentId;
-      if (userLocation) filter["metadata.userLocation"] = userLocation;
-      if (disconnectReason) filter["metadata.sockets.disconnectReason"] = disconnectReason;
+      if (status) filter.status = status;                          // top-level field, not metadata.status
+      if (priority) filter.priority = priority;                      // ObjectId ref to Channel
+      if (agentIds) filter.agent = { $in: agentIds };
+      if (channelIds) filter.channel = { $in: channelIds };
+      if (campaignIds) filter.campaign = { $in: campaignIds };
+      if (leadIds) filter.lead = { $in: leadIds };
       if (from || to) {
         filter.createdAt = {};
         if (from) filter.createdAt.$gte = new Date(from);
         if (to) filter.createdAt.$lte = new Date(to);
       }
-      if (channelIds) filter.channelFullDetails = { $in: channelIds };
-      if (campaignIds) filter.campaign = { $in: campaignIds };
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
       const { rootFields, populateFields } = getSelectFields(requestedFields.data);
-      console.log("filter:", filter);
-      const [conversations, totalDocuments] = await Promise.all([
-        Conversation.find(filter).limit(limit).skip(skip).sort({ createdAt: -1 }).select(rootFields),
-        Conversation.countDocuments(filter)
-      ]);
-      // await Business.populate(conversations, { path: 'business', select: nested.business });
-      if (populateFields?.agent) await AgentModel.populate(conversations, { path: 'agent', select: populateFields.agent });
-      // await Channel.populate(conversations, { path: 'channel', select: nested.channel });
-      // await Campaign.populate(conversations, { path: 'campaign', select: nested.campaign });
-      return { data: conversations, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
-    }
-  }
+      const [conversations, totalDocuments] = await Promise.all([Conversation.find(filter).limit(limit).skip(skip).sort({ createdAt: -1 }).select(rootFields), Conversation.countDocuments(filter),]);
+      if (populateFields?.agent)
+        await AgentModel.populate(conversations, {
+          path: "agent",
+          select: populateFields.agent,
+        });
+      if (populateFields?.channel)
+        await ChannelModel.populate(conversations, {
+          path: "channel",
+          select: populateFields.channel,
+        });
+      if (populateFields?.campaign)
+        await CampaignModel.populate(conversations, {
+          path: "campaign",
+          select: populateFields.campaign,
+        });
+      if (populateFields?.lead)
+        await LeadModel.populate(conversations, {
+          path: "lead",
+          select: populateFields.lead,
+        });
+      return {
+        data: conversations,
+        metaData: {
+          page,
+          limit,
+          totalPages: Math.ceil(totalDocuments / limit),
+          totalDocuments,
+        },
+      };
+    },
+  },
 };
-

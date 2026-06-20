@@ -187,6 +187,7 @@ const ConversationSchema = new Schema({
     workflowStatus: { type: String, enum: ["started", "completed", "failed"] },
     workflowExecution: Schema.Types.Mixed, // status of the workflow
     metadata: {
+        openai: { "lastResponseId": String, "lastResponseAt": Date },
         summary: String,
         sockets: { socketId: String, disconnectReason: String, },
         userLocation: Schema.Types.Mixed,

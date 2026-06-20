@@ -1,146 +1,145 @@
-export const conversationTypeDefs =
-  `#graphql
+export const conversationTypeDefs = `#graphql
+
+  """Status of the conversation lifecycle"""
   enum ConversationStatusEnum {
-    initiated
-    active
-    interrupted
-    inactive
-    disconnected
-    noAnswer
-    busy
-    failed
-    completed
-    inProgress
+    open
+    pending
+    snoozed
+    closed
+    archived
+    spam
   }
-"""Available communication channels for conversations"""
-enum ChannelStatusEnum {
-  """Email communication"""
-  email
-  """WhatsApp messaging"""
-  whatsapp
-  """Telegram bot"""
-  telegram
-  """Web chat widget"""
-  web
-  """Voice calls"""
-  phone
-  """SMS text messaging"""
-  sms
-  """Instagram messaging"""
-  instagram
-}
 
-"""User reactions to conversation messages"""
-type Reactions {
-  """Number of neutral reactions"""
-  neutral: Int
-  """Number of positive reactions"""
-  like: Int
-  """Number of negative reactions"""
-  dislike: Int
-}
+  """Priority level of the conversation"""
+  enum ConversationPriorityEnum {
+    low
+    normal
+    high
+    urgent
+  }
 
-"""Metadata about the conversation"""
-type ConversationMetadata {
-  """Total number of messages exchanged"""
-  totalMessages: Int
-  """User reactions to messages"""
-  reactions: Reactions
-  """Geographic location of the user"""
-  userLocation: JSON
-  """Socket connection details"""
-  sockets: Sockets
-  """Current conversation status"""
-  status: ConversationStatusEnum
-  browserUrl: String
-}
+  """Status of the workflow attached to the conversation"""
+  enum WorkflowStatusEnum {
+    started
+    completed
+    failed
+  }
 
-"""WebSocket connection information"""
-type Sockets {
-  """ID of the socket connection"""
-  socketId: String,
-  """Reason for socket disconnection if applicable"""
-  disconnectReason: String
-}
-
-"""AI model configuration"""
-type ModelConfig {
-  """Type of AI model"""
-  type: String
-  """Default model settings"""
-  default: String
-}
-
-"""Represents a conversation between user and agent"""
-type Conversation {
-  """Unique identifier"""
-  _id: ID!
-  """Communication channel used"""
-  channel: ChannelStatusEnum
-  """AI agent handling the conversation"""
-  agent: Agent
-  """Data extracted from conversation"""
-  extractedData: JSON
-  transcripts:JSON
-  workflowStatus: String
-  workflow: Workflow
-  campaign: Campaign
-  contact:JSON
-  """Conversation metadata"""
-  metadata: ConversationMetadata
-  """When conversation started"""
-  createdAt: DateTime
-  """When conversation was last updated"""
-  updatedAt: DateTime
-}
-
-"""Input type for conversation metadata"""
-input MetadataInput {
-  """Total number of messages"""
-  totalMessages: Int
-  """User reactions data"""
-  reactions: ReactionsInput
-}
-
-"""Input type for user reactions"""
-input ReactionsInput {
-  """Number of neutral reactions"""
-  neutral: Int
-  """Number of positive reactions"""
-  like: Int
-  """Number of negative reactions"""
-  dislike: Int
-}
-
-type ConversationPagination {
-  data: [Conversation]
-  metaData: PaginationMetaData
-}
-
-type Query {
-  """Get conversations matching specified filters
-  @param limit - Maximum number of conversations to return
-  @param status - Filter by conversation status
-  @param id - Get specific conversation by ID
-  @param agentId - Filter by agent ID
-  @param channel - Filter by communication channel
-  @param from - Filter by start date
-  @param to - Filter by end date
-  @param userLocation - Filter by user location
-  @param disconnectReason - Filter by disconnect reason"""
-  conversations(
-    limit: Int
-    page: Int
-    status: ConversationStatusEnum
-    id: ID
-    campaignIds:[ID]
-    channelIds:[ID]
-    agentId: ID
-    channel: ChannelStatusEnum
-    from: DateTime
-    to: DateTime
-    userLocation: JSON
+  """WebSocket connection information"""
+  type Sockets {
+    """ID of the socket connection"""
+    socketId: String
+    """Reason for socket disconnection, if applicable"""
     disconnectReason: String
-  ): ConversationPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
-}
+  }
+
+  """Credit usage breakdown for a conversation"""
+  type CreditsUsage {
+    conversationCredits: Float
+    analysisCredits: Float
+    miscellaneousCredits: Float
+    totalCredits: Float
+  }
+
+  """Metadata attached to the conversation"""
+  type ConversationMetadata {
+    """AI-generated summary of the conversation"""
+    summary: String
+    """Socket connection details"""
+    sockets: Sockets
+    """Geographic location of the user"""
+    userLocation: JSON
+    """Credits consumed by this conversation"""
+    CreditsUsage: CreditsUsage
+  }
+
+  """Assignment/routing config for a conversation"""
+  type ConversationAssignment {
+    """Whether the AI agent should reply"""
+    agentReply: Boolean
+    """Team assigned to this conversation"""
+    team: ID
+    """When the conversation was assigned"""
+    assignedAt: DateTime
+    """Who the conversation is assigned to"""
+    assignedTo: String
+  }
+
+  """Config settings applied to the conversation"""
+  type ConversationConfig {
+    assignment: ConversationAssignment
+    tags: [String]
+  }
+
+  """Represents a conversation between a lead and an agent"""
+  type Conversation {
+    """Unique identifier"""
+    _id: ID!
+    """AI agent handling the conversation"""
+    agent: Agent
+    """Business this conversation belongs to"""
+    business: ID
+    """Channel (ObjectId) the conversation is happening on"""
+    channel: ID
+    """Lead (contact) involved in the conversation"""
+    lead: ID
+    """Campaign this conversation belongs to, if any"""
+    campaign: Campaign
+    """External provider thread ID"""
+    externalConversationId: String
+    """Routing and assignment configuration"""
+    config: ConversationConfig
+    """Current status of the conversation"""
+    status: ConversationStatusEnum
+    """Priority level"""
+    priority: ConversationPriorityEnum
+    """Attached workflow"""
+    workflow: Workflow
+    """Execution status of the attached workflow"""
+    workflowStatus: WorkflowStatusEnum
+    """Raw workflow execution data"""
+    workflowExecution: JSON
+    """Conversation metadata"""
+    metadata: ConversationMetadata
+    """When the conversation was created"""
+    createdAt: DateTime
+    """When the conversation was last updated"""
+    updatedAt: DateTime
+  }
+
+  type ConversationPagination {
+    data: [Conversation]
+    metaData: PaginationMetaData
+  }
+
+  type Query {
+    """
+    Get conversations matching the specified filters.
+    @param limit        - Max results per page (default: 10)
+    @param page         - Page number (default: 1)
+    @param status       - Filter by conversation status
+    @param priority     - Filter by priority level
+    @param id           - Fetch a specific conversation by ID
+    @param agentId      - Filter by AI agent ID
+    @param channel      - Filter by channel ObjectId
+    @param channelIds   - Filter by multiple channel ObjectIds
+    @param campaignIds  - Filter by multiple campaign IDs
+    @param from         - Created-at start date
+    @param to           - Created-at end date
+    @param disconnectReason - Filter by socket disconnect reason
+    """
+    conversations(
+      limit: Int
+      page: Int
+      status: ConversationStatusEnum
+      priority: ConversationPriorityEnum
+      agentIds: [ID]
+      channelIds: [ID]
+      campaignIds: [ID]
+      leadIds: [ID]
+      from: DateTime
+      to: DateTime
+      disconnectReason: String
+    ): ConversationPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
+  }
 `;
