@@ -154,15 +154,15 @@ type CampaignPagination {
     metaData: PaginationMetaData
 }
 type Query {
-    fetchJobs(campaignId: ID, status: jobStatusEnum, priority: Int, jobType: jobTypeEnum id: ID schedule_type: scheduleTypeEnum schedule_run_at: DateTime limit: Int page: Int): [Job]
-    fetchCampaigns( id: ID, limit: Int page: Int ): CampaignPagination
+    fetchJobs(campaignId: ID, status: jobStatusEnum, priority: Int, jobType: jobTypeEnum id: ID schedule_type: scheduleTypeEnum schedule_run_at: DateTime limit: Int page: Int): [Job] @requireScope(scope: "campaign:read") @requireBusinessAccess
+    fetchCampaigns( id: ID, limit: Int page: Int ): CampaignPagination @requireScope(scope: "campaign:read") @requireBusinessAccess
 }
 type Mutation {
-    createCampaign(name: String communicationChannels: [ID] leads: [ID] nodes: [JSON] edges: [JSON]): Campaign
-    createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job
-    updateJobSchedule(id: ID, schedule: scheduleJobInput): Job
-    deleteJob(id: ID): Boolean
-    makeAnOutboundCall(number: String channelId: ID! PreContext: String campaignId: ID): Conversation
-    exotelCampaignSetup(contacts: JSON, channelId: ID! schedule:JSON): JSON
-    testTataTele(channelId: ID! action: String! data: JSON): JSON
+    createCampaign(name: String communicationChannels: [ID] leads: [ID] nodes: [JSON] edges: [JSON]): Campaign @requireScope(scope: "campaign:create") @requireBusinessAccess
+    createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job @requireScope(scope: "campaign:launch") @requireBusinessAccess
+    updateJobSchedule(id: ID, schedule: scheduleJobInput): Job @requireScope(scope: "campaign:update") @requireBusinessAccess
+    deleteJob(id: ID): Boolean @requireScope(scope: "campaign:delete") @requireBusinessAccess
+    makeAnOutboundCall(number: String channelId: ID! PreContext: String campaignId: ID): Conversation @requireScope(scope: "call:initiate") @requireBusinessAccess
+    exotelCampaignSetup(contacts: JSON, channelId: ID! schedule:JSON): JSON @requireScope(scope: "campaign:launch") @requireBusinessAccess
+    testTataTele(channelId: ID! action: String! data: JSON): JSON @requireScope(scope: "call:initiate") @requireBusinessAccess
 }`

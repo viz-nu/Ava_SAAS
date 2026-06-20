@@ -74,13 +74,13 @@ input PlanInput {
 type Query {
     fetchPublicPlans(code: String, name: String, type: PlanTypeEnum, status: PlanStatusEnum, id: ID): [Plan]
     fetchPlans(code: String, name: String, type: PlanTypeEnum, status: PlanStatusEnum, id: ID): [Plan] @requireScope(scope: "super:all")
-    fetchSubscription(id: ID!): Subscription @requireScope(scope: "subscription:upgrade")
+    fetchSubscription(id: ID!): Subscription @requireScope(scope: "subscription:read")
 }
 type Mutation {
     createAVAPlan(input: PlanInput!): Plan @requireScope(scope: "super:all")
     updateAVAPlan(id: ID!, input: PlanInput!): Plan @requireScope(scope: "super:all")
     deleteAVAPlan(id: ID!): Boolean @requireScope(scope: "super:all")
     startPayment(planId: ID!, gateway: String, paymentType: String, startDate:DateTime): Subscription @requireScope(scope: "subscription:upgrade")
-    cancelSubscription(id: ID!): Boolean @requireScope(scope: "subscription:upgrade")
+    cancelSubscription(id: ID!): Boolean @requireScope(scope: "subscription:cancel")
 }
 `;

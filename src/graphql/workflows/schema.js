@@ -37,9 +37,9 @@ type Mutation {
     createWorkflow(name: String, nodes: JSON, connections: JSON): Workflow @requireScope(scope: "workflow:create") @requireBusinessAccess
     updateWorkflow(id: ID!, name: String, nodes: JSON, connections: JSON): Workflow @requireScope(scope: "workflow:update") @requireBusinessAccess
     deleteWorkflow(id: ID!): Boolean @requireScope(scope: "workflow:delete") @requireBusinessAccess
-    testWorkflowNode(input: JSON, node: JSON): JSON @requireScope(scope: "workflow:create") @requireBusinessAccess
-    createInbuiltNode(id: ID, ports: JSON, core: JSON, meta: JSON): InbuiltNode @requireScope(scope: "workflow:create") 
-    updateInbuiltNode(id: ID, ports: JSON, core: JSON, meta: JSON): InbuiltNode @requireScope(scope: "workflow:update") 
-    deleteInbuiltNode(id: ID!): Boolean @requireScope(scope: "workflow:delete") 
+    testWorkflowNode(input: JSON, node: JSON): JSON @requireScope(scope: "action:test") @requireBusinessAccess
+    createInbuiltNode(id: ID, ports: JSON, core: JSON, meta: JSON): InbuiltNode @requireScope(scope: "super:platform_management")
+    updateInbuiltNode(id: ID, ports: JSON, core: JSON, meta: JSON): InbuiltNode @requireScope(scope: "super:platform_management")
+    deleteInbuiltNode(id: ID!): Boolean @requireScope(scope: "super:platform_management")
 }
 `;

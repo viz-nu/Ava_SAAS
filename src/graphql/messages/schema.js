@@ -199,7 +199,7 @@ export const messageTypeDefs = `#graphql
       conversationId: ID
       limit: Int
       page: Int
-    ): MessagePagination @requireScope(scope: "conversation:read") @requireBusinessAccess
+    ): MessagePagination @requireScope(scope: "message:read") @requireBusinessAccess
 
     """
     Fetch paginated call sessions for a conversation.
@@ -213,6 +213,6 @@ export const messageTypeDefs = `#graphql
       status: CallSessionStatusEnum
       limit: Int
       page: Int
-    ): CallSessionPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
+    ): CallSessionPagination @requireScope(scope: "call:read") @requireBusinessAccess
   }
 `;

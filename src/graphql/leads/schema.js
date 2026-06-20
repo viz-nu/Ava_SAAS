@@ -37,7 +37,7 @@ export const leadTypeDefs = `#graphql
     business: Business
     createdBy: User
     name: String
-    contactDetails: ContactDetails
+    contactDetails: LeadContactDetails
     """Inbound source e.g. Whatsapp-Inbound, facebook_ads"""
     source: String
     tags: [String]
@@ -138,24 +138,24 @@ export const leadTypeDefs = `#graphql
 
   type Mutation {
     createLeadTemplate(LeadTemplateInput: LeadTemplateInput!): LeadTemplate
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:create") @requireBusinessAccess
 
     updateLeadTemplate(id: ID!, LeadTemplateInput: LeadTemplateInput!): LeadTemplate
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:update") @requireBusinessAccess
 
     deleteLeadTemplate(id: ID!): Boolean
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:delete") @requireBusinessAccess
 
     createLead(LeadCreateInput: LeadCreateInput!): Lead
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:create") @requireBusinessAccess
 
     bulkCreateLeads(dataList: [BulkLeadCreateInput!]!): [Lead]
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:import") @requireBusinessAccess
 
     updateLead(id: ID!, LeadCreateInput: LeadCreateInput!): Lead
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:update") @requireBusinessAccess
 
     deleteLead(id: ID!): Boolean
-      @requireScope(scope: "lead:write") @requireBusinessAccess
+      @requireScope(scope: "lead:delete") @requireBusinessAccess
   }
 `;

@@ -183,13 +183,13 @@ type Mutation {
   createCollection(collection: CollectionInput!): Collection @requireScope(scope: "collection:create") @requireBusinessAccess
   """Get an upload URL
   @param key - The key to upload the file to"""
-  getUploadUrl(key: String!): String @requireScope(scope: "collection:read") @requireBusinessAccess
+  getUploadUrl(key: String!): String @requireScope(scope: "collection:upload_files") @requireBusinessAccess
   """Get a download URL
   @param key - The key to download the file from"""
-  getDownloadUrl(key: String!): String @requireScope(scope: "collection:read") @requireBusinessAccess
+  getDownloadUrl(key: String!): String @requireScope(scope: "file:download") @requireBusinessAccess
   """Delete an uploaded file from storage
   @param key - The key of the file to delete"""
-  deleteUploadedFileFromStorage(key: String!): Boolean @requireScope(scope: "collection:read") @requireBusinessAccess
+  deleteUploadedFileFromStorage(key: String!): Boolean @requireScope(scope: "file:delete") @requireBusinessAccess
   """Update a collection
   @param id - ID of collection to update
   @param name - New name of the collection

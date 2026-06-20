@@ -165,7 +165,7 @@ kind: String
     """ Test prompt generation for an agent
         @param prompt - Test prompt to generate from """
     generatePrompt(prompt: String!): String @requireScope(scope: "agent:manage_prompts") @requireBusinessAccess
-    startDemo(input: DemonstrationInput!): Demonstration 
-    endDemo(_id: ID!, transcripts: JSON, miscellaneous: JSON): Demonstration 
+    startDemo(input: DemonstrationInput!): Demonstration @requireScope(scope: "agent:test") @requireBusinessAccess
+    endDemo(_id: ID!, transcripts: JSON, miscellaneous: JSON): Demonstration @requireScope(scope: "agent:test") @requireBusinessAccess
   }
 `; 

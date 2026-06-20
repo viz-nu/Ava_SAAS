@@ -50,7 +50,7 @@ type Query {
   @parm apiAuthenticator - Filter by api authenticator ID
   @param status - Filter by channel status
   @param type - Filter by channel type"""
-  getChannels(_id: ID, provider: ID, apiAuthenticator: ID, status: String, type: ChannelTypeEnum, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read")
+  getChannels(_id: ID, provider: ID, apiAuthenticator: ID, status: String, type: ChannelTypeEnum, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read") @requireBusinessAccess
 }
 
 """Input type for creating/updating channels"""

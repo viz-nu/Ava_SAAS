@@ -37,7 +37,7 @@ type notification {
 
 type Query {
     """Get all notifications for the current user"""
-    fetchNotifications: [notification] @requireScope(scope: "notification:read")
+    fetchNotifications: [notification] @requireScope(scope: "notification:read") @requireBusinessAccess
 }
 
 type Mutation {

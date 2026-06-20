@@ -106,7 +106,7 @@ type Query {
     @param status - Filter by current status
     @param id - Find specific ticket by ID
     """
-    fetchTickets(notifierEmail: String priority: priorityEnum status: statusEnum id:ID): [Ticket] @requireScope(scope: "ticket:read")
+    fetchTickets(notifierEmail: String priority: priorityEnum status: statusEnum id:ID): [Ticket] @requireScope(scope: "ticket:read") @requireBusinessAccess
 }
 
 type Mutation {

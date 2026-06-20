@@ -81,19 +81,19 @@ type AuthStrategy {
     misc: JSON
 }
 type Query {
-    fetchProviders(name: String, description: String, _id: ID, page: Int, limit: Int): ProviderPagination
-    fetchApis(providers: [ID], providerName: String, title: String, description: String, version: String, _id: ID, page: Int, limit: Int): ApiPagination
-    fetchApiAuthenticators(provider: ID, providerName: String, _id: ID, page: Int, limit: Int): ApiAuthenticatorPagination
+    fetchProviders(name: String, description: String, _id: ID, page: Int, limit: Int): ProviderPagination @requireScope(scope: "integration:read")
+    fetchApis(providers: [ID], providerName: String, title: String, description: String, version: String, _id: ID, page: Int, limit: Int): ApiPagination @requireScope(scope: "integration:read")
+    fetchApiAuthenticators(provider: ID, providerName: String, _id: ID, page: Int, limit: Int): ApiAuthenticatorPagination @requireScope(scope: "integration:read") @requireBusinessAccess
 }
 type Mutation {
-    createProvider(name: String, description: String, icon: String, color: String, basicScopes: [String]): Provider
-    updateProvider(id: ID!, name: String, description: String, icon: String, color: String): Provider
-    deleteProvider(id: ID!): Boolean
-    createApi(providerId: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
-    updateApi(id: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api
-    deleteApi(id: ID!): Boolean
-    createAuthStrategy(apiId: ID!, state: String):AuthStrategy
-    createApiAuthenticator(providerId: ID!, authType: apiAuthEnum!, existingAuthenticatorId: ID, keys: JSON): ApiAuthenticator
+    createProvider(name: String, description: String, icon: String, color: String, basicScopes: [String]): Provider @requireScope(scope: "super:marketplace")
+    updateProvider(id: ID!, name: String, description: String, icon: String, color: String): Provider @requireScope(scope: "super:marketplace")
+    deleteProvider(id: ID!): Boolean @requireScope(scope: "super:marketplace")
+    createApi(providerId: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api @requireScope(scope: "super:marketplace")
+    updateApi(id: ID!, title: String, description: String, version: String, schemas: JSON, requestTemplate: JSON, requiredScopes: [String]): Api @requireScope(scope: "super:marketplace")
+    deleteApi(id: ID!): Boolean @requireScope(scope: "super:marketplace")
+    createAuthStrategy(apiId: ID!, state: String):AuthStrategy @requireScope(scope: "integration:create") @requireBusinessAccess
+    createApiAuthenticator(providerId: ID!, authType: apiAuthEnum!, existingAuthenticatorId: ID, keys: JSON): ApiAuthenticator @requireScope(scope: "integration:create") @requireBusinessAccess
 }
 
 `;
