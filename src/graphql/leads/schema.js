@@ -1,6 +1,15 @@
 export const leadTypeDefs = `#graphql
 type Lead {
     _id: ID!
+    name: String
+    contactDetails: JSON
+    source: String
+    tags: [String]
+    leadScore: Int
+    status: String
+    lastInteractedAt: DateTime
+    nextFollowUpAt: DateTime
+    pendingTasks: JSON
     template: LeadTemplate
     business: Business
     createdBy: User

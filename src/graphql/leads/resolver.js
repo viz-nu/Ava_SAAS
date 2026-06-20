@@ -24,81 +24,81 @@ export const leadResolvers = {
       filter.business = context.user.business;
       if (id !== undefined) filter._id = id;
       if (templateId !== undefined) filter.template = templateId;
-      if (status !== undefined) filter["data.status"] = status; // "NEW"  | "ATTEMPTED"  | "CONTACTED"  | "QUALIFIED"  | "INTERESTED"  | "NEGOTIATION"  | "CONVERTED"  | "LOST";
-      if (creator !== undefined) filter["data.creator"] = creator; // "user" | "avakado" | "api" | "import" | "integration";
-      if (origin !== undefined) filter["data.origin"] = origin; // "facebook_ads"  | "google_ads"  | "instagram_ads"  | "linkedin_ads"  | "website"  | "landing_page"  | "whatsapp"  | "email"  | "referral"  | "event"  | "walk_in"  | "cold_call"  | "partner"  | "marketplace"  | "other";
-      if (tags.length > 0) filter["data.tags"] = { $in: tags };
+      if (status !== undefined) filter["status"] = status; // "NEW"  | "ATTEMPTED"  | "CONTACTED"  | "QUALIFIED"  | "INTERESTED"  | "NEGOTIATION"  | "CONVERTED"  | "LOST";
+      // if (creator !== undefined) filter["data.creator"] = creator; // "user" | "avakado" | "api" | "import" | "integration";
+      if (origin !== undefined) filter["source"] = origin; // "facebook_ads"  | "google_ads"  | "instagram_ads"  | "linkedin_ads"  | "website"  | "landing_page"  | "whatsapp"  | "email"  | "referral"  | "event"  | "walk_in"  | "cold_call"  | "partner"  | "marketplace"  | "other";
+      if (tags.length > 0) filter["tags"] = { $in: tags };
       const leads = await Lead.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
       const totalDocuments = await Lead.countDocuments(filter);
       return { data: leads, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
     },
-    fetchLeadFacets: async (_, { templateId, status, creator, origin, tags = [] }, context) => {
-      const match = { business: context.user.business };
-      if (id) match._id = id;
-      if (templateId) match.template = templateId;
-      if (status) match["data.status"] = status;
-      if (creator) match["data.creator"] = creator;
-      if (origin) match["data.origin"] = origin;
-      if (tags.length > 0) match["data.tags"] = { $in: tags };
-      const facets = await Lead.aggregate([
-        { $match: match },
-        {
-          $facet: {
-            // 🔹 Status counts
-            status: [
-              {
-                $group: {
-                  _id: "$data.status",
-                  count: { $sum: 1 },
-                },
-              },
-              { $sort: { count: -1 } },
-            ],
+    // fetchLeadFacets: async (_, { templateId, status, creator, origin, tags = [] }, context) => {
+    //   const match = { business: context.user.business };
+    //   if (id) match._id = id;
+    //   if (templateId) match.template = templateId;
+    //   if (status) match["status"] = status;
+    //   // if (creator) match["data.creator"] = creator;
+    //   if (origin) match["source"] = origin;
+    //   if (tags.length > 0) match["tags"] = { $in: tags };
+    //   const facets = await Lead.aggregate([
+    //     { $match: match },
+    //     {
+    //       $facet: {
+    //         // 🔹 Status counts
+    //         status: [
+    //           {
+    //             $group: {
+    //               _id: "$data.status",
+    //               count: { $sum: 1 },
+    //             },
+    //           },
+    //           { $sort: { count: -1 } },
+    //         ],
 
-            // 🔹 Creator counts
-            creator: [
-              {
-                $group: {
-                  _id: "$data.creator",
-                  count: { $sum: 1 },
-                },
-              },
-              { $sort: { count: -1 } },
-            ],
+    //         // 🔹 Creator counts
+    //         creator: [
+    //           {
+    //             $group: {
+    //               _id: "$data.creator",
+    //               count: { $sum: 1 },
+    //             },
+    //           },
+    //           { $sort: { count: -1 } },
+    //         ],
 
-            // 🔹 Origin counts
-            origin: [
-              {
-                $group: {
-                  _id: "$data.origin",
-                  count: { $sum: 1 },
-                },
-              },
-              { $sort: { count: -1 } },
-            ],
+    //         // 🔹 Origin counts
+    //         origin: [
+    //           {
+    //             $group: {
+    //               _id: "$data.origin",
+    //               count: { $sum: 1 },
+    //             },
+    //           },
+    //           { $sort: { count: -1 } },
+    //         ],
 
-            // 🔹 Tags (array → unwind)
-            tags: [
-              { $unwind: "$data.tags" },
-              {
-                $group: {
-                  _id: "$data.tags",
-                  count: { $sum: 1 },
-                },
-              },
-              { $sort: { count: -1 } },
-            ],
+    //         // 🔹 Tags (array → unwind)
+    //         tags: [
+    //           { $unwind: "$data.tags" },
+    //           {
+    //             $group: {
+    //               _id: "$data.tags",
+    //               count: { $sum: 1 },
+    //             },
+    //           },
+    //           { $sort: { count: -1 } },
+    //         ],
 
-            // 🔹 Total count
-            total: [
-              {
-                $count: "count",
-              },
-            ],
-          },
-        }]);
-      return facets[0];
-    }
+    //         // 🔹 Total count
+    //         total: [
+    //           {
+    //             $count: "count",
+    //           },
+    //         ],
+    //       },
+    //     }]);
+    //   return facets[0];
+    // }
   },
   Mutation: {
     createLeadTemplate: async (_, { LeadTemplateInput }, context, info) => {
