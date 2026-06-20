@@ -2,9 +2,9 @@ import { Conversation } from "../../models/Conversations.js";
 import { getSelectFields } from "../../utils/graphqlTools.js";
 import graphqlFields from "graphql-fields";
 import { AgentModel } from "../../models/Agent.js";
-import { ChannelModel } from "../../models/Channel.js";
-import { CampaignModel } from "../../models/Campaign.js";
-import { LeadModel } from "../../models/Lead.js";
+import { Channel } from "../../models/Channels.js";
+import { Campaign } from "../../models/Campaign.js";
+import { Lead } from "../../models/Leads.js";
 export const conversationResolvers = {
   Query: {
     conversations: async (_, { limit = 10, page = 1, status, id, channelIds, campaignIds, agentIds, leadIds, from, to, priority }, context, info) => {
@@ -31,17 +31,17 @@ export const conversationResolvers = {
           select: populateFields.agent,
         });
       if (populateFields?.channel)
-        await ChannelModel.populate(conversations, {
+        await Channel.populate(conversations, {
           path: "channel",
           select: populateFields.channel,
         });
       if (populateFields?.campaign)
-        await CampaignModel.populate(conversations, {
+        await Campaign.populate(conversations, {
           path: "campaign",
           select: populateFields.campaign,
         });
       if (populateFields?.lead)
-        await LeadModel.populate(conversations, {
+        await Lead.populate(conversations, {
           path: "lead",
           select: populateFields.lead,
         });
