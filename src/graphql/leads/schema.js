@@ -1,6 +1,5 @@
 export const leadTypeDefs = `#graphql
 
-  """Lifecycle status of a lead"""
   enum LeadStatusEnum {
     new
     contacted
@@ -10,7 +9,7 @@ export const leadTypeDefs = `#graphql
   }
 
   """A single platform contact entry (e.g. a WhatsApp number or email address)"""
-  type PlatformEntry {
+  type LeadPlatformEntry {
     platform: String!
     handle: String
     """Label such as work, personal, brand"""
@@ -20,14 +19,14 @@ export const leadTypeDefs = `#graphql
   }
 
   """All known contact handles for a lead, grouped by platform"""
-  type ContactDetails {
-    whatsapp: [PlatformEntry]
-    telegram: [PlatformEntry]
-    email: [PlatformEntry]
-    phone: [PlatformEntry]
-    twitter: [PlatformEntry]
-    instagram: [PlatformEntry]
-    facebook: [PlatformEntry]
+  type LeadContactDetails {
+    whatsapp: [LeadPlatformEntry]
+    telegram: [LeadPlatformEntry]
+    email: [LeadPlatformEntry]
+    phone: [LeadPlatformEntry]
+    twitter: [LeadPlatformEntry]
+    instagram: [LeadPlatformEntry]
+    facebook: [LeadPlatformEntry]
   }
 
   """A lead / contact in the system"""
