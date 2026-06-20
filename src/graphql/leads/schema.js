@@ -118,6 +118,7 @@ export const leadTypeDefs = `#graphql
       limit: Int
       page: Int
       id: ID
+      templateId: ID
       isActive: Boolean
     ): LeadTemplatePagination @requireScope(scope: "lead:read") @requireBusinessAccess
 

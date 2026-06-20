@@ -8,7 +8,7 @@ export const leadResolvers = {
   Query: {
     fetchleadsTemplates: async (
       _,
-      { limit = 10, page = 1, id, isActive },
+      { limit = 10, page = 1, id, isActive, templateId: ID },
       context,
       info
     ) => {
