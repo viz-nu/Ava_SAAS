@@ -135,6 +135,47 @@ const ScopesEnum = {
     'workflow:create': 'User can create new workflows',
     'workflow:update': 'User can update workflow configurations',
     'workflow:delete': 'User can delete workflows',
+
+    // Lead Management
+    'lead:read': 'User can read leads and lead templates',
+    'lead:create': 'User can create new leads',
+    'lead:update': 'User can update lead information',
+    'lead:delete': 'User can delete leads',
+    'lead:import': 'User can bulk import leads',
+    'lead:export': 'User can export lead data',
+
+    // Message Management
+    'message:read': 'User can read messages',
+    'message:send': 'User can send messages in conversations',
+    'message:delete': 'User can delete messages',
+
+    // Call Session Management
+    'call:read': 'User can read call sessions and transcripts',
+    'call:initiate': 'User can initiate outbound calls',
+    'call:record': 'User can access call recordings',
+
+    // Campaign Management
+    'campaign:read': 'User can read campaigns',
+    'campaign:create': 'User can create new campaigns',
+    'campaign:update': 'User can update campaigns',
+    'campaign:delete': 'User can delete campaigns',
+    'campaign:launch': 'User can launch and schedule campaigns',
+    'campaign:analytics': 'User can view campaign analytics',
+
+    // Team Management
+    'team:read': 'User can read team information',
+    'team:create': 'User can create new teams',
+    'team:update': 'User can update team settings',
+    'team:delete': 'User can delete teams',
+    'team:manage_members': 'User can add or remove team members',
+
+    // Conversation extras
+    'conversation:assign': 'User can assign conversations to agents or teams',
+    'conversation:reply': 'User can send messages in conversations',
+
+    // Channel extras
+    'channel:manage_agents': 'User can assign agents to channels',
+
 };
 
 // Role-based scope mappings
@@ -237,7 +278,14 @@ const RoleScopes = {
         'workflow:read',
         'workflow:create',
         'workflow:update',
-        'workflow:delete'
+        'workflow:delete',
+        'lead:read', 'lead:create', 'lead:update', 'lead:delete', 'lead:import', 'lead:export',
+        'message:read', 'message:send', 'message:delete',
+        'call:read', 'call:initiate', 'call:record',
+        'campaign:read', 'campaign:create', 'campaign:update', 'campaign:delete', 'campaign:launch', 'campaign:analytics',
+        'team:read', 'team:create', 'team:update', 'team:delete', 'team:manage_members',
+        'conversation:assign', 'conversation:reply',
+        'channel:manage_agents',
     ],
     'admin': [
         'admin:users',
@@ -319,7 +367,14 @@ const RoleScopes = {
         'workflow:read',
         'workflow:create',
         'workflow:update',
-        'workflow:delete'
+        'workflow:delete',
+        'lead:read', 'lead:create', 'lead:update', 'lead:delete', 'lead:import', 'lead:export',
+        'message:read', 'message:send', 'message:delete',
+        'call:read', 'call:initiate', 'call:record',
+        'campaign:read', 'campaign:create', 'campaign:update', 'campaign:delete', 'campaign:launch', 'campaign:analytics',
+        'team:read', 'team:create', 'team:update', 'team:delete', 'team:manage_members',
+        'conversation:assign', 'conversation:reply',
+        'channel:manage_agents',
     ],
     'manager': [
         'business:read',
@@ -354,6 +409,12 @@ const RoleScopes = {
         'user:update',
         'notification:read',
         'workflow:read',
+        'lead:read', 'lead:create', 'lead:update', 'lead:export',
+        'message:read', 'message:send',
+        'call:read', 'call:record',
+        'campaign:read', 'campaign:analytics',
+        'team:read',
+        'conversation:assign', 'conversation:reply',
     ]
 };
 

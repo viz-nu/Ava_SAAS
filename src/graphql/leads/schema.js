@@ -34,8 +34,8 @@ export const leadTypeDefs = `#graphql
     _id: ID!
     """Optional template this lead was created from"""
     template: LeadTemplate
-    business: ID
-    createdBy: ID
+    business: Business
+    createdBy: User
     name: String
     contactDetails: ContactDetails
     """Inbound source e.g. Whatsapp-Inbound, facebook_ads"""
