@@ -82,6 +82,10 @@ export const leadTypeDefs = `#graphql
   """Input for creating or updating a lead"""
   input LeadCreateInput {
     templateId: ID
+    contactDetails: JSON
+    createdBy: ID
+    lastInteractedAt: DateTime
+    nextFollowUpAt: DateTime
     name: String
     source: String
     tags: [String]

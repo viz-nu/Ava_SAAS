@@ -134,11 +134,15 @@ export const leadResolvers = {
     },
 
     updateLead: async (_, { id, LeadCreateInput }, context) => {
-      const { name, source, tags, leadScore, status, notes, data } = LeadCreateInput;
+      const { name, contactDetails, createdBy, lastInteractedAt, nextFollowUpAt, source, tags, leadScore, status, notes, data } = LeadCreateInput;
       const updateData = {};
       // Only set fields that were explicitly provided — never default status to "new" on update
       if (name !== undefined) updateData.name = name;
       if (source !== undefined) updateData.source = source;
+      if (contactDetails !== undefined) updateData.contactDetails = contactDetails;
+      if (createdBy !== undefined) updateData.createdBy = createdBy;
+      if (lastInteractedAt !== undefined) updateData.lastInteractedAt = lastInteractedAt;
+      if (nextFollowUpAt !== undefined) updateData.nextFollowUpAt = nextFollowUpAt;
       if (tags !== undefined) updateData.tags = tags;
       if (leadScore !== undefined) updateData.leadScore = leadScore;
       if (status !== undefined) updateData.status = status;
