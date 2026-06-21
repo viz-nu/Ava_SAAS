@@ -77,24 +77,21 @@ export const leadTypeDefs = `#graphql
     metaData: PaginationMetaData
   }
 
+type BulkCreateResult {
+  created: [Lead!]!
+  merged: [Lead!]!
+  duplicatesRequiringMode: [DuplicateConflict!]!
+}
+
+type DuplicateConflict {
+  input: JSON
+  existingLeadId: ID
+  matchedOn: [String!]!
+}
+
   # ─── Inputs ──────────────────────────────────────────────────────────────────
 
-  """Input for creating or updating a lead"""
-  input LeadCreateInput {
-    templateId: ID
-    contactDetails: JSON
-    createdBy: ID
-    lastInteractedAt: DateTime
-    nextFollowUpAt: DateTime
-    name: String
-    source: String
-    tags: [String]
-    leadScore: Int
-    status: LeadStatusEnum
-    notes: String
-    """Arbitrary template-driven data"""
-    data: JSON
-  }
+
 
   """Input for creating or updating a lead template"""
   input LeadTemplateInput {
@@ -103,16 +100,28 @@ export const leadTypeDefs = `#graphql
     fields: JSON
     isActive: Boolean
   }
+enum LeadInsertMode {
+  merge
+  new
+}
+  """Input for creating or updating a lead"""
+input LeadCreateInput {
+  templateId: ID
+  contactDetails: JSON
+  createdBy: ID
+  lastInteractedAt: DateTime
+  nextFollowUpAt: DateTime
+  name: String
+  source: String
+  tags: [String]
+  leadScore: Int
+  status: LeadStatusEnum
+  notes: String
+  data: JSON
+  mode: LeadInsertMode  # <-- add this
+}
 
-  """Input row for bulk lead creation"""
-  input BulkLeadCreateInput {
-    templateId: ID
-    name: String
-    source: String
-    tags: [String]
-    notes: String
-    data: JSON
-  }
+
 
   # ─── Queries ─────────────────────────────────────────────────────────────────
 
@@ -153,8 +162,8 @@ export const leadTypeDefs = `#graphql
     createLead(LeadCreateInput: LeadCreateInput!): Lead
       @requireScope(scope: "lead:create") @requireBusinessAccess
 
-    bulkCreateLeads(dataList: [BulkLeadCreateInput!]!): [Lead]
-      @requireScope(scope: "lead:import") @requireBusinessAccess
+    bulkCreateLeads(dataList: [LeadCreateInput!]!): BulkCreateResult
+  @requireScope(scope: "lead:import") @requireBusinessAccess
 
     updateLead(id: ID!, LeadCreateInput: LeadCreateInput!): Lead
       @requireScope(scope: "lead:update") @requireBusinessAccess

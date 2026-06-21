@@ -3,6 +3,7 @@ import { Lead, LeadTemplate } from "../../models/Leads.js";
 import graphqlFields from "graphql-fields";
 import { getSelectFields } from "../../utils/graphqlTools.js";
 import { GraphQLError } from "graphql";
+import { buildDuplicateQuery, mergeContactDetails, findMatchedHandles } from "../../utils/leadDuplicateUtils.js";
 
 export const leadResolvers = {
   Query: {
@@ -111,26 +112,149 @@ export const leadResolvers = {
     },
 
     createLead: async (_, { LeadCreateInput }, context) => {
-      const { templateId, name, source, tags, leadScore, status, notes, data } = LeadCreateInput;
+      const {
+        templateId, name, contactDetails, lastInteractedAt, nextFollowUpAt,
+        source, tags, leadScore, status, notes, data, mode
+      } = LeadCreateInput;
+
+      const businessId = context.user.business;
+
+      // Step 1: check for duplicate
+      const duplicateQuery = buildDuplicateQuery(contactDetails, businessId);
+      const existingLead = duplicateQuery ? await Lead.findOne(duplicateQuery) : null;
+
+      // Step 2: handle based on mode
+      if (existingLead) {
+        if (!mode || !['merge', 'new'].includes(mode)) {
+          const matched = findMatchedHandles(contactDetails, existingLead);
+          throw new GraphQLError(
+            `A lead with matching contact detail(s) already exists (matched on: ${matched.join(', ')}). ` +
+            `You must specify a 'mode': use "merge" to combine this data into the existing lead, ` +
+            `or "new" to create a separate lead anyway.`,
+            { extensions: { code: 'DUPLICATE_LEAD', existingLeadId: existingLead._id, matchedOn: matched } }
+          );
+        }
+
+        if (mode === 'merge') {
+          const mergedContactDetails = mergeContactDetails(
+            existingLead.contactDetails?.toObject?.() || existingLead.contactDetails,
+            contactDetails
+          );
+
+          return Lead.findByIdAndUpdate(
+            existingLead._id,
+            {
+              $set: {
+                contactDetails: mergedContactDetails,
+                // Only overwrite scalar fields if incoming has a value
+                ...(name && { name }),
+                ...(source && { source }),
+                ...(notes && { notes }),
+                ...(leadScore != null && { leadScore }),
+                ...(status && { status }),
+                ...(lastInteractedAt && { lastInteractedAt }),
+                ...(nextFollowUpAt && { nextFollowUpAt }),
+                ...(data && { data: { ...existingLead.data, ...data } }),
+              },
+              $addToSet: { tags: { $each: tags || [] } },  // merge tags without dupes
+            },
+            { new: true }
+          );
+        }
+
+        // mode === 'new': fall through to create
+      }
+
+      // No duplicate, or mode is 'new' — create fresh
       return Lead.create({
         template: templateId,
+        contactDetails,
+        lastInteractedAt,
+        nextFollowUpAt,
         name, source, tags, leadScore,
-        status: status || "new",
+        status: status || 'new',
         notes, data,
-        business: context.user.business,
+        business: businessId,
         createdBy: context.user._id,
       });
     },
 
+
+    // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
+
     bulkCreateLeads: async (_, { dataList }, context) => {
-      const docs = dataList.map(({ templateId, name, source, tags, notes, data }) => ({
-        template: templateId,
-        name, source, tags, notes, data,
-        status: "new",
-        business: context.user.business,
-        createdBy: context.user._id,
-      }));
-      return Lead.insertMany(docs);
+      const businessId = context.user.business;
+      const created = [];
+      const merged = [];
+      const duplicatesRequiringMode = [];
+
+      for (const input of dataList) {
+        const {
+          templateId, name, contactDetails, lastInteractedAt, nextFollowUpAt,
+          source, tags, leadScore, status, notes, data, mode
+        } = input;
+
+        const duplicateQuery = buildDuplicateQuery(contactDetails, businessId);
+        const existingLead = duplicateQuery ? await Lead.findOne(duplicateQuery) : null;
+
+        if (existingLead) {
+          if (!mode || !['merge', 'new'].includes(mode)) {
+            // Don't throw — collect all conflicts and report at the end
+            const matched = findMatchedHandles(contactDetails, existingLead);
+            duplicatesRequiringMode.push({
+              input,
+              existingLeadId: existingLead._id,
+              matchedOn: matched,
+            });
+            continue;
+          }
+
+          if (mode === 'merge') {
+            const mergedContactDetails = mergeContactDetails(
+              existingLead.contactDetails?.toObject?.() || existingLead.contactDetails,
+              contactDetails
+            );
+
+            const updated = await Lead.findByIdAndUpdate(
+              existingLead._id,
+              {
+                $set: {
+                  contactDetails: mergedContactDetails,
+                  ...(name && { name }),
+                  ...(source && { source }),
+                  ...(notes && { notes }),
+                  ...(leadScore != null && { leadScore }),
+                  ...(status && { status }),
+                  ...(lastInteractedAt && { lastInteractedAt }),
+                  ...(nextFollowUpAt && { nextFollowUpAt }),
+                  ...(data && { data: { ...existingLead.data, ...data } }),
+                },
+                $addToSet: { tags: { $each: tags || [] } },
+              },
+              { new: true }
+            );
+            merged.push(updated);
+            continue;
+          }
+
+          // mode === 'new': fall through to create
+        }
+
+        const newLead = await Lead.create({
+          template: templateId,
+          contactDetails,
+          lastInteractedAt,
+          nextFollowUpAt,
+          name, source, tags, leadScore,
+          status: status || 'new',
+          notes, data,
+          business: businessId,
+          createdBy: context.user._id,
+        });
+        created.push(newLead);
+      }
+
+      return { created, merged, duplicatesRequiringMode };
     },
 
     updateLead: async (_, { id, LeadCreateInput }, context) => {
