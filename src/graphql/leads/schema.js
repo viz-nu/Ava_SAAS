@@ -170,5 +170,7 @@ input LeadCreateInput {
 
     deleteLead(id: ID!): Boolean
       @requireScope(scope: "lead:delete") @requireBusinessAccess
+    contactLead(id: ID!, action: String!, channelId: ID!, message: JSON!, conversationId: ID!): Message
+      @requireScope(scope: "message:send") @requireBusinessAccess
   }
 `;

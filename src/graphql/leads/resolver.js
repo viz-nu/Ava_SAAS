@@ -6,7 +6,8 @@ import { GraphQLError } from "graphql";
 import { buildDuplicateQuery, mergeContactDetails, findMatchedHandles } from "../../utils/leadDuplicateUtils.js";
 import { Channel } from "../../models/Channels.js";
 import { sendKafkaMessage } from "../../utils/kafka.js";
-import { Message } from "twilio/lib/twiml/MessagingResponse.js";
+import { Message } from "../../models/Messages.js";
+import { Providers } from "../../models/ExternalServiceProviders.js";
 
 export const leadResolvers = {
   Query: {
