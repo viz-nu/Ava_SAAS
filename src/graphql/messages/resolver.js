@@ -42,7 +42,18 @@ export const messageResolvers = {
           path: "business",
           select: populateFields.business,
         });
-
+      if (populateFields?.sender) {
+        await Message.populate(messages, {
+          path: "sender.ref",
+          select: populateFields.sender,
+        });
+      }
+      if (populateFields?.repliedTo){
+        await Message.populate(messages, {
+          path: "repliedTo",
+          select: populateFields.repliedTo,
+        });
+      }
       return {
         data: messages,
         metaData: {

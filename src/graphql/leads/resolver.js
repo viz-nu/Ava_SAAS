@@ -4,6 +4,9 @@ import graphqlFields from "graphql-fields";
 import { getSelectFields } from "../../utils/graphqlTools.js";
 import { GraphQLError } from "graphql";
 import { buildDuplicateQuery, mergeContactDetails, findMatchedHandles } from "../../utils/leadDuplicateUtils.js";
+import { Channel } from "../../models/Channels.js";
+import { sendKafkaMessage } from "../../utils/kafka.js";
+import { Message } from "twilio/lib/twiml/MessagingResponse.js";
 
 export const leadResolvers = {
   Query: {
@@ -179,6 +182,61 @@ export const leadResolvers = {
       });
     },
 
+    contactLead: async (_, { id, action = "sendMessage", channelId, message, conversationId }, context) => {
+      const lead = await Lead.findById(id);
+      const channel = await Channel.findOne({ _id: channelId, business: context.user.business });
+      if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "NOT_FOUND" } });
+      await channel.populate('apiAuthenticator');
+      await Providers.populate(channel, { path: 'apiAuthenticator.provider', select: 'name' });
+      if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "NOT_FOUND" } });
+      let toId = null, topic = null, platformMeta = null;
+      const { type, data } = message;
+      switch (action) {
+        case "sendMessage":
+          switch (channel.apiAuthenticator.provider.name) {
+            case "Whatsapp":
+              topic = 'sending-whatsapp-message'
+              const { whatsapp } = lead.contactDetails;
+              toId = whatsapp?.find(entry => entry.isPrimary)?.handle ?? whatsapp?.[0]?.handle;
+              platformMeta = {
+                accessToken: channel.apiAuthenticator.accessToken,
+                phone_number_id: channel.apiAuthenticator.phone_number_id,
+              };
+              break;
+          }
+          break;
+        default:
+          break;
+      }
+      // create a message and conenct it to a conversation
+      const mesasge = await Message.create({
+        conversation: conversationId,
+        business: context.user.business,
+        externalMessageId: toId?.toString() ?? 'unknown',
+        direction: 'outbound',
+        sender: {
+          type: 'user',
+          id: context.user._id,
+          name: context.user.name,
+          ref: context.user._id,
+          refModel: 'User',
+        },
+        type: type,
+        kind: 'message',
+        content: data,
+        statusTimeline: {
+          initiated: new Date(),
+        }
+      });
+      await sendKafkaMessage({
+        topic,
+        messages: [{
+          key: toId?.toString() ?? 'unknown',
+          value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: mesasge._id }),
+        }]
+      });
+      return mesasge;
+    },
 
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
 
