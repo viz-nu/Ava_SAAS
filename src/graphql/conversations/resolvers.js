@@ -6,7 +6,7 @@ import { Channel } from "../../models/Channels.js";
 import { Campaign } from "../../models/Campaign.js";
 import { Lead } from "../../models/Leads.js";
 import { GraphQLError } from "graphql";
-import { Providers } from "../../models/Providers.js";
+import { Providers } from "../../models/ExternalServiceProviders.js";
 export const conversationResolvers = {
   Query: {
     conversations: async (_, { limit = 10, page = 1, status, id, channelIds, campaignIds, agentIds, leadIds, from, to, priority }, context, info) => {
