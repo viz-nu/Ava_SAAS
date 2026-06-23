@@ -148,7 +148,9 @@ input LeadCreateInput {
   }
 
   # ─── Mutations ───────────────────────────────────────────────────────────────
-
+  enum ContactLeadAction {
+    sendMessage
+  }
   type Mutation {
     createLeadTemplate(LeadTemplateInput: LeadTemplateInput!): LeadTemplate
       @requireScope(scope: "lead:create") @requireBusinessAccess
