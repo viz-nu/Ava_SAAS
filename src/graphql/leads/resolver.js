@@ -200,8 +200,8 @@ export const leadResolvers = {
               const { whatsapp } = lead.contactDetails;
               toId = whatsapp?.find(entry => entry.isPrimary)?.handle ?? whatsapp?.[0]?.handle;
               platformMeta = {
-                accessToken: channel.apiAuthenticator.accessToken,
-                phone_number_id: channel.apiAuthenticator.phone_number_id,
+                accessToken: channel.apiAuthenticator.credentials.accessToken,
+                phone_number_id: channel.config.phone_number_id,
               };
               break;
           }
@@ -210,38 +210,33 @@ export const leadResolvers = {
           break;
       }
       // create a message and conenct it to a conversation
-      console.log(JSON.stringify([{
-        key: toId?.toString() ?? 'unknown',
-        value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: 'some message id'}),
-      }]));
-
-      // const mesasge = await Message.create({
-      //   conversation: conversationId,
-      //   business: context.user.business,
-      //   externalMessageId: toId?.toString() ?? 'unknown',
-      //   direction: 'outbound',
-      //   sender: {
-      //     type: 'user',
-      //     id: context.user._id,
-      //     name: context.user.name,
-      //     ref: context.user._id,
-      //     refModel: 'User',
-      //   },
-      //   type: type,
-      //   kind: 'message',
-      //   content: data,
-      //   statusTimeline: {
-      //     initiated: new Date(),
-      //   }
-      // });
-      // await sendKafkaMessage({
-      //   topic,
-      //   messages: [{
-      //     key: toId?.toString() ?? 'unknown',
-      //     value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: mesasge._id }),
-      //   }]
-      // });
-      return {_id: 'some message id'};
+      const messageDocument = await Message.create({
+        conversation: conversationId,
+        business: context.user.business,
+        externalMessageId: toId?.toString() ?? 'unknown',
+        direction: 'outbound',
+        sender: {
+          type: 'user',
+          id: context.user._id,
+          name: context.user.name,
+          ref: context.user._id,
+          refModel: 'User',
+        },
+        type: type,
+        kind: 'message',
+        content: data,
+        statusTimeline: {
+          initiated: new Date(),
+        }
+      });
+      await sendKafkaMessage({
+        topic,
+        messages: [{
+          key: toId?.toString() ?? 'unknown',
+          value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }),
+        }]
+      });
+      return messageDocument;
     },
 
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
