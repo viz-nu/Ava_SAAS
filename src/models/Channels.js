@@ -5,7 +5,7 @@ const Capability = new Schema({
     enabled: { type: Boolean, default: false },
     label: String,
     description: String,
-},{_id: false});
+}, { _id: false });
 
 export const ChannelCapabilityDefaults = {
     whatsapp: [
@@ -26,6 +26,24 @@ export const ChannelCapabilityDefaults = {
             enabled: true,
             label: "List Menu",
             description: "A scrollable menu with up to 10 rows grouped into sections. Best for support categories, product options, or multi-step flows."
+        },
+        {
+            key: "interactive_cta_url",
+            enabled: false,
+            label: "CTA URL Button",
+            description: "A button that opens a URL in the user's browser when tapped."
+        },
+        {
+            key: "interactive_voice_call",
+            enabled: false,
+            label: "Voice Call Button",
+            description: "A button that opens the user's phone app to make a voice call when tapped."
+        },
+        {
+            key: "interactive_location",
+            enabled: false,
+            label: "Location Request",
+            description: "A button that opens the user's phone app to send their location when tapped."
         },
         {
             key: "image",
@@ -208,7 +226,6 @@ export const ChannelCapabilityDefaults = {
             description: "Text-to-speech voice response read aloud to the caller. Supports plain text or SSML for tone and pacing control."
         },
     ],
-
 };
 
 
