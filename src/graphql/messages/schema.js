@@ -64,7 +64,7 @@ export const messageTypeDefs = `#graphql
     _id: ID!
     """Conversation this message belongs to"""
     conversation: Conversation
-    business: ID
+    business: Business
     """Provider-side message ID"""
     externalMessageId: String
     """inbound | outbound"""
