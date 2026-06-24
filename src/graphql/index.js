@@ -3,11 +3,11 @@ import { conversationResolvers } from './conversations/resolvers.js';
 import { userTypeDefs } from './users/schema.js';
 import { userResolvers } from './users/resolvers.js';
 import { sharedTypeDefs } from './shared/types.js';
-import { twilioResolvers } from './twilio/resolver.js';
+// import { twilioResolvers } from './twilio/resolver.js';
 import { scopeAuthDirectiveTypeDefs, applyScopeAuthDirectives } from './directives/scopeAuth.js';
 import { mergeResolvers, mergeTypeDefs } from '@graphql-tools/merge';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { twilioTypeDefs } from './twilio/schema.js';
+// import { twilioTypeDefs } from './twilio/schema.js';
 import { channelResolvers } from './channels/resolver.js';
 import { channelTypeDefs } from './channels/schema.js';
 import { ApolloServer } from '@apollo/server';
@@ -49,7 +49,7 @@ const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
   conversationTypeDefs,
-  twilioTypeDefs,
+  // twilioTypeDefs,
   channelTypeDefs,
   ticketTypeDefs,
   notificationTypeDefs,
@@ -68,7 +68,7 @@ const typeDefs = mergeTypeDefs([
 ]);
 const resolvers = mergeResolvers([
   conversationResolvers,
-  twilioResolvers,
+  // twilioResolvers,
   channelResolvers,
   ticketResolvers,
   notificationResolvers,
