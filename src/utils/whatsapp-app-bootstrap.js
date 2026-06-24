@@ -1,5 +1,5 @@
 import axios from "axios";
-
+import FormData from 'form-data';
 const API_VERSION = "v23.0";
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
@@ -58,4 +58,41 @@ export async function ensureWhatsAppWebhookSubscription() {
         });
         return { ok: false, error: fb.message || error.message };
     }
+}
+export async function uploadFileToWhatsApp(fileStream, mimeType, filename, platformMeta) {
+    try {
+        const { accessToken, phone_number_id } = platformMeta;
+        const uploadUrl = `${BASE_URL}/${phone_number_id}/media`;
+
+        // Create FormData
+        const form = new FormData();
+        form.append('file', fileStream, {
+            filename: filename,
+            contentType: mimeType,
+        });
+        form.append('type', mimeType);
+        form.append('messaging_product', 'whatsapp');
+
+
+        // Make request to WhatsApp Cloud API
+        const response = await axios.post(uploadUrl, form, {
+            headers: {
+                ...form.getHeaders(),
+                'Authorization': `Bearer ${accessToken}`,
+            },
+            timeout: 60000,
+        });
+
+        // WhatsApp returns: { id: "wamid.xxx" }
+        if (!response.data.id) {
+            throw new Error('No media ID returned from WhatsApp');
+        }
+
+        return response.data;
+
+    } catch (error) {
+        const errorMsg = error.response?.data?.error?.message || error.message;
+        throw new Error(`WhatsApp upload failed: ${errorMsg}`);
+    }
+
 }

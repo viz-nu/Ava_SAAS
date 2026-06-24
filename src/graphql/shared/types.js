@@ -3,6 +3,8 @@ export const sharedTypeDefs = `#graphql
   scalar DateTime
   """Custom scalar for handling arbitrary JSON data"""
   scalar JSON
+  """Custom scalar for handling file uploads"""
+  scalar Upload
 
   """Represents a quick question with label and value"""
   type QuickQuestion {

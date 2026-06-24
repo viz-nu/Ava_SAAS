@@ -122,7 +122,10 @@ input LeadCreateInput {
 }
 
 
-
+input contactLeadMessageInput {
+  type: String
+  data: JSON
+}
   # ─── Queries ─────────────────────────────────────────────────────────────────
 
   type Query {
@@ -150,6 +153,7 @@ input LeadCreateInput {
   # ─── Mutations ───────────────────────────────────────────────────────────────
   enum ContactLeadAction {
     sendMessage
+    sendMedia
   }
   type Mutation {
     createLeadTemplate(LeadTemplateInput: LeadTemplateInput!): LeadTemplate
@@ -172,7 +176,7 @@ input LeadCreateInput {
 
     deleteLead(id: ID!): Boolean
       @requireScope(scope: "lead:delete") @requireBusinessAccess
-    contactLead(id: ID!, action: String!, channelId: ID!, message: JSON!, conversationId: ID!): Message
+    contactLead(id: ID!, action: ContactLeadAction!, channelId: ID!, message: contactLeadMessageInput, file:Upload, caption:String,conversationId: ID!): Message
       @requireScope(scope: "message:send") @requireBusinessAccess
   }
 `;

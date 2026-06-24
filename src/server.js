@@ -59,6 +59,13 @@ export const createApp = async () => {
         app.use(cookieParser());
         app.use(morgan(':date[web] :method :url :status - :response-time ms'));
         app.use(express.json({ type: ["application/json", "text/plain"], limit: '50mb' }));
+        // Apollo setup
+        try {
+            await registerApollo(app, server);
+        } catch (error) {
+            console.error("error with Apollo setup", error);
+            throw error;
+        }
         app.use((req, res, next) => {
             req.body = sanitize(req.body);
             req.params = sanitize(req.params);
@@ -161,13 +168,7 @@ export const createApp = async () => {
             }
         })
         // app.use("/api/v1", cors(corsOptions), indexRouter);
-        // Apollo setup
-        try {
-            await registerApollo(app, server);
-        } catch (error) {
-            console.error("error with Apollo setup", error);
-            throw error;
-        }
+
         // Error handling
         try {
             app.use(errorHandlerMiddleware);

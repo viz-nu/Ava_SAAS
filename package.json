@@ -38,6 +38,7 @@
     "express": "^5.1.0",
     "graphql": "^16.11.0",
     "graphql-fields": "^2.0.3",
+    "graphql-upload": "^17.0.0",
     "helmet": "^8.0.0",
     "http-status-codes": "^2.3.0",
     "ical-generator": "^9.0.0",

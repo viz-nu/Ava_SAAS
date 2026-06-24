@@ -8,6 +8,7 @@ import { Channel } from "../../models/Channels.js";
 import { sendKafkaMessage } from "../../utils/kafka.js";
 import { Message } from "../../models/Messages.js";
 import { Providers } from "../../models/ExternalServiceProviders.js";
+import { uploadFileToWhatsApp } from "../../utils/whatsapp-app-bootstrap.js";
 
 export const leadResolvers = {
   Query: {
@@ -183,7 +184,7 @@ export const leadResolvers = {
       });
     },
 
-    contactLead: async (_, { id, action = "sendMessage", channelId, message, conversationId }, context) => {
+    contactLead: async (_, { id, action = "sendMessage", channelId, message, file, caption, conversationId }, context) => {
       const lead = await Lead.findById(id);
       const channel = await Channel.findOne({ _id: channelId, business: context.user.business });
       if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "NOT_FOUND" } });
@@ -191,23 +192,48 @@ export const leadResolvers = {
       await Providers.populate(channel, { path: 'apiAuthenticator.provider', select: 'name' });
       if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "NOT_FOUND" } });
       let toId = null, topic = null, platformMeta = null;
-      const { type, data } = message;
-      switch (action) {
-        case "sendMessage":
-          switch (channel.apiAuthenticator.provider.name) {
-            case "Whatsapp":
-              topic = 'sending-whatsapp-message'
-              const { whatsapp } = lead.contactDetails;
-              toId = whatsapp?.find(entry => entry.isPrimary)?.handle ?? whatsapp?.[0]?.handle;
-              platformMeta = {
-                accessToken: channel.apiAuthenticator.credentials.accessToken,
-                phone_number_id: channel.config.phone_number_id,
-              };
+      let type, data, content, shouldSendKafkaMessage = false;
+      switch (channel.apiAuthenticator.provider.name) {
+        case "Whatsapp":
+          topic = 'sending-whatsapp-message'
+          const { whatsapp } = lead.contactDetails;
+          toId = whatsapp?.find(entry => entry.isPrimary)?.handle ?? whatsapp?.[0]?.handle;
+          platformMeta = {
+            accessToken: channel.apiAuthenticator.credentials.accessToken,
+            phone_number_id: channel.config.phone_number_id,
+          };
+          switch (action) {
+            case "sendMessage":
+              ({ type, data } = message) ?? {};
+              content = data;
+              shouldSendKafkaMessage = true;
+              break;
+            case "sendMedia":
+              if (!file) throw new GraphQLError("No file provided", { extensions: { code: "BAD_REQUEST" } });
+              // ✅ Await the file promise first
+              const { createReadStream, filename, mimetype } = await file.promise;
+              console.log('File data:', { filename, mimetype });
+              if (!createReadStream || typeof createReadStream !== 'function') throw new GraphQLError(`createReadStream is not a function. Received: ${JSON.stringify(Object.keys(fileData))}`, { extensions: { code: "INTERNAL_SERVER_ERROR" } });
+              // Create the upload stream
+              const fileStream = createReadStream();
+              const { id: mediaId } = await uploadFileToWhatsApp(fileStream, mimetype, filename, platformMeta);
+              type = mimetype.split("/")[0];
+              content = [{
+                id: mediaId,
+                mimeType: mimetype,
+                caption: caption,
+                filename: filename, // documents only
+                ref: { strategy: "whatsapp_media_id", value: mediaId, needsAuth: true, url: `https://graph.facebook.com/v23.0/${mediaId}` },
+              }]
+              data = { id: mediaId, caption: type === 'document' ? caption : null };
+              shouldSendKafkaMessage = true;
+              break;
+            default:
               break;
           }
           break;
         default:
-          break;
+          throw new GraphQLError("Invalid channel provider", { extensions: { code: "NOT_FOUND" } });
       }
       // create a message and conenct it to a conversation
       const messageDocument = await Message.create({
@@ -224,21 +250,15 @@ export const leadResolvers = {
         },
         type: type,
         kind: 'message',
-        content: data,
+        content,
         statusTimeline: {
           initiated: new Date(),
         }
       });
-      await sendKafkaMessage({
-        topic,
-        messages: [{
-          key: toId?.toString() ?? 'unknown',
-          value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }),
-        }]
-      });
+      if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }), }] });
+
       return messageDocument;
     },
-
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
 
     bulkCreateLeads: async (_, { dataList }, context) => {

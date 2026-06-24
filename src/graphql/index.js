@@ -45,6 +45,7 @@ import { workflowTypeDefs } from './workflows/schema.js';
 import { workflowResolvers } from './workflows/resolvers.js';
 import { serviceProvidersTypeDefs } from './serviceProviders/schema.js';
 import { serviceProvidersResolvers } from './serviceProviders/resolvers.js';
+import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs'
 const typeDefs = mergeTypeDefs([
   scopeAuthDirectiveTypeDefs,
   sharedTypeDefs,
@@ -94,6 +95,7 @@ export const registerApollo = async (app, httpServer) => {
   const apolloServer = new ApolloServer({
     schema: schemaWithDirectives,
     introspection: true,
+    csrfPrevention: true, // ✅ Simple boolean - works with CORS
     formatResponse: (response, requestContext) => {
       if (response.errors) {
         return response; // handled by formatError above
@@ -218,26 +220,39 @@ export const registerApollo = async (app, httpServer) => {
     }
     return null;
   };
+  // ✅ 1. MUST BE FIRST - before any body parser
+  app.use('/graphql', graphqlUploadExpress({
+    maxFileSize: 100000000,
+    maxFiles: 5
+  }));
 
-  app.use(
-    '/graphql',
-    cors(corsOptions),
-    expressMiddleware(apolloServer, {
-      context: async ({ req, res }) => {
-        try {
-          const operationName = extractOperationName(req);
-          if (operationName && publicOperations.includes(operationName)) {
-            console.log(`Allowing public operation: ${operationName}`);
-            return { user: null, isAuthenticated: false, isPublicOperation: true };
-          }
-          const authResult = await authForGraphQL(req, res);
-          return authResult;
-        } catch (error) {
-          console.error('Auth error details:', { message: error.message, stack: error.stack, headers: req.headers, body: req.body });
-          if (error.message === 'Internal Server Error') throw new Error('Authentication failed: Unable to verify credentials');
-          throw error;
+  // console.log('✅ graphqlUploadExpress middleware loaded');
+  // ✅ 3. Debug middleware
+  // app.use('/graphql', (req, res, next) => {
+  //   console.log('📤 After upload middleware');
+  //   console.log('Body:', req.body ? Object.keys(req.body) : 'no body');
+  //   next();
+  // });
+
+
+
+  app.use('/graphql', cors(corsOptions))
+  app.use('/graphql', expressMiddleware(apolloServer, {
+    context: async ({ req, res }) => {
+      try {
+        const operationName = extractOperationName(req);
+        if (operationName && publicOperations.includes(operationName)) {
+          console.log(`Allowing public operation: ${operationName}`);
+          return { user: null, isAuthenticated: false, isPublicOperation: true };
         }
-      },
-    })
+        const authResult = await authForGraphQL(req, res);
+        return authResult;
+      } catch (error) {
+        console.error('Auth error details:', { message: error.message, stack: error.stack, headers: req.headers, body: req.body });
+        if (error.message === 'Internal Server Error') throw new Error('Authentication failed: Unable to verify credentials');
+        throw error;
+      }
+    },
+  })
   )
 }
