@@ -23,7 +23,7 @@ export const ChannelCapabilityDefaults = {
         },
         {
             key: "interactive_list",
-            enabled: true,
+            enabled: false,
             label: "List Menu",
             description: "A scrollable menu with up to 10 rows grouped into sections. Best for support categories, product options, or multi-step flows."
         },

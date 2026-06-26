@@ -142,16 +142,4 @@ export const conversationTypeDefs = `#graphql
       disconnectReason: String
     ): ConversationPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
   }
-   input CreateConversationInput {
-      leadId:ID!
-      channelId:ID!
-      force:Boolean
-    }
-    type CreateConversationResponse {
-      newConversation: Conversation
-      existingConversations: [Conversation]
-    }
-    type Mutation {
-      createConversation(input: CreateConversationInput!): CreateConversationResponse @requireScope(scope: "conversation:create") @requireBusinessAccess
-    }
 `;

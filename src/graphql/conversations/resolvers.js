@@ -57,43 +57,5 @@ export const conversationResolvers = {
         },
       };
     },
-  },
-  Mutation: {
-    createConversation: async (_, { input }, context) => {
-      const { leadId, channelId, force = false } = input;
-      const lead = await Lead.findById(leadId);
-      if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "NOT_FOUND" } });
-      const channel = await Channel.findById(channelId);
-      if (!channel) throw new GraphQLError("Channel not found", { extensions: { code: "NOT_FOUND" } });
-      await channel.populate('apiAuthenticator');
-      await Providers.populate(channel, { path: 'apiAuthenticator.provider', select: 'name' });
-      let externalConversationIds = null, primaryExternalConversationId = null;
-      switch (channel.apiAuthenticator.provider.name) {
-        case "Whatsapp":
-          externalConversationIds = lead.contactDetails.whatsapp?.map(entry => {
-            if (entry.isPrimary) primaryExternalConversationId = entry.handle;
-            return entry.handle
-          });
-          if (!primaryExternalConversationId) primaryExternalConversationId = externalConversationIds[0];
-          break;
-      }
-      const conversations = await Conversation.find({
-        business: context.user.business,
-        channel: channelId,
-        lead: leadId,
-        externalConversationId: { $in: externalConversationIds },
-        status: { $nin: ["archived", "spam", "closed"] }
-      });
-      if (conversations.length > 0 && !force) return { existingConversations: conversations, newConversation: null };
-      if (!primaryExternalConversationId) throw new GraphQLError("cannot create conversation for this lead using this channel", { extensions: { code: "INVALID_INPUT" } });
-      const conversation = await Conversation.create({
-        business: context.user.business,
-        channel: channelId,
-        lead: leadId,
-        externalConversationId: primaryExternalConversationId,
-        status: "open"
-      });
-      return { newConversation: conversation, existingConversations: null };
-    },
-  },
+  }
 };

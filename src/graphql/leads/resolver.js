@@ -9,6 +9,8 @@ import { sendKafkaMessage } from "../../utils/kafka.js";
 import { Message } from "../../models/Messages.js";
 import { Providers } from "../../models/ExternalServiceProviders.js";
 import { uploadFileToWhatsApp } from "../../utils/whatsapp-app-bootstrap.js";
+import { Conversation } from "../../models/Conversations.js";
+import { AgentModel } from "../../models/Agent.js";
 
 export const leadResolvers = {
   Query: {
@@ -236,8 +238,23 @@ export const leadResolvers = {
           throw new GraphQLError("Invalid channel provider", { extensions: { code: "NOT_FOUND" } });
       }
       // create a message and conenct it to a conversation
+      let conversation = null;
+      if (conversationId) {
+        conversation = await Conversation.findById(conversationId);
+        if (!conversation) throw new GraphQLError("Conversation not found", { extensions: { code: "NOT_FOUND" } });
+      }
+      else {
+        const agent = await AgentModel.findOne({ business: context.user.business, channels: { $in: [channelId] } });
+        conversation = await Conversation.create({
+          agent: agent?._id,
+          business: context.user.business,
+          channel: channelId,
+          lead: id,
+          externalConversationId: toId?.toString() ?? 'unknown',
+        });
+      }
       const messageDocument = await Message.create({
-        conversation: conversationId,
+        conversation: conversation._id,
         business: context.user.business,
         externalMessageId: toId?.toString() ?? 'unknown',
         direction: 'outbound',
@@ -256,7 +273,6 @@ export const leadResolvers = {
         }
       });
       if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }), }] });
-
       return messageDocument;
     },
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
