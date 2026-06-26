@@ -78,11 +78,11 @@ export const conversationTypeDefs = `#graphql
     """AI agent handling the conversation"""
     agent: Agent
     """Business this conversation belongs to"""
-    business: ID
-    """Channel (ObjectId) the conversation is happening on"""
-    channel: ID
+    business: Business
+    """Channel  the conversation is happening on"""
+    channel: Channel
     """Lead (contact) involved in the conversation"""
-    lead: ID
+    lead: Lead
     """Campaign this conversation belongs to, if any"""
     campaign: Campaign
     """External provider thread ID"""
