@@ -16,31 +16,31 @@ export const ChannelCapabilityDefaults = {
             description: "Plain text messages. Supports basic formatting like bold, italic, and emojis.",
         },
         {
-            key: "interactive_button",
+            key: "button",
             enabled: true,
             label: "Quick Reply Buttons",
             description: "Up to 3 tappable reply buttons below a message. Best for simple yes/no or multi-choice responses."
         },
         {
-            key: "interactive_list",
+            key: "list",
             enabled: false,
             label: "List Menu",
             description: "A scrollable menu with up to 10 rows grouped into sections. Best for support categories, product options, or multi-step flows."
         },
         {
-            key: "interactive_cta_url",
+            key: "cta_url",
             enabled: false,
             label: "CTA URL Button",
             description: "A button that opens a URL in the user's browser when tapped."
         },
         {
-            key: "interactive_voice_call",
+            key: "voice_call",
             enabled: false,
             label: "Voice Call Button",
             description: "A button that opens the user's phone app to make a voice call when tapped."
         },
         {
-            key: "interactive_location",
+            key: "location",
             enabled: false,
             label: "Location Request",
             description: "A button that opens the user's phone app to send their location when tapped."
@@ -82,7 +82,6 @@ export const ChannelCapabilityDefaults = {
             description: "Send WhatsApp-compatible WebP stickers. Mostly used for casual or expressive interactions."
         },
     ],
-
     telegram: [
         {
             key: "text",
@@ -127,7 +126,6 @@ export const ChannelCapabilityDefaults = {
             description: "Send Telegram-compatible WebP or TGS animated stickers."
         },
     ],
-
     sms: [
         {
             key: "text",
@@ -136,7 +134,6 @@ export const ChannelCapabilityDefaults = {
             description: "Plain text SMS. Maximum 160 characters per segment. No formatting, links, or media supported natively."
         },
     ],
-
     email: [
         {
             key: "text",
@@ -157,7 +154,6 @@ export const ChannelCapabilityDefaults = {
             description: "Attach files such as PDFs, invoices, or reports to the email."
         },
     ],
-
     web: [
         {
             key: "text",
@@ -190,7 +186,6 @@ export const ChannelCapabilityDefaults = {
             description: "A rich card with a title, subtitle, image, and action buttons. Useful for product listings or recommendations."
         },
     ],
-
     instagram: [
         {
             key: "text",
@@ -217,7 +212,6 @@ export const ChannelCapabilityDefaults = {
             description: "Send Instagram stickers or emoji reactions within the DM thread."
         },
     ],
-
     phone: [
         {
             key: "voice",
@@ -227,7 +221,6 @@ export const ChannelCapabilityDefaults = {
         },
     ],
 };
-
 
 const ChannelBaseSchema = new Schema(
     {

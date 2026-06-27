@@ -9,7 +9,7 @@ const MessagesSchema = new Schema({
         id: String,
         name: String,
         ref: { type: Schema.Types.ObjectId, refPath: "sender.refModel" },
-        refModel: { type: String, enum: ["Lead", "Agent", "User"] },
+        refModel: { type: String, enum: ["Lead", "Agent", "Users"] },
     },
     type: {
         type: String,

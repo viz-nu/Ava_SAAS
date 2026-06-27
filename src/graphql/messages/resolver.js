@@ -45,10 +45,10 @@ export const messageResolvers = {
       if (populateFields?.sender) {
         await Message.populate(messages, {
           path: "sender.ref",
-          select: populateFields.sender,
+          select: { _id: 1, name: 1, "personalInfo.name": 1 },
         });
       }
-      if (populateFields?.repliedTo){
+      if (populateFields?.repliedTo) {
         await Message.populate(messages, {
           path: "repliedTo",
           select: populateFields.repliedTo,

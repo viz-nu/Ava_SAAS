@@ -50,6 +50,8 @@ export const messageTypeDefs = `#graphql
     type: SenderTypeEnum
     id: String
     name: String
+    ref: JSON
+    refModel: String
   }
 
   """A single emoji reaction on a message"""

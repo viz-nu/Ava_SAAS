@@ -263,7 +263,7 @@ export const leadResolvers = {
           id: context.user._id,
           name: context.user.name,
           ref: context.user._id,
-          refModel: 'User',
+          refModel: 'Users',
         },
         type: type,
         kind: 'message',
