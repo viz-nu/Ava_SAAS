@@ -31,7 +31,9 @@ export const corsOptions = {
         "X-Requested-With",
         "Accept",
         "Cache-Control",   // ✅ allow cache control header
-        "Pragma"           // ✅ allow pragma header
+        "Pragma",           // ✅ allow pragma header
+        "apollo-require-preflight",
+        "x-apollo-operation-name",
     ],
     credentials: true,
     optionsSuccessStatus: 200,
