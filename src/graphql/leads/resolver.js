@@ -1,7 +1,7 @@
 
 import { Lead, LeadTemplate } from "../../models/Leads.js";
 import graphqlFields from "graphql-fields";
-import { getSelectFields } from "../../utils/graphqlTools.js";
+import { documentTypes, getSelectFields } from "../../utils/graphqlTools.js";
 import { GraphQLError } from "graphql";
 import { buildDuplicateQuery, mergeContactDetails, findMatchedHandles } from "../../utils/leadDuplicateUtils.js";
 import { Channel } from "../../models/Channels.js";
@@ -219,7 +219,7 @@ export const leadResolvers = {
               // Create the upload stream
               const fileStream = createReadStream();
               const { id: mediaId } = await uploadFileToWhatsApp(fileStream, mimetype, filename, platformMeta);
-              type = mimetype.split("/")[0];
+              type = documentTypes.has(mimetype) ? "document" : mimetype.split("/")[0];
               content = [{
                 id: mediaId,
                 mimeType: mimetype,
