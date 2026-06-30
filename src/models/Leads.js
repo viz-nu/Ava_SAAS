@@ -49,7 +49,7 @@ const LeadSchema = new Schema({
     //evaluation
     leadScore: { type: Number, default: 0 },
     status: { type: String, enum: leadStatusEnum, default: 'new' },
-    notes: { type: String, trim: true },
+    notes: { type: [String], trim: true },
     // operations
     lastInteractedAt: Date,
     nextFollowUpAt: Date,

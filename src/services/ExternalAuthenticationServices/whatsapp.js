@@ -206,20 +206,7 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             messaging: steps.subscription.ok && steps.registration.ok,
             calling: steps.calling.ok,
         };
-
-        if (!config.capabilities.messaging) {
-            // fatal: build a readable message; full detail already logged by _safeStep
-            const failed = Object.values(steps)
-                .filter(s => !s.ok && !s.optional)
-                .map(s => `${s.name}(code=${s.code ?? "?"}, trace=${s.fbtrace_id ?? "?"})`)
-                .join("; ");
-            return this._errorResponse(
-                "channel_setup_incomplete",
-                `Core messaging setup failed: ${failed}`,
-                502
-            );
-        }
-
+        if (!config.capabilities.messaging) config.errors = Object.values(steps).filter(s => !s.ok && !s.optional).map(s => `${s.name}(code=${s.code ?? "?"}, trace=${s.fbtrace_id ?? "?"})`).join("; ");
         // success: matches _successResponse(data, { config }) -> { success, data, config }
         return this._successResponse(config, { config });
     }
