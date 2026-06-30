@@ -43,7 +43,7 @@ export const leadTypeDefs = `#graphql
     tags: [String]
     leadScore: Int
     status: LeadStatusEnum
-    notes: String
+    notes: [String]
     lastInteractedAt: DateTime
     nextFollowUpAt: DateTime
     pendingTasks: JSON
@@ -116,7 +116,7 @@ input LeadCreateInput {
   tags: [String]
   leadScore: Int
   status: LeadStatusEnum
-  notes: String
+  notes: [String]
   data: JSON
   mode: LeadInsertMode  # <-- add this
 }
