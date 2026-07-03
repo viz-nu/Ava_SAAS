@@ -43,8 +43,8 @@ export const conversationTypeDefs = `#graphql
 
   """Metadata attached to the conversation"""
   type ConversationMetadata {
-    """AI-generated summary of the conversation"""
-    summary: String
+    """Extracted data from the conversation"""
+    extractedData: JSON
     """Socket connection details"""
     sockets: Sockets
     """Geographic location of the user"""

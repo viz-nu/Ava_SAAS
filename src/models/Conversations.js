@@ -183,12 +183,9 @@ const ConversationSchema = new Schema({
     */
 
     priority: { type: String, enum: ["low", "normal", "high", "urgent"], default: "normal" },
-    workflow: { type: Schema.Types.ObjectId, ref: "Workflow" }, // workflow is the workflow that is applied to the conversation
-    workflowStatus: { type: String, enum: ["started", "completed", "failed"] },
-    workflowExecution: Schema.Types.Mixed, // status of the workflow
     metadata: {
         openai: { "lastResponseId": String, "lastResponseAt": Date },
-        summary: String,
+        extractedData: Schema.Types.Mixed,
         sockets: { socketId: String, disconnectReason: String, },
         userLocation: Schema.Types.Mixed,
         CreditsUsage: {
