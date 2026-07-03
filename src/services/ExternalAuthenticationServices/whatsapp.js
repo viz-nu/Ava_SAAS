@@ -329,7 +329,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             return this._handleError(error);
         }
     }
-
     /**
      * OPTIONAL: Get token metadata (validity, scopes, etc.)
      * Provider-specific, not in base interface
@@ -429,6 +428,207 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
 
         // Always success: report what cleaned up, but never block channel deletion.
         return this._successResponse({ teardown }, { config: { ...config, teardown } });
+    }
+    async listTemplates({ secrets, parameters = { limit: 20, afterCursor: null, fields: "id,name,status,category,language,components,quality_score,rejected_reason,last_updated_time,source" } }) {
+        const accessToken = secrets.authentcatorDoc.credentials.accessToken;
+        const wabaId = secrets.channelConfig.wabaId;
+        const { limit, afterCursor, fields } = parameters;
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${API_VERSION}/${wabaId}/message_templates`, { params: { limit, afterCursor, fields, }, headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } });
+            return data;
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
+    async getTemplate({ secrets, parameters = {} }) {
+        const accessToken = secrets.authentcatorDoc.credentials.accessToken;
+        const wabaId = secrets.channelConfig.wabaId;
+        const { templateId } = parameters;
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${API_VERSION}/${wabaId}/message_templates/${templateId}`, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } });
+            return data;
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
+    async createTemplate({ secrets, parameters = {} }) {
+        const accessToken = secrets.authentcatorDoc.credentials.accessToken;
+        const wabaId = secrets.channelConfig.wabaId;
+        const { body } = parameters;
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${API_VERSION}/${wabaId}/message_templates`, body, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } });
+            return data;
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
+    async updateTemplate({ secrets, parameters = {} }) {
+        const accessToken = secrets.authentcatorDoc.credentials.accessToken;
+        const wabaId = secrets.channelConfig.wabaId;
+        const { updates, templateId } = parameters;
+        try {
+            const { data } = await axios.post(`${BASE_URL}/${API_VERSION}/${wabaId}/message_templates/${templateId}`, updates, { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } });
+            return data;
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
+    async deleteTemplate({ secrets, parameters = {} }) {
+        const accessToken = secrets.authentcatorDoc.credentials.accessToken;
+        const wabaId = secrets.channelConfig.wabaId;
+        const { templateId } = parameters;
+        try {
+            const { data } = await axios.delete(`${BASE_URL}/${API_VERSION}/${wabaId}/message_templates`, { params: { hsm_id: templateId }, headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } });
+            return data;
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
+    listChannelSettingMethods() {
+        return [
+            {
+                name: "listTemplates",
+                description: "List all templates",
+                parameters: {
+                    limit: {
+                        type: "number",
+                        description: "The limit of the templates to list",
+                        default: 20,
+                    },
+                    afterCursor: {
+                        type: "string",
+                        description: "The cursor to the next page of templates",
+                    },
+                    fields: {
+                        type: "string",
+                        description: "The fields to return",
+                        default: "id,name,status,category,language,components,quality_score,rejected_reason,last_updated_time,source",
+                    },
+                },
+                returns: {
+                    type: "array",
+                    description: "The list of templates",
+                    items: {
+                        type: "object",
+                        properties: {
+                            id: { type: "string" },
+                            name: { type: "string" },
+                            status: { type: "string" },
+                            category: { type: "string" },
+                            language: { type: "string" },
+                            components: { type: "array" },
+                            quality_score: { type: "number" },
+                            rejected_reason: { type: "string" },
+                            last_updated_time: { type: "string" },
+                            source: { type: "string" },
+                        },
+                    },
+                },
+            },
+            {
+                name: "getTemplate",
+                description: "Get a template by ID",
+                parameters: {
+                    templateId: {
+                        type: "string",
+                        description: "The ID of the template to get",
+                    },
+                },
+                returns: {
+                    type: "object",
+                    description: "The template",
+                    properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        status: { type: "string" },
+                        category: { type: "string" },
+                        language: { type: "string" },
+                        components: { type: "array" },
+                    },
+                },
+            },
+            {
+                name: "createTemplate",
+                description: "Create a new template",
+                parameters: {
+                    body: {
+                        type: "object",
+                        description: "The body of the template to create",
+                    },
+                },
+                returns: {
+                    type: "object",
+                    description: "The created template",
+                    properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                    },
+                    status: { type: "string" },
+                    category: { type: "string" },
+                    language: { type: "string" },
+                    components: { type: "array" },
+                    quality_score: { type: "number" },
+                    rejected_reason: { type: "string" },
+                    last_updated_time: { type: "string" },
+                    source: { type: "string" },
+                    created_time: { type: "string" },
+                    updated_time: { type: "string" },
+                    deleted_time: { type: "string" },
+                    deleted: { type: "boolean" },
+                    deleted_reason: { type: "string" },
+                    deleted_reason_code: { type: "string" },
+                    deleted_reason_description: { type: "string" },
+                },
+            },
+            {
+                name: "updateTemplate",
+                description: "Update a template by ID",
+                parameters: {
+                    templateId: {
+                        type: "string",
+                        description: "The ID of the template to update",
+                    },
+                    updates: {
+                        type: "object",
+                        description: "The updates to the template",
+                    },
+                },
+                returns: {
+                    type: "object",
+                    description: "The updated template",
+                    properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        status: { type: "string" },
+                        category: { type: "string" },
+                        language: { type: "string" },
+                        components: { type: "array" },
+                    },
+                },
+            },
+            {
+                name: "deleteTemplate",
+                description: "Delete a template by ID",
+                parameters: {
+                    templateId: {
+                        type: "string",
+                        description: "The ID of the template to delete",
+                    },
+                },
+                returns: {
+                    type: "object",
+                    description: "The deleted template",
+                    properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        status: { type: "string" },
+                        category: { type: "string" },
+                        language: { type: "string" },
+                        components: { type: "array" },
+                    },
+                },
+            },
+        ];
     }
     _handleError(error) {
         // FIX: Handle case where response is null/undefined (network error)

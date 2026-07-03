@@ -51,6 +51,10 @@ type Query {
   @param status - Filter by channel status
   @param type - Filter by channel type"""
   getChannels(_id: ID, provider: ID, apiAuthenticator: ID, status: String, type: ChannelTypeEnum, page: Int, limit: Int): ChannelPagination @requireScope(scope: "channel:read") @requireBusinessAccess
+
+  """List the setting methods for a channel
+  @param id - ID of the channel"""
+  channelSettingMethods(id: ID!): JSON @requireScope(scope: "channel:read") @requireBusinessAccess
 }
 
 """Input type for creating/updating channels"""
@@ -84,5 +88,12 @@ type Mutation {
   """Delete a channel
   @param id - ID of channel to delete"""
   deleteChannel(id: ID!): Boolean @requireScope(scope: "channel:delete") @requireBusinessAccess
+  
+
+  """Execute a channel setting method
+  @param id - ID of the channel
+  @param method - Name of the method to execute
+  @param parameters - Parameters for the method"""
+  channelSetting(id: ID!, method: String!, parameters: JSON!): JSON @requireScope(scope: "channel:read") @requireBusinessAccess
 }
 `; 

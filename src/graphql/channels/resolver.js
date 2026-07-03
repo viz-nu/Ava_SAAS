@@ -30,6 +30,16 @@ export const channelResolvers = {
             if (populateFields?.apiAuthenticator) await ApiAuthenticators.populate(channels, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
             return { data: channels, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
+        async channelSettingMethods(_, { id }, context, info) {
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
+            let channel = await Channel.findById(id).populate("apiAuthenticator").populate("provider");
+            if (!channel) throw new GraphQLError('Channel not found', { extensions: { code: 'INVALID_INPUT' } });
+            const serviceProvider = PROVIDER_MAP[channel.provider.name];
+            if (!serviceProvider) throw new GraphQLError('ServiceProvider not found', { extensions: { code: 'INVALID_INPUT' } });
+            return serviceProvider.listChannelSettingMethods();
+
+        },
     },
     Mutation: {
         async createChannel(_, { input }, context, info) {
@@ -51,6 +61,16 @@ export const channelResolvers = {
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
             await Providers.populate(channel, { path: 'provider', select: populateFields.provider });
             return channel;
+        },
+        async channelSetting(_, { id, method, parameters }, context, info) {
+            const requestedFields = graphqlFields(info, {}, { processArguments: false });
+            const { rootFields, populateFields } = getSelectFields(requestedFields.data);
+            let channel = await Channel.findById(id).populate("apiAuthenticator").populate("provider");
+            if (!channel) throw new GraphQLError('Channel not found', { extensions: { code: 'INVALID_INPUT' } });
+            const serviceProvider = PROVIDER_MAP[channel.provider.name];
+            if (!serviceProvider) throw new GraphQLError('ServiceProvider not found', { extensions: { code: 'INVALID_INPUT' } });
+            const response = await serviceProvider[method]({ secrets: { channelConfig: channel.config, authentcatorDoc: channel.apiAuthenticator }, parameters });
+            return response;
         },
         async updateChannel(_, { id, input }, context, info) {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
