@@ -429,6 +429,16 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
         // Always success: report what cleaned up, but never block channel deletion.
         return this._successResponse({ teardown }, { config: { ...config, teardown } });
     }
+    async listTemplatesLibrary({ secrets, parameters = {} }) {
+        const accessToken = secrets.authentcatorDoc.credentials.accessToken;
+        const { search, topic, usecase, industry, language, name, limit = 20, afterCursor = null } = parameters;
+        try {
+            const { data } = await axios.get(`${BASE_URL}/${API_VERSION}/message_template_library`, { params: { search, topic, usecase, industry, language, name, limit, afterCursor }, headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } });
+            return data;
+        } catch (error) {
+            return this._handleError(error);
+        }
+    }
     async listTemplates({ secrets, parameters = { limit: 20, afterCursor: null, fields: "id,name,status,category,language,components,quality_score,rejected_reason,last_updated_time,source" } }) {
         const accessToken = secrets.authentcatorDoc.credentials.accessToken;
         const wabaId = secrets.channelConfig.wabaId;
@@ -486,6 +496,89 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
     }
     listChannelSettingMethods() {
         return [
+            {
+                name: "listTemplatesLibrary",
+                description: "List all templates library",
+                parameters: {
+                    search: {
+                        type: "string",
+                        description: "The search query to filter templates",
+                    },
+                    topic: {
+                        type: "string",
+                        enum: ["ACCOUNT_UPDATE", "CUSTOMER_FEEDBACK", "ORDER_MANAGEMENT", "PAYMENTS"],
+                        description: "The topic to filter templates",
+                    },
+                    usecase: {
+                        type: "string",
+                        enum: ["ACCOUNT_CREATION_CONFIRMATION", "AUTO_PAY_REMINDER", "DELIVERY_CONFIRMATION", "DELIVERY_FAILED", "DELIVERY_UPDATE", "FEEDBACK_SURVEY", "FRAUD_ALERT", "LOW_BALANCE_WARNING", "ORDER_ACTION_NEEDED", "ORDER_CONFIRMATION", "ORDER_DELAY", "ORDER_OR_TRANSACTION_CANCEL", "ORDER_PICK_UP", "PAYMENT_ACTION_REQUIRED", "PAYMENT_CONFIRMATION", "PAYMENT_DUE_REMINDER", "PAYMENT_OVERDUE", "PAYMENT_REJECT_FAIL", "PAYMENT_SCHEDULED", "RECEIPT_ATTACHMENT", "RETURN_CONFIRMATION", "SHIPMENT_CONFIRMATION", "STATEMENT_ATTACHMENT", "STATEMENT_AVAILABLE", "TRANSACTION_ALERT"],
+                        description: "The use case to filter templates",
+                    },
+                    industry: {
+                        type: "array",
+                        enum: ["E_COMMERCE", "FINANCIAL_SERVICES"],
+                        description: "The industry to filter templates",
+                    },
+                    language: {
+                        type: "string",
+                        enum: ["af", "sq", "ar", "ar_EG", "ar_AE", "ar_LB", "ar_MA", "ar_QA", "az", "be_BY", "bn", "bn_IN", "bg", "ca", "zh_CN", "zh_HK", "zh_TW", "hr", "cs", "da", "prs_AF", "nl", "nl_BE", "en", "en_GB", "en_US", "en_AE", "en_AU", "en_CA", "en_GH", "en_IE", "en_IN", "en_JM", "en_MY", "en_NZ", "en_QA", "en_SG", "en_UG", "en_ZA", "et", "fil", "fi", "fr", "fr_BE", "fr_CA", "fr_CH", "fr_CI", "fr_MA", "ka", "de", "de_AT", "de_CH", "el", "gu", "ha", "he", "hi", "hu", "id", "ga", "it", "ja", "kn", "kk", "rw_RW", "ko", "ky_KG", "lo", "lv", "lt", "mk", "ms", "ml", "mr", "nb", "ps_AF", "fa", "pl", "pt_BR", "pt_PT", "pa", "ro", "ru", "sr", "si_LK", "sk", "sl", "es", "es_AR", "es_CL", "es_CO", "es_CR", "es_DO", "es_EC", "es_HN", "es_MX", "es_PA", "es_PE", "es_ES", "es_UY", "sw", "ny", "xh", "zu", "en_GB", "en_AU", "en_CA", "en_NZ", "en_ZA", "en_IN", "en_IE", "en_PH", "en_SG", "en_HK", "en_MO"],
+                        description: "The language to filter templates ,refer to https://developers.facebook.com/documentation/business-messaging/whatsapp/templates/supported-languages ",
+                    },
+                    name: {
+                        type: "string",
+                        description: "The name of the template to filter templates",
+                    },
+                    limit: {
+                        type: "number",
+                        description: "The limit of the templates to list",
+                        default: 20,
+                    },
+                    afterCursor: {
+                        type: "string",
+                        description: "The cursor to the next page of templates",
+                    },
+                },
+                returns: {
+                    type: "object",
+                    properties: {
+                        data: {
+                            type: "array",
+                            description: "The list of templates library",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    id: { type: "string" },
+                                    name: { type: "string" },
+                                    status: { type: "string" },
+                                    category: { type: "string" },
+                                    topic: { type: "string" },
+                                    usecase: { type: "string" },
+                                    industry: { type: "array" },
+                                    header: { type: "string" },
+                                    body: { type: "string" },
+                                    body_params: { type: "array" },
+                                    body_param_types: { type: "array" },
+                                    buttons: { type: "array" }
+                                },
+                            }
+                        },
+                        paging: {
+                            type: "object",
+                            properties: {
+                                cursors: {
+                                    type: "object",
+                                    properties: {
+                                        before: { type: "string" },
+                                        after: { type: "string" },
+                                    },
+                                },
+                                next: { type: "string" },
+                            },
+                        }
+                    }
+
+                },
+            },
             {
                 name: "listTemplates",
                 description: "List all templates",
