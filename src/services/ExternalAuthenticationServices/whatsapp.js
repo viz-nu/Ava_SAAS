@@ -103,7 +103,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             console.log("Step 5: Successfully fetched WABA details");
             console.log("WABA details:", wabaDetails);
             const { data: businessDetails } = await axios.get(`${BASE_URL}/${business_id}`, {
-                params: { fields: "id,name,verification_status,primary_page,vertical,created_time,updated_time,timezone_id" },
                 headers: auth.headers,
             });
             console.log("Step 5: Successfully fetched business details");
