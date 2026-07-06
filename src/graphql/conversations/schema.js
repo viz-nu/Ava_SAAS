@@ -8,6 +8,7 @@ export const conversationTypeDefs = `#graphql
     closed
     archived
     spam
+    completed
   }
 
   """Priority level of the conversation"""
