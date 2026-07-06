@@ -8,12 +8,10 @@ import bodyParser from 'body-parser';
 import { initialize } from "./utils/dbConnect.js";
 import errorHandlerMiddleware from './middleware/errorHandler.js';
 import { registerApollo } from './graphql/index.js';
-// import { indexRouter } from "./routers/index.js";
 import { webhookRouter } from "./webhooks/index.js";
 import sanitize from 'mongo-sanitize';
 import 'dotenv/config'
 // weighted imports
-import { emailConformation } from "./controllers/auth/register.js";
 import { Message } from "./models/Messages.js";
 import ical, { ICalCalendarMethod } from 'ical-generator';
 import { sendEmail, sendMail } from "./utils/sendEmail.js";
@@ -79,8 +77,6 @@ export const createApp = async () => {
         app.use(bodyParser.urlencoded({ extended: true }));
         // Routes
         app.get('/', (_, res) => res.status(200).send('Server running'));
-        // weighted routes
-        app.get("/email/confirmation", cors(corsOptions), emailConformation);
         app.put("/reaction", openCors, async (req, res) => {
             const { messageId, reaction } = req.body;
             // Validation for messageId and reaction
@@ -169,8 +165,6 @@ export const createApp = async () => {
                 res.status(400).json({ error: err.message });
             }
         })
-        // app.use("/api/v1", cors(corsOptions), indexRouter);
-
         // Error handling
         try {
             app.use(errorHandlerMiddleware);
