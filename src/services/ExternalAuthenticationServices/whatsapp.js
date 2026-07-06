@@ -89,24 +89,17 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             const { scopes, user_id } = tokenInfo.data;
             const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${longLived.access_token}` } }
             // step 4: setup webhooks
-            console.log("Step 4: Setup webhooks");
             const base = (process.env.WEBHOOKS_URL || "").replace(/\/?$/, "/");
-            const { data: webhookResponse } = await axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` }, auth);
-            console.log("Step 4: Successfully setup webhooks");
-            console.log("Webhook response:", webhookResponse);
+            await axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` }, auth);
+            const webhookResponse = { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` };
             // Step 5: Fetch account details
-            console.log("Step 5: Fetch account details");
             const { data: wabaDetails } = await axios.get(`${BASE_URL}/${waba_id}`, {
                 params: { fields: "id,name,status,country,currency,timezone_id,message_template_namespace,account_review_status,business_verification_status" },
                 headers: auth.headers,
             });
-            console.log("Step 5: Successfully fetched WABA details");
-            console.log("WABA details:", wabaDetails);
             const { data: businessDetails } = await axios.get(`${BASE_URL}/${business_id}`, {
                 headers: auth.headers,
             });
-            console.log("Step 5: Successfully fetched business details");
-            console.log("Business details:", businessDetails);
             const credentials = {
                 accessToken: longLived.access_token,
                 refreshToken: null, // Facebook long-lived tokens don't use refresh tokens
@@ -115,8 +108,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                 expiresIn: longLived.expires_in,
                 refreshTokenExpiresAt: null,
             };
-            console.log("Step 6: Successfully returning");
-            console.log("Credentials:", JSON.stringify({ accountDetails, scope: scopes }, null, 2));
             return this._successResponse({
                 credentials,
                 scope: scopes,
