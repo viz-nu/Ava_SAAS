@@ -109,7 +109,8 @@ export default class OauthMicrosoft extends BaseOAuthProvider {
 
             const scope = this._parseScopeString(tokenData.scope, " ");
 
-            return this._successResponse(credentials, {
+            return this._successResponse({
+                credentials,
                 scope,
                 accountDetails: {
                     id: accountDetails.id,
@@ -121,8 +122,7 @@ export default class OauthMicrosoft extends BaseOAuthProvider {
                     mobilePhone: accountDetails.mobilePhone,
                     jobTitle: accountDetails.jobTitle,
                     officeLocation: accountDetails.officeLocation,
-                },
-                config: this.getConfig(),
+                }
             });
         } catch (error) {
             return this._handleError(error);
@@ -170,7 +170,7 @@ export default class OauthMicrosoft extends BaseOAuthProvider {
                 refreshTokenExpiresAt: null,
             };
 
-            return this._successResponse(refreshed);
+            return this._successResponse({ credentials: refreshed });
         } catch (error) {
             return this._handleError(error);
         }

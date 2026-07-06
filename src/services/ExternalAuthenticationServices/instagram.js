@@ -146,14 +146,7 @@ export default class OauthInstagram extends BaseOAuthProvider {
             const scope = shortLived.permissions || [];
 
             // FIX #3: ALWAYS include config in getTokens response
-            return this._successResponse(credentials, {
-                scope,
-                accountDetails: {
-                    ...accountDetails,
-                    linkedPage,
-                },
-                config: this.getConfig(),
-            });
+            return this._successResponse({ credentials, scope, accountDetails: { ...accountDetails, linkedPage, } })
         } catch (error) {
             return this._handleError(error);
         }

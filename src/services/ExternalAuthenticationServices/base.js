@@ -256,12 +256,8 @@ export class BaseOAuthProvider {
      * @returns {object} - Standardized response
      * @protected
      */
-    _successResponse(data, { scope = [], accountDetails = null, config = null, externalId = null } = {}) {
+    _successResponse(data) {
         const response = { success: true, data };
-        if (scope.length > 0) response.scope = scope;
-        if (accountDetails) response.accountDetails = accountDetails;
-        if (config) response.config = config;
-        if (externalId) response.externalId = externalId;
         return response;
     }
 

@@ -19,7 +19,7 @@ export default class OauthTelegram extends BaseOAuthProvider {
         try {
             const client = new Telegraf(apiToken);
             const botInfo = await client.telegram.getMe();
-            return this._successResponse({ apiToken }, { accountDetails: botInfo, config: {}, scope: [] });
+            return this._successResponse({ credentials: { apiToken }, accountDetails: botInfo });
         } catch (error) {
             return this._handleError(error);
         }

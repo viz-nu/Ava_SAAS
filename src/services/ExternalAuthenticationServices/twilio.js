@@ -32,7 +32,7 @@ export default class OauthTwilio extends BaseOAuthProvider {
         if (!AccountSid) return this._errorResponse("missing_account_sid", "accountSid is required.", 400);
         try {
             const { data: accountDetails } = await axios.get(`${BASE_URL}/Accounts/${AccountSid}.json`, { headers: { Authorization: `Basic ${buildBasicToken(AccountSid, TWILIO_AUTH_TOKEN)}` } });
-            return this._successResponse({ id: AccountSid, basicToken: buildBasicToken(AccountSid, TWILIO_AUTH_TOKEN) }, { accountDetails, config: this.getConfig(), scope: [] });
+            return this._successResponse({ credentials: { id: AccountSid, basicToken: buildBasicToken(AccountSid, TWILIO_AUTH_TOKEN) }, accountDetails });
         } catch (error) {
             return this._handleError(error);
         }

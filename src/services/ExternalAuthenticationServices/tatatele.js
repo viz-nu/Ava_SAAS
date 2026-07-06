@@ -49,7 +49,7 @@ export default class OauthTataTele extends BaseOAuthProvider {
             const { data: accountDetails } = await axios.get(`${BASE_URL}/v1/live_calls`, {
                 headers: authHeaders(apiToken),
             });
-            return this._successResponse({ apiToken, apiKey }, { accountDetails, config: {}, scope: [] });
+            return this._successResponse({ credentials: { apiToken, apiKey }, accountDetails });
         } catch (error) {
             return this._handleError(error);
         }

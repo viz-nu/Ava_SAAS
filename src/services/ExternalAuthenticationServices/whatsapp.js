@@ -116,13 +116,14 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                 refreshTokenExpiresAt: null,
             };
             console.log("Step 6: Successfully returning");
-            console.log("Credentials:", JSON.stringify({ accountDetails, scope: scopes, config: this.getConfig() }, null, 2));
-            return this._successResponse(credentials, {
+            console.log("Credentials:", JSON.stringify({ accountDetails, scope: scopes }, null, 2));
+            return this._successResponse({
+                credentials,
                 scope: scopes,
-                accountDetails: { business: businessDetails, waba: wabaDetails, token: tokenInfo, webhook: webhookResponse },
-                config: this.getConfig(),
+                accountDetails: { business: businessDetails, waba: wabaDetails, token: tokenInfo, webhook: webhookResponse }
             });
         } catch (error) {
+            console.log("Error:", error);
             return this._handleError(error);
         }
     }

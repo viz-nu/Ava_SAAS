@@ -104,11 +104,7 @@ export default class OauthGoogle extends BaseOAuthProvider {
                 }
                 : null;
 
-            return this._successResponse(credentials, {
-                scope,
-                accountDetails,
-                config: this.getConfig(),
-            });
+            return this._successResponse({ credentials, scope, accountDetails });
         } catch (error) {
             return this._handleError(error);
         }
@@ -155,7 +151,7 @@ export default class OauthGoogle extends BaseOAuthProvider {
                 refreshTokenExpiresAt: null, // Not provided on refresh
             };
 
-            return this._successResponse(refreshed);
+            return this._successResponse({ credentials: refreshed });
         } catch (error) {
             return this._handleError(error);
         }

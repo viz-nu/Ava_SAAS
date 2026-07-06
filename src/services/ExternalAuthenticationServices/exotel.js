@@ -66,15 +66,7 @@ export default class OauthExotel extends BaseOAuthProvider {
                 `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
                 { headers: { Authorization: basicAuth(apiKey, apiToken) } }
             );
-            return this._successResponse(
-                { apiKey, apiToken, accountSid, subdomain },
-                {
-                    accountDetails,
-                    config: { AccountSid: accountSid, subdomain, region },
-                    scope: [],
-                }
-            );
-
+            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: [], accountDetails });
         } catch (error) {
             return this._handleError(error);
         }
@@ -109,7 +101,7 @@ export default class OauthExotel extends BaseOAuthProvider {
                 { headers: { Authorization: authCode, "Content-Type": "application/json" } }
             );
 
-            return this._successResponse({ ...config, webhookUrl, exophone }, { config: { ...config, webhookUrl, exophone }, scope: [] });
+            return this._successResponse({ ...config, webhookUrl, exophone });
         } catch (error) {
             return this._handleError(error);
         }
@@ -125,7 +117,7 @@ export default class OauthExotel extends BaseOAuthProvider {
                 `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
                 { headers: { Authorization: basicAuth(apiKey, apiToken) } }
             );
-            return this._successResponse({ accountSid, subdomain, ...data }, { accountDetails: { accountSid, subdomain, ...data }, config: {}, scope: [] });
+            return this._successResponse({ credentials: { accountSid, subdomain, ...data }, accountDetails: { accountSid, subdomain, ...data } });
         } catch (error) {
             return this._handleError(error);
         }
@@ -140,7 +132,7 @@ export default class OauthExotel extends BaseOAuthProvider {
                 `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
                 { headers: { Authorization: basicAuth(apiKey, apiToken) } }
             );
-            return this._successResponse({ clientId: accountSid, scopes: [], expiresIn: null, isValid: true }, { config: {}, scope: [] });
+            return this._successResponse({ credentials: { clientId: accountSid, scopes: [], expiresIn: null, isValid: true } });
         } catch (error) {
             return this._handleError(error);
         }

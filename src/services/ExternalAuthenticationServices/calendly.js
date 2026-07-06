@@ -101,11 +101,7 @@ export default class OauthCalendly extends BaseOAuthProvider {
                 ? userInfoResult.data
                 : null;
 
-            return this._successResponse(credentials, {
-                scope,
-                accountDetails,
-                config: this.getConfig(),
-            });
+            return this._successResponse({credentials, scope, accountDetails});
         } catch (error) {
             return this._handleError(error);
         }
@@ -156,7 +152,7 @@ export default class OauthCalendly extends BaseOAuthProvider {
                 refreshTokenExpiresAt: null,
             };
 
-            return this._successResponse(refreshed);
+            return this._successResponse({ credentials: refreshed });
         } catch (error) {
             return this._handleError(error);
         }
@@ -188,10 +184,7 @@ export default class OauthCalendly extends BaseOAuthProvider {
             // Extract UUID from full URI: "https://api.calendly.com/users/AAAA" → "AAAA"
             const id = resource.uri?.split("/").pop() ?? null;
 
-            return this._successResponse({
-                ...resource,
-                id,
-            });
+            return this._successResponse({ id, resource });
         } catch (error) {
             return this._handleError(error);
         }
