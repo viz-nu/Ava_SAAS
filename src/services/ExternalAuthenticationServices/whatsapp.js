@@ -90,8 +90,8 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${longLived.access_token}` } }
             // step 4: setup webhooks
             const base = (process.env.WEBHOOKS_URL || "").replace(/\/?$/, "/");
-            await axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` }, auth);
-            const webhookResponse = { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` };
+            const webhookData = { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` };
+            const { data: webhookResponse } = await axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, webhookData, auth);
             // Step 5: Fetch account details
             const { data: wabaDetails } = await axios.get(`${BASE_URL}/${waba_id}`, {
                 params: { fields: "id,name,status,country,currency,timezone_id,message_template_namespace,account_review_status,business_verification_status" },
@@ -111,10 +111,10 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             return this._successResponse({
                 credentials,
                 scope: scopes,
-                accountDetails: { business: businessDetails, waba: wabaDetails, token: tokenInfo, webhook: webhookResponse }
+                accountDetails: { business: businessDetails, waba: wabaDetails, token: tokenInfo, webhook: webhookData }
             });
         } catch (error) {
-            console.log("Error:", error);
+            console.error("Error:", error);
             return this._handleError(error);
         }
     }
