@@ -53,9 +53,10 @@ export const channelResolvers = {
             const serviceProvider = PROVIDER_MAP[provider.name];
             if (!serviceProvider) throw new GraphQLError('ServiceProvider not found', { extensions: { code: 'INVALID_INPUT' } });
             const channel = await Channel.create({ name, business: context.user.business, apiAuthenticator: apiAuthenticatorDoc._id, provider: provider._id, status: "enabled", systemPrompt, isPublic, UIElements, type })
-            const { success, config: restConfigurations, error } = await serviceProvider.setupChannel({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id, config });
+            const { success, config: restConfigurations, error, externalId = "" } = await serviceProvider.setupChannel({ apiAuthenticator: apiAuthenticatorDoc, providerName: provider.name, channelId: channel._id, config });
             if (!success) throw new GraphQLError('Failed to setup channel', { extensions: { code: 'INVALID_INPUT', error } });
             channel.config = { ...config, ...restConfigurations };
+            channel.externalId = externalId;
             await channel.save();
             await Business.populate(channel, { path: 'business', select: populateFields.business });
             await ApiAuthenticators.populate(channel, { path: 'apiAuthenticator', select: populateFields.apiAuthenticator });
