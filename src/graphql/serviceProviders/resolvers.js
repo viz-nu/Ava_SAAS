@@ -116,8 +116,9 @@ export const serviceProvidersResolvers = {
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
             const oauthProvider = PROVIDER_MAP[provider.name];
             if (!oauthProvider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            const { success, data: { credentials, scope, accountDetails, config }, error } = await oauthProvider.getTokens(keys);
-            if (!success) throw new GraphQLError(error.message, { extensions: { code: error.code } });
+            const result = await oauthProvider.getTokens(keys);
+            if (!result.success) throw new GraphQLError(result.error.message, { extensions: { code: result.error.code } });
+            const { credentials, scope, accountDetails, config } = result.data;
             if (existingAuthenticatorId) {
                 const update = { $set: { credentials, config, accountDetails } };
                 if (scope?.length > 0) update.$addToSet = { scope: { $each: scope } };

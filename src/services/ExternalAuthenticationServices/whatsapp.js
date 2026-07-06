@@ -54,6 +54,7 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
 
         try {
             // Step 1: Exchange code for short-lived token
+            console.log("Step 1: Exchange code for short-lived token");
             const { data: shortLived } = await axios.get(
                 `${BASE_URL}/oauth/access_token`,
                 {
@@ -63,9 +64,12 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                         client_secret: wa_client_secret,
                     },
                 }
-            );
-            if (!shortLived?.access_token) return this._errorResponse("malformed_response", "Failed to obtain short-lived token.", 502);
+            ).catch(error => {
+                console.error("Step 1: Error:", error);
+                return this._errorResponse("malformed_response", "Failed to obtain short-lived token.", 502);
+            });
             // Step 2: Exchange for long-lived token (60+ days, essentially permanent)
+            console.log("Step 2: Exchange for long-lived token");
             const { data: longLived } = await axios.get(
                 `${BASE_URL}/oauth/access_token`,
                 {
@@ -76,30 +80,48 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                         fb_exchange_token: shortLived.access_token,
                     },
                 }
-            );
-            if (!longLived?.access_token) return this._errorResponse("malformed_response", "Failed to obtain long-lived token.", 502);
+            ).catch(error => {
+                console.error("Step 2: Error:", error);
+                return this._errorResponse("malformed_response", "Failed to obtain long-lived token.", 502);
+            });
             // Step 3: debug tokens for scopes and validity
+            console.log("Step 3: Debug tokens for scopes and validity");    
             const { data: tokenInfo } = await axios.get(`${BASE_URL}/debug_token`, {
                 params: {
                     input_token: longLived.access_token,
                     access_token: `${wa_client_id}|${wa_client_secret}`,
                 },
+            }).catch(error => {
+                console.error("Step 3: Error:", error);
+                return this._errorResponse("malformed_response", "Failed to debug longlived access token.", 502);
             });
-            if (!tokenInfo?.data?.is_valid) return this._errorResponse("malformed_response", "Failed to debug longlived access token.", 502);
             const { scopes, user_id } = tokenInfo.data;
             const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${longLived.access_token}` } }
             // step 4: setup webhooks
+            console.log("Step 4: Setup webhooks");
             const base = (process.env.WEBHOOKS_URL || "").replace(/\/?$/, "/");
             const webhookData = { override_callback_uri: `${base}webhook/Whatsapp`, verify_token: `LeanOn_Webhook` };
-            const { data: webhookResponse } = await axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, webhookData, auth);
+            const { data: webhookResponse } = await axios.post(`${BASE_URL}/${waba_id}/subscribed_apps`, webhookData, auth).catch(error => {
+                console.error("Step 4: Error:", error);
+                return this._errorResponse("malformed_response", "Failed to setup webhooks.", 502);
+            });
             // Step 5: Fetch account details
+            console.log("Step 5: Fetch WABA details");
             const { data: wabaDetails } = await axios.get(`${BASE_URL}/${waba_id}`, {
                 params: { fields: "id,name,status,country,currency,timezone_id,message_template_namespace,account_review_status,business_verification_status" },
                 headers: auth.headers,
+            }).catch(error => {
+                console.error("Step 5: Error:", error);
+                return this._errorResponse("malformed_response", "Failed to fetch WABA details.", 502);
             });
+            console.log("Step 6: Fetch business details");
             const { data: businessDetails } = await axios.get(`${BASE_URL}/${business_id}`, {
                 headers: auth.headers,
+            }).catch(error => {
+                console.error("Step 6: Error:", error);
+                return this._errorResponse("malformed_response", "Failed to fetch business details.", 502);
             });
+            console.log("Step 7: Return success response");
             const credentials = {
                 accessToken: longLived.access_token,
                 refreshToken: null, // Facebook long-lived tokens don't use refresh tokens
@@ -108,11 +130,8 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                 expiresIn: longLived.expires_in,
                 refreshTokenExpiresAt: null,
             };
-            return this._successResponse({
-                credentials,
-                scope: scopes,
-                accountDetails: { business: businessDetails, waba: wabaDetails, token: tokenInfo, webhook: webhookData }
-            });
+            console.log("Step 8: Success response");
+            return this._successResponse({ credentials, scope: scopes, accountDetails: { business: businessDetails, waba: wabaDetails, token: tokenInfo, webhook: webhookData } });
         } catch (error) {
             console.error("Error:", error);
             return this._handleError(error);
