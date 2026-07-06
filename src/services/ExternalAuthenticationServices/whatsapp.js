@@ -54,7 +54,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
 
         try {
             // Step 1: Exchange code for short-lived token
-            console.log("Step 1: Exchange code for short-lived token");
             const { data: shortLived } = await axios.get(
                 `${BASE_URL}/oauth/access_token`,
                 {
@@ -66,10 +65,7 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                 }
             );
             if (!shortLived?.access_token) return this._errorResponse("malformed_response", "Failed to obtain short-lived token.", 502);
-            console.log("Step 1: Successfully obtained short-lived token");
-            console.log("Short-lived token:", shortLived.access_token);
             // Step 2: Exchange for long-lived token (60+ days, essentially permanent)
-            console.log("Step 2: Exchange for long-lived token (60+ days, essentially permanent)");
             const { data: longLived } = await axios.get(
                 `${BASE_URL}/oauth/access_token`,
                 {
@@ -82,10 +78,7 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                 }
             );
             if (!longLived?.access_token) return this._errorResponse("malformed_response", "Failed to obtain long-lived token.", 502);
-            console.log("Step 2: Successfully obtained long-lived token");
-            console.log("Long-lived token:", longLived.access_token);
             // Step 3: debug tokens for scopes and validity
-            console.log("Step 3: Debug tokens for scopes and validity");
             const { data: tokenInfo } = await axios.get(`${BASE_URL}/debug_token`, {
                 params: {
                     input_token: longLived.access_token,
@@ -93,8 +86,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
                 },
             });
             if (!tokenInfo?.data?.is_valid) return this._errorResponse("malformed_response", "Failed to debug longlived access token.", 502);
-            console.log("Step 3: Successfully debugged long-lived token");
-            console.log("Token info:", tokenInfo.data);
             const { scopes, user_id } = tokenInfo.data;
             const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${longLived.access_token}` } }
             // step 4: setup webhooks
@@ -138,10 +129,15 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
     }
     async setupChannel({ apiAuthenticator, config }) {
         const { phone_number_id } = config;
+        console.log("Step 1: Setup channel");
+        console.log("Phone number ID:", phone_number_id);
         const accessToken = apiAuthenticator?.credentials?.accessToken;
         if (!accessToken) return this._errorResponse("missing_credentials", "Missing access token.", 400);
+        console.log("Step 2: Access token found");
+        console.log("Access token:", accessToken);
         const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } };
         const steps = {};
+        console.log("Step 3: Steps initialized");
         steps.registration = await this._safeStep("registration", () =>
             axios.post(`${BASE_URL}/${phone_number_id}/register`, {
                 messaging_product: "whatsapp",
@@ -149,6 +145,8 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             }, auth),
             { okErrorCodes: [133016] } // CRITICAL — register number to send and receive messages
         );
+        console.log("Step 4: Registration step completed");
+        console.log("Registration step:", steps.registration);
         // OPTIONAL — calling fails gracefully on sub-2000-tier numbers
         steps.calling = await this._safeStep("calling", () =>
             axios.post(`${BASE_URL}/${phone_number_id}/settings`, {
@@ -161,6 +159,8 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             }, auth),
             { optional: true }  // OPTIONAL — calling fails gracefully on sub-2000-tier numbers
         );
+        console.log("Step 5: Calling step completed");
+        console.log("Calling step:", steps.calling);
         // capabilities live INSIDE config so they persist via ...restConfigurations
         config.capabilities = { messaging: steps.registration.ok, calling: steps.calling.ok };
         if (!config.capabilities.messaging) config.errors = Object.values(steps).filter(s => !s.ok && !s.optional).map(s => `${s.name}(code=${s.code ?? "?"}, trace=${s.fbtrace_id ?? "?"})`).join("; ");
