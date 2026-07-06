@@ -140,11 +140,9 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
     async setupChannel({ apiAuthenticator, config }) {
         const { phone_number_id } = config;
         console.log("Step 1: Setup channel");
-        console.log("Phone number ID:", phone_number_id);
         const accessToken = apiAuthenticator?.credentials?.accessToken;
         if (!accessToken) return this._errorResponse("missing_credentials", "Missing access token.", 400);
         console.log("Step 2: Access token found");
-        console.log("Access token:", accessToken);
         const auth = { headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` } };
         const steps = {};
         console.log("Step 3: Steps initialized");
@@ -156,7 +154,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             { okErrorCodes: [133016] } // CRITICAL — register number to send and receive messages
         );
         console.log("Step 4: Registration step completed");
-        console.log("Registration step:", steps.registration);
         // OPTIONAL — calling fails gracefully on sub-2000-tier numbers
         steps.calling = await this._safeStep("calling", () =>
             axios.post(`${BASE_URL}/${phone_number_id}/settings`, {
@@ -170,7 +167,6 @@ export default class OauthWhatsApp extends BaseOAuthProvider {
             { optional: true }  // OPTIONAL — calling fails gracefully on sub-2000-tier numbers
         );
         console.log("Step 5: Calling step completed");
-        console.log("Calling step:", steps.calling);
         // capabilities live INSIDE config so they persist via ...restConfigurations
         config.capabilities = { messaging: steps.registration.ok, calling: steps.calling.ok };
         if (!config.capabilities.messaging) config.errors = Object.values(steps).filter(s => !s.ok && !s.optional).map(s => `${s.name}(code=${s.code ?? "?"}, trace=${s.fbtrace_id ?? "?"})`).join("; ");
