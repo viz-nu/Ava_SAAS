@@ -57,5 +57,18 @@ export const conversationResolvers = {
         },
       };
     },
+  },
+  Mutation: {
+    updateConversationStatus: async (_, { id, status }, context) => {
+      const conversation = await Conversation.findById(id);
+      if (!conversation) throw new GraphQLError('Conversation not found');
+      await conversation.updateStatus(status);
+      return conversation;
+    },
+    // updateConversationSettings: async (_, { id, settings }, context) => {
+    //   const conversation = await Conversation.findById(id);
+    //   if (!conversation) throw new GraphQLError('Conversation not found');
+    //   return conversation.updateSettings(settings);
+    // }
   }
 };

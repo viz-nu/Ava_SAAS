@@ -11,6 +11,7 @@ import { Providers } from "../../models/ExternalServiceProviders.js";
 import { uploadFileToWhatsApp } from "../../utils/whatsapp-app-bootstrap.js";
 import { Conversation } from "../../models/Conversations.js";
 import { AgentModel } from "../../models/Agent.js";
+import { fireAndForgetAxios } from "../../utils/fireAndForget.js";
 
 export const leadResolvers = {
   Query: {
@@ -273,6 +274,7 @@ export const leadResolvers = {
         }
       });
       if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }), }] });
+      fireAndForgetAxios('post', `https://socketio.avakado.ai/api/websocket/notify`, { nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: messageDocument })
       return messageDocument;
     },
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────

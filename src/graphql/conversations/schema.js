@@ -143,4 +143,8 @@ export const conversationTypeDefs = `#graphql
       disconnectReason: String
     ): ConversationPagination @requireScope(scope: "conversation:read") @requireBusinessAccess
   }
+
+  type Mutation {
+    updateConversationStatus(id: ID!, status: ConversationStatusEnum!): Conversation @requireScope(scope: "conversation:write") @requireBusinessAccess
+  }
 `;
