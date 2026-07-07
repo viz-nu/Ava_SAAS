@@ -133,6 +133,7 @@ export const conversationTypeDefs = `#graphql
       limit: Int
       page: Int
       status: ConversationStatusEnum
+      id: ID
       priority: ConversationPriorityEnum
       agentIds: [ID]
       channelIds: [ID]

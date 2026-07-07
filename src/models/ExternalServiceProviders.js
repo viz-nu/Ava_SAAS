@@ -21,7 +21,11 @@ const ApiSchema = new Schema({
         headers: Schema.Types.Mixed, // headers of the api
         body: Schema.Types.Mixed // body of the api
     },
-    requiredScopes: [String] // scopes required for the api
+    requiredScopes: [String], // scopes required for the api
+    metadata: {
+        category: String,
+        feature: String
+    }
 }, { timestamps: true });
 
 ApiSchema.methods.evaluateExpressions = function (context = { input, config, auth }) {
@@ -91,6 +95,7 @@ const ProvidersSchema = new Schema({
     icon: String, // url
     color: String,
     basicScopes: [String],
+    apiFilters: Schema.Types.Mixed,
     createdBy: { type: Schema.Types.ObjectId, ref: 'Users' }
 }, { timestamps: true });
 

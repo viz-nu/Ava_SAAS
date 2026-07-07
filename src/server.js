@@ -8,7 +8,6 @@ import bodyParser from 'body-parser';
 import { initialize } from "./utils/dbConnect.js";
 import errorHandlerMiddleware from './middleware/errorHandler.js';
 import { registerApollo } from './graphql/index.js';
-import { webhookRouter } from "./webhooks/index.js";
 import sanitize from 'mongo-sanitize';
 import 'dotenv/config'
 // weighted imports
@@ -72,7 +71,6 @@ export const createApp = async () => {
             if (JSON.stringify(req.query) !== JSON.stringify(sanitize(req.query))) return res.status(400).json({ error: 'Invalid query parameters detected', message: 'Query contains potentially malicious content' });
             next();
         });
-        app.use("/webhook", webhookRouter);
         app.use(express.urlencoded({ limit: '50mb', extended: true }));
         app.use(bodyParser.urlencoded({ extended: true }));
         // Routes

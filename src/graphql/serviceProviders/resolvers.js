@@ -15,7 +15,7 @@ export const serviceProvidersResolvers = {
             const totalDocuments = await Providers.countDocuments(filter);
             return { data: providers, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
         },
-        fetchApis: async (_, { providers, providerName, title, description, version, _id, page = 1, limit = 10 }, context, info) => {
+        fetchApis: async (_, { providers, providerName, title, description, version, _id, page = 1, limit = 10, category, feature }, context, info) => {
             const filter = {};
             // 🛡️ Safe checks
             if (providers?.length) filter.provider = { $in: providers };
@@ -23,6 +23,8 @@ export const serviceProvidersResolvers = {
             if (description) filter.description = description;
             if (version) filter.version = version;
             if (_id) filter._id = _id;
+            if (category) filter["metadata.category"] = category;
+            if (feature) filter["metadata.feature"] = feature;
             const skip = (page - 1) * limit;
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { rootFields, populateFields } = getSelectFields(requestedFields.data);
@@ -86,7 +88,7 @@ export const serviceProvidersResolvers = {
     },
     Mutation: {
         createProvider: async (_, { name, description, icon, color, basicScopes }, context) => {
-            return await Providers.create({ name, description, icon, color, basicScopes, createdBy: context.user._id });
+            return await Providers.create({ name, description, icon, color, basicScopes, apiFilters: {}, createdBy: context.user._id });
         },
         updateProvider: async (_, { id, name, description, icon, color }, context) => {
             const fieldsToUpdate = {};
@@ -94,6 +96,7 @@ export const serviceProvidersResolvers = {
             if (description) fieldsToUpdate.description = description;
             if (icon) fieldsToUpdate.icon = icon;
             if (color) fieldsToUpdate.color = color;
+            if (apiFilters) fieldsToUpdate.apiFilters = apiFilters;
             return await Providers.findByIdAndUpdate(id, fieldsToUpdate, { new: true });
         },
         deleteProvider: async (_, { id }) => {
@@ -128,14 +131,14 @@ export const serviceProvidersResolvers = {
             }
             return await ApiAuthenticators.create({ provider: providerId, authType, credentials, config, accountDetails, scope, createdBy: context.user._id, business: context.user.business });
         },
-        createApi: async (_, { providerId, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
+        createApi: async (_, { providerId, title, description, version, schemas, requestTemplate, requiredScopes, metadata }, context) => {
             const provider = await Providers.findById(providerId);
             if (!provider) throw new GraphQLError("Provider not found", { extensions: { code: 'INVALID_INPUT' } });
-            const api = await Api.create({ provider: providerId, title: title, description: description, version: version, schemas: schemas, requestTemplate: requestTemplate, requiredScopes: requiredScopes });
+            const api = await Api.create({ provider: providerId, title: title, description: description, version: version, schemas: schemas, requestTemplate: requestTemplate, requiredScopes: requiredScopes, metadata: metadata });
             return api
         },
-        updateApi: async (_, { id, title, description, version, schemas, requestTemplate, requiredScopes }, context) => {
-            const api = await Api.findByIdAndUpdate(id, { title: title, description: description, version: version, schemas: schemas, requestTemplate: requestTemplate, requiredScopes: requiredScopes }, { new: true });
+        updateApi: async (_, { id, title, description, version, schemas, requestTemplate, requiredScopes, metadata }, context) => {
+            const api = await Api.findByIdAndUpdate(id, { title: title, description: description, version: version, schemas: schemas, requestTemplate: requestTemplate, requiredScopes: requiredScopes, metadata: metadata }, { new: true });
             return api
         },
         deleteApi: async (_, { id }) => {

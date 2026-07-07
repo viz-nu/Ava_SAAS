@@ -274,7 +274,7 @@ export const leadResolvers = {
         }
       });
       if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }), }] });
-      fireAndForgetAxios('post', `https://socketio.avakado.ai/api/websocket/notify`, { nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: messageDocument })
+      await sendKafkaMessage({ topic: 'socket-event', messages: [{ key: conversation._id.toString(), value: JSON.stringify({ nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: messageDocument }) }] });
       return messageDocument;
     },
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
