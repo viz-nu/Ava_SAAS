@@ -1,6 +1,14 @@
 import { model, Schema } from 'mongoose';
+const MessageSessionSchema = new Schema({
+    campaign: { type: Schema.Types.ObjectId, ref: 'Campaigns' },
+    firstMessage: { type: Schema.Types.ObjectId, ref: 'Message' },
+    lastMessage: { type: Schema.Types.ObjectId, ref: 'Message' },
+    conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+    business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
+})
 const MessagesSchema = new Schema({
     conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+    campaign: { type: Schema.Types.ObjectId, ref: 'Campaigns' },
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     externalMessageId: String,
     direction: String,
@@ -33,3 +41,4 @@ const MessagesSchema = new Schema({
     timestamps: true
 });
 export const Message = model('Message', MessagesSchema, "Messages");
+export const MessageSession = model('MessageSession', MessageSessionSchema, "MessageSessions");

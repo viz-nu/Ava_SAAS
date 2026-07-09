@@ -1,168 +1,45 @@
 
 export const jobTypeDefs = `#graphql
-type Job {
-    _id: ID!
-    campaign: Campaign
-    name: String
-    description: String
-    status: jobStatusEnum
-    priority: Int
-    schedule: scheduleJob
-    jobType: jobTypeEnum
-    payload: outboundCallPayload
-    result_ref: JSON
-    error_ref: JSON
-    log: logEntry
-    tags: [String]
-    createdBy: User
-    business: Business
-    createdAt: DateTime
-    updatedAt: DateTime
-}
-type logEntry {
-    level: String
-    message: String
-    timestamp: DateTime
-    data: JSON
-}
-enum jobStatusEnum {
-    scheduled
-    active
-    completed
-    failed
-    canceled
-    delayed
-    waiting
-}
-type outboundCallPayload {
-    channel: Channel
-    conversationId: Conversation
-    agent: Agent
-    to: String
-    PreContext: String
-    expectedDuration: Int
-    maxRetries: Int
-    callbackUrl: String
-    cps: Int
-}
-    enum jobTypeEnum {
-    outboundCall
-}
-type scheduleJob {
-    run_at: DateTime
-    type: scheduleTypeEnum
-    timezone: String
-    backoff: backoff
-    cancel_requested: Boolean
-}
-enum scheduleTypeEnum {
-    once
-    cron
-}
-type backoff {
-    type: backoffTypeEnum
-    delay_ms: Int
-    attempts: attempts
-}
-type attempts {
-    max: Int
-    made: Int
-    reason: String
-}
-enum backoffTypeEnum {
-    fixed
-    exponential
-}
 type Campaign {
     _id: ID!
-    name: String
-    agent: Agent
-    communicationChannels: [Channel]
+    name: String!
+    channel: Channel!
     leads: [Lead]
-    schedule: scheduleCampaign
-    cps: Int
-    instructions: String
+    config: JSON!
+    status: String
+    timeLines: JSON
+    cancel_requested: Boolean
     createdBy: User
-    business: Business
     createdAt: DateTime
     updatedAt: DateTime
 }
-type scheduleCampaign {
-    startAt: DateTime
-    endAt: DateTime
-    timezone: String
-}
-type CampaignPersonalInfo {
-    name: String
-    contactDetails: ContactDetails
-    miscInfo: JSON
-}
-type ContactDetails {
-    email: String
-    phone: String
-    telegramId: String
-    whatsappId: String
-    instagramId: String
-}
-input receiverInput {
-    personalInfo: receiverPersonalInfoInput
-    preferredLanguage: String
-    instructions: String
-}
-input receiverPersonalInfoInput {
-    name: String
-    contactDetails: contactDetailsInput
-    miscInfo: JSON
-}
-input contactDetailsInput {
-    email: String
-    phone: String
-    telegramId: String
-    whatsappId: String
-    instagramId: String
-}
-input scheduleCampaignInput {
-    startAt: DateTime
-    endAt: DateTime
-    timezone: String
-}
-input scheduleJobInput {
-    run_at: DateTime
-    type: scheduleTypeEnum
-}
-input backoffInput {
-    type: backoffTypeEnum
-    delay_ms: Int
-    attempts: attemptsInput
-}
-input attemptsInput {
-    max: Int
-    made: Int
-    reason: String
-}
-input outboundCallPayloadInput {
-    channel: ID
-    agent: ID
-    to: String
-    PreContext: String
-    expectedDuration: Int
-    maxRetries: Int
-    cps: Int
-}
-type CampaignPagination {
-    data: [Campaign]
-    metaData: PaginationMetaData
-}
-type Query {
-    fetchJobs(campaignId: ID, status: jobStatusEnum, priority: Int, jobType: jobTypeEnum id: ID schedule_type: scheduleTypeEnum schedule_run_at: DateTime limit: Int page: Int): [Job] @requireScope(scope: "campaign:read") @requireBusinessAccess
-    fetchCampaigns( id: ID, limit: Int page: Int ): CampaignPagination @requireScope(scope: "campaign:read") @requireBusinessAccess
-}
-type Mutation {
-    createCampaign(name: String communicationChannels: [ID] leads: [ID] nodes: [JSON] edges: [JSON]): Campaign @requireScope(scope: "campaign:create") @requireBusinessAccess
-    createJob(name: String, description: String, payload: outboundCallPayloadInput, schedule: scheduleJobInput, tags: [String], priority: Int): Job @requireScope(scope: "campaign:launch") @requireBusinessAccess
-    updateJobSchedule(id: ID, schedule: scheduleJobInput): Job @requireScope(scope: "campaign:update") @requireBusinessAccess
-    deleteJob(id: ID): Boolean @requireScope(scope: "campaign:delete") @requireBusinessAccess
-    makeAnOutboundCall(number: String channelId: ID! PreContext: String campaignId: ID): Conversation @requireScope(scope: "call:initiate") @requireBusinessAccess
-    exotelCampaignSetup(contacts: JSON, channelId: ID! schedule:JSON): JSON @requireScope(scope: "campaign:launch") @requireBusinessAccess
-    testTataTele(channelId: ID! action: String! data: JSON): JSON @requireScope(scope: "call:initiate") @requireBusinessAccess
-}`
+    type Task {
+        _id: ID!
+        business: Business
+        campaign: Campaign
+        lead: Lead
+        status: String
+        timeLine: JSON
+        createdAt: DateTime
+        type: String
+        data: JSON
+        error: JSON
+        updatedAt: DateTime
+    }
+    type CampaignPagination {
+        data: [Campaign]
+        metaData: JSON
+    }
+    type TaskPagination {
+        data: [Task]
+        metaData: JSON
+    }
+      type  Query {
+            fetchCampaigns(id: ID, name: String, channelIds: [ID], leadIds: [ID], status: String, limit: Int, page: Int): CampaignPagination
+            fetchTasks(campaignId: ID, status: String, limit: Int, page: Int): TaskPagination
+        }
+       type Mutation {
+            createCampaign(name: String, channelId: ID, leadIds: [ID], config: JSON): Campaign
+            cancelCampaign(id: ID): Campaign
+        }
+`

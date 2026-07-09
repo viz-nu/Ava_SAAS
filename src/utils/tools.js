@@ -1,5 +1,6 @@
 import axios from "axios";
 import { Conversation } from "../models/Conversations.js";
+import pkg from 'lodash';
 import 'dotenv/config'
 export const populateStructure = (child, dataMap, parentPath = "") => {
     const result = []
@@ -272,3 +273,15 @@ export const buildJSONSchema = (def) => {
     return schema;
 }
 export const defaultAnalysisMetrics ={}
+
+export const buildComponents = (parametersMap, data) => {
+    return parametersMap.map(component => ({
+        ...Object.fromEntries(
+            Object.entries(component).filter(([k]) => k !== "parameters")
+        ),
+        parameters: component.parameters.map(path => ({
+            type: path.type,
+            [path.type]: pkg.get(data, path.source)
+        }))
+    }));
+};

@@ -84,8 +84,6 @@ export const conversationTypeDefs = `#graphql
     channel: Channel
     """Lead (contact) involved in the conversation"""
     lead: Lead
-    """Campaign this conversation belongs to, if any"""
-    campaign: Campaign
     """External provider thread ID"""
     externalConversationId: String
     """Routing and assignment configuration"""
@@ -124,7 +122,6 @@ export const conversationTypeDefs = `#graphql
     @param agentId      - Filter by AI agent ID
     @param channel      - Filter by channel ObjectId
     @param channelIds   - Filter by multiple channel ObjectIds
-    @param campaignIds  - Filter by multiple campaign IDs
     @param from         - Created-at start date
     @param to           - Created-at end date
     @param disconnectReason - Filter by socket disconnect reason
@@ -137,7 +134,6 @@ export const conversationTypeDefs = `#graphql
       priority: ConversationPriorityEnum
       agentIds: [ID]
       channelIds: [ID]
-      campaignIds: [ID]
       leadIds: [ID]
       from: DateTime
       to: DateTime

@@ -11,6 +11,7 @@ const TranscriptSchema = new Schema({
 }, { _id: false });
 const CallSessionSchema = new Schema({
     conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+    campaign: { type: Schema.Types.ObjectId, ref: 'Campaigns' },
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: { type: Schema.Types.ObjectId, ref: "Channel" },
     externalCallSessionId: String,

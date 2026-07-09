@@ -1,13 +1,13 @@
 import { model, Schema } from 'mongoose';
 import Trigger from './Triggers.js';
 import { sendKafkaMessage } from '../utils/kafka.js';
+import { Message, MessageSession } from './Messages.js';
 // const ConversationStatusEnum = ["initiated", "active", "interrupted", "inactive", "disconnected"];
 const ConversationSchema = new Schema({
     agent: { type: Schema.Types.ObjectId, ref: 'Agent' },  // the AI agent
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     channel: { type: Schema.Types.ObjectId, ref: "Channel" },
     lead: { type: Schema.Types.ObjectId, ref: "Lead" }, // from sender of the inbound message / call or recipient of the outbound message / call
-    campaign: { type: Schema.Types.ObjectId, ref: "Campaign" }, // participant of the campaign(bulk messaging)
     // Deterministic provider thread key used to find-or-create on every inbound
     // event. e.g. WhatsApp: contact wa_id · Telegram: chat.id · Messenger: PSID.
     externalConversationId: { type: String },
@@ -44,6 +44,8 @@ ConversationSchema.methods.updateStatus = async function (status) {
     this.status = status;
     if (status === "completed") {
         console.log("Sending agentic-data-summarisation message");
+        const lastMessage = await Message.findOne({ conversation: this._id }).sort({ createdAt: -1 });
+        // const messageSession = await MessageSession.updateOne({ conversation: this._id, business: this.business._id, lastMessage: { $exists: false } }, { $set: { lastMessage: lastMessage._id } }, { upsert: true });
         await sendKafkaMessage({
             topic: 'agentic-data-summarisation',
             message: {

@@ -3,10 +3,8 @@ import { getSelectFields } from "../../utils/graphqlTools.js";
 import graphqlFields from "graphql-fields";
 import { AgentModel } from "../../models/Agent.js";
 import { Channel } from "../../models/Channels.js";
-import { Campaign } from "../../models/Campaign.js";
 import { Lead } from "../../models/Leads.js";
 import { GraphQLError } from "graphql";
-import { Providers } from "../../models/ExternalServiceProviders.js";
 export const conversationResolvers = {
   Query: {
     conversations: async (_, { limit = 10, page = 1, status, id, channelIds, campaignIds, agentIds, leadIds, from, to, priority }, context, info) => {
@@ -36,11 +34,6 @@ export const conversationResolvers = {
         await Channel.populate(conversations, {
           path: "channel",
           select: populateFields.channel,
-        });
-      if (populateFields?.campaign)
-        await Campaign.populate(conversations, {
-          path: "campaign",
-          select: populateFields.campaign,
         });
       if (populateFields?.lead)
         await Lead.populate(conversations, {

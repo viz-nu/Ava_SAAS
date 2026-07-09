@@ -6,7 +6,7 @@ import { GraphQLError } from "graphql";
 import { buildDuplicateQuery, mergeContactDetails, findMatchedHandles } from "../../utils/leadDuplicateUtils.js";
 import { Channel } from "../../models/Channels.js";
 import { sendKafkaMessage } from "../../utils/kafka.js";
-import { Message } from "../../models/Messages.js";
+import { Message, MessageSession } from "../../models/Messages.js";
 import { Providers } from "../../models/ExternalServiceProviders.js";
 import { uploadFileToWhatsApp } from "../../utils/whatsapp-app-bootstrap.js";
 import { Conversation } from "../../models/Conversations.js";
@@ -240,9 +240,14 @@ export const leadResolvers = {
       }
       // create a message and conenct it to a conversation
       let conversation = null;
+      // let CreateMessageSession = false;
       if (conversationId) {
         conversation = await Conversation.findById(conversationId);
         if (!conversation) throw new GraphQLError("Conversation not found", { extensions: { code: "NOT_FOUND" } });
+        if (conversation.status !== 'open') {
+          // CreateMessageSession = true;
+          await conversation.updateStatus('open');
+        }
       }
       else {
         const agent = await AgentModel.findOne({ business: context.user.business, channels: { $in: [channelId] } });
@@ -253,6 +258,7 @@ export const leadResolvers = {
           lead: id,
           externalConversationId: toId?.toString() ?? 'unknown',
         });
+        // CreateMessageSession = true;
       }
       const messageDocument = await Message.create({
         conversation: conversation._id,
@@ -273,6 +279,13 @@ export const leadResolvers = {
           initiated: new Date(),
         }
       });
+      // if (CreateMessageSession) {
+      //   await MessageSession.create({
+      //     conversation: conversation._id,
+      //     business: context.user.business,
+      //     firstMessage: messageDocument._id
+      //   });
+      // }
       if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }), }] });
       await sendKafkaMessage({ topic: 'socket-event', messages: [{ key: conversation._id.toString(), value: JSON.stringify({ nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: messageDocument }) }] });
       return messageDocument;
