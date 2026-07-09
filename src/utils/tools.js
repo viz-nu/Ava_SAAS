@@ -272,7 +272,7 @@ export const buildJSONSchema = (def) => {
     }
     return schema;
 }
-export const defaultAnalysisMetrics ={}
+export const defaultAnalysisMetrics = {}
 
 export const buildComponents = (parametersMap, data) => {
     return parametersMap.map(component => ({
@@ -281,6 +281,7 @@ export const buildComponents = (parametersMap, data) => {
         ),
         parameters: component.parameters.map(path => ({
             type: path.type,
+            parameter_name: path.parameter_name || null,
             [path.type]: pkg.get(data, path.source)
         }))
     }));
