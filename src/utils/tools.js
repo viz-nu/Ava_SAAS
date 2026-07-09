@@ -282,7 +282,7 @@ export const buildComponents = (parametersMap, data) => {
         parameters: component.parameters.map(path => ({
             type: path.type,
             parameter_name: path.parameter_name || null,
-            [path.type]: pkg.get(data, path.source)
+            [path.type]: path.value.startsWith("{{") && path.value.endsWith("}}") ? pkg.get(data, path.value.slice(2, -2)) : path.value
         }))
     }));
 };
