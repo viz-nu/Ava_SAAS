@@ -1,5 +1,6 @@
 import axios from "axios";
 import BaseOAuthProvider from "./base.js";
+import { ConsoleSpanExporter } from "@openai/agents";
 const SUBDOMAIN_MAP = {
     singapore: "api.exotel.com",       // my.exotel.com accounts
     mumbai: "api.in.exotel.com",       // my.mum1.exotel.com accounts
@@ -24,27 +25,85 @@ export default class OauthExotel extends BaseOAuthProvider {
     // getAuthUrl is not applicable; the UI should collect these four fields directly.
     getAuthUrl({ state = "" }) {
         return {
-            AuthUrl: `https://www.avakado.ai/integrate/exotel?state=${state}`, ExpectedKeysFromQuery: {
+            AuthUrl: `https://www.avakado.ai/integrate/exotel?state=${state}`,
+            ExpectedKeysFromQuery: {
                 type: "object",
-                required: ["apiKey", "apiToken", "accountSid", "region"],
+                required: ["apiKey", "apiToken", "accountSid", "region","scope"],
                 properties: {
                     apiKey: {
-                        type: "string",
-                        description: "Exotel API Key"
+                        "type": "string",
+                        description: "Exotel API Key",
+                        minLength: 1,
+                        xUi: {
+                            label: "API Key",
+                            inputType: "password",
+                            sensitive: true,
+                            placeholder: "e.g. a1b2c3d4e5f6",
+                            helpText: "Exotel Dashboard → Settings → API Settings",
+                            helpLink: "https://my.exotel.com"
+                        }
                     },
                     apiToken: {
                         type: "string",
-                        description: "Exotel API Token"
+                        description: "Exotel API Token",
+                        minLength: 1,
+                        xUi: {
+                            label: "API Token",
+                            inputType: "password",
+                            sensitive: true,
+                            placeholder: "e.g. 9f8e7d6c5b4a",
+                            helpText: "Paired secret shown alongside the API Key on the same Settings page."
+                        }
                     },
                     accountSid: {
                         type: "string",
-                        description: "Exotel Account SID"
+                        description: "Exotel Account SID",
+                        minLength: 1,
+                        xUi: {
+                            label: "Account SID",
+                            inputType: "text",
+                            sensitive: false,
+                            placeholder: "e.g. yourcompany1a2b3c",
+                            helpText: "Also found on the API Settings page — not the same as your login username."
+                        }
                     },
                     region: {
                         type: "string",
                         description: "Exotel Region",
                         default: "singapore",
-                        enum: ["singapore", "mumbai"]
+                        enum: ["singapore", "mumbai"],
+                        xUi: {
+                            label: "Data Center",
+                            inputType: "select",
+                            options: [
+                                { value: "singapore", label: "Singapore (Global)" },
+                                { value: "mumbai", label: "India (Mumbai)" }
+                            ],
+                            helpText: "Pick the data center your Exotel account was provisioned in. This determines which host every API call is routed to.",
+                            mapsTo: {
+                                subdomain: { singapore: "api.exotel.com", mumbai: "api.in.exotel.com" },
+                                ccmSubdomain: { singapore: "ccm-api.exotel.com", mumbai: "ccm-api.in.exotel.com" }
+                            }
+                        }
+                    },
+                    scope: {
+                        type: "array",
+                        description: "Exotel Scopes",
+                        items: {
+                            type: "string",
+                            enum: ["voice_calling", "exophones_manage", "ccm_agent_context"]
+                        },
+                        default: ["voice_calling", "exophones_manage"],
+                        xUi: {
+                            label: "Enable capabilities",
+                            inputType: "multi-select",
+                            options: [
+                                { value: "voice_calling", label: "Voice — make/receive calls, call reporting" },
+                                { value: "exophones_manage", label: "Phone Numbers — browse, purchase, configure ExoPhones" },
+                                { value: "ccm_agent_context", label: "Agent Calling (deprecated) — CCM agent-to-customer calls" }
+                            ],
+                            helpText: "Application-level gating only — Exotel itself does not scope API keys; this just controls which of your app's Exotel actions this credential set is allowed to power."
+                        }
                     }
                 },
                 additionalProperties: false
@@ -55,7 +114,7 @@ export default class OauthExotel extends BaseOAuthProvider {
     // Validates the credentials by hitting a lightweight Exotel endpoint.
     // ExpectedKeysFromQuery: ['apiKey', 'apiToken', 'accountSid', 'region']
     // region: 'singapore' | 'mumbai'  (defaults to 'singapore')
-    async getTokens({ apiKey, apiToken, accountSid, region = "singapore" }) {
+    async getTokens({ apiKey, apiToken, accountSid, region = "singapore", scope = [] }) {
         if (!apiKey || !apiToken || !accountSid) {
             return this._errorResponse("missing_credentials", "apiKey, apiToken, and accountSid are required.", 400);
         }
@@ -66,7 +125,8 @@ export default class OauthExotel extends BaseOAuthProvider {
                 `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
                 { headers: { Authorization: basicAuth(apiKey, apiToken) } }
             );
-            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: [], accountDetails });
+            console.log(accountDetails);
+            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: scope, accountDetails });
         } catch (error) {
             return this._handleError(error);
         }
