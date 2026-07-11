@@ -28,7 +28,7 @@ export default class OauthExotel extends BaseOAuthProvider {
             AuthUrl: `https://www.avakado.ai/integrate/exotel?state=${state}`,
             ExpectedKeysFromQuery: {
                 type: "object",
-                required: ["apiKey", "apiToken", "accountSid", "region","scope"],
+                required: ["apiKey", "apiToken", "accountSid", "region", "scope"],
                 properties: {
                     apiKey: {
                         "type": "string",
@@ -70,19 +70,19 @@ export default class OauthExotel extends BaseOAuthProvider {
                     region: {
                         type: "string",
                         description: "Exotel Region",
-                        default: "singapore",
-                        enum: ["singapore", "mumbai"],
+                        default: "Singapore",
+                        enum: ["Singapore", "Mumbai"],
                         xUi: {
                             label: "Data Center",
                             inputType: "select",
                             options: [
-                                { value: "singapore", label: "Singapore (Global)" },
-                                { value: "mumbai", label: "India (Mumbai)" }
+                                { value: "Singapore", label: "Singapore (Global)" },
+                                { value: "Mumbai", label: "India (Mumbai)" }
                             ],
                             helpText: "Pick the data center your Exotel account was provisioned in. This determines which host every API call is routed to.",
                             mapsTo: {
-                                subdomain: { singapore: "api.exotel.com", mumbai: "api.in.exotel.com" },
-                                ccmSubdomain: { singapore: "ccm-api.exotel.com", mumbai: "ccm-api.in.exotel.com" }
+                                subdomain: { Singapore: "api.exotel.com", Mumbai: "api.in.exotel.com" },
+                                ccmSubdomain: { Singapore: "ccm-api.exotel.com", Mumbai: "ccm-api.in.exotel.com" }
                             }
                         }
                     },
@@ -121,12 +121,8 @@ export default class OauthExotel extends BaseOAuthProvider {
         const subdomain = SUBDOMAIN_MAP[region] || SUBDOMAIN_MAP.singapore;
         try {
             // Lightweight validation: list calls (empty is fine, 200 = credentials valid)
-            const { data: accountDetails } = await axios.get(
-                `${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`,
-                { headers: { Authorization: basicAuth(apiKey, apiToken) } }
-            );
-            console.log(accountDetails);
-            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: scope, accountDetails });
+            await axios.get(`${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`, { headers: { Authorization: basicAuth(apiKey, apiToken) } });
+            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: scope, accountDetails: { accountSid, region, subdomain } });
         } catch (error) {
             return this._handleError(error);
         }
