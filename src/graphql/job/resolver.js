@@ -55,6 +55,8 @@ export const jobResolvers = {
                         let lead = await Lead.findById(leadId);
                         if (!lead) throw new GraphQLError("Lead not found");
                         const data = { lead }
+                        const components = buildComponents(parametersMap, data);
+                        console.log("components", components);
                         tasks.push({
                             type: "quick",
                             data: {
@@ -62,7 +64,7 @@ export const jobResolvers = {
                                     "to": lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle ?? lead.contactDetails.phone?.[0]?.handle,
                                     templateName,
                                     languageCode,
-                                    components: buildComponents(parametersMap, data)
+                                    components: components
                                 },
                                 config: { "phoneNumberId": channel.config.phoneNumberId },
                                 apiId: "6a4c109329ef086643c24211",

@@ -282,7 +282,36 @@ export const buildComponents = (parametersMap, data) => {
         parameters: component.parameters.map(path => ({
             type: path.type,
             parameter_name: path.parameter_name || null,
-            [path.type]: path.value.startsWith("{{") && path.value.endsWith("}}") ? pkg.get(data, path.value.slice(2, -2)) : path.value
+            [path.type]: evaluateData(path[path.type], data)
+            // path[path.type].startsWith("{{") && path[path.type].endsWith("}}") ? pkg.get(data, path[path.type].slice(2, -2)) : path[path.type]
         }))
     }));
 };
+export const evaluateData = (data, context) => {
+    //check if expression or not
+    const isExpression = typeof data === "string" && data.startsWith("{{") && data.endsWith("}}")
+    //if expression evalute
+    if (isExpression) {
+        const expression = data.slice(2, -2).trim();
+        return evaluateExpression(expression, context);
+    }
+    else {
+        if (data == null) {
+            return data
+        }
+        if (Array.isArray(data)) {
+            return data.map((v) => evaluateData(v, context));
+        }
+        else if (typeof data == "object") {
+            return Object.keys(data).reduce((acc, curr) => { acc[curr] = evaluateData(data[curr], context); return acc }, {})
+        }
+        else {
+            return data;
+        }
+    }
+}
+export const evaluateExpression = (expression, context) => {
+    let result = pkg.get(context, expression);
+    console.log(result, "result");
+    return result;
+}
