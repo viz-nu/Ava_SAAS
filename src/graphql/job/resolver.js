@@ -76,7 +76,7 @@ export const jobResolvers = {
                 default:
                     throw new GraphQLError("Cannot service campaign for this channel", { extensions: { code: "Invalid_Channel" } });
             }
-            const newCampaign = await Campaign.create({ name, business: context.user.business, channel, leads, config, status: "pending", timeLines: { scheduledAt: new Date(config.scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
+            const newCampaign = await Campaign.create({ name, business: context.user.business, channel: channelId, leads: leadIds, config, status: "pending", timeLines: { scheduledAt: new Date(config.scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
             await Task.insertMany(tasks.map(task => ({ ...task, campaign: newCampaign._id, business: context.user.business })));
             await sendKafkaMessage({
                 topic: 'cron-job', messages: [{
