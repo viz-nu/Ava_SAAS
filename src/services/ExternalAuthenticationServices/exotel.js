@@ -120,23 +120,48 @@ export default class OauthExotel extends BaseOAuthProvider {
         }
         const subdomain = SUBDOMAIN_MAP[region] || SUBDOMAIN_MAP.singapore;
         try {
+            const { data: accountDetails } = await axios.get(`https://api.exotel.com/v1/Accounts/${accountSid}.json`, {
+                headers: {
+                    'Authorization': basicAuth(apiKey, apiToken)
+                }
+            });
+            console.log("accountDetails", accountDetails);
+            // expect 
+            // { Sid: 'onewindowoverseaseducation1', FriendlyName: 'One Window Overseas Education', Type: 'Full', Status: 'active', DateCreated: '2025-05-16 17:27:41', DateUpdated: '2025-11-07 15:20:11', Uri: null, BillingType: 'prepaid', KycStatus: 'completed' }
             // Lightweight validation: list calls (empty is fine, 200 = credentials valid)
-            await axios.get(`${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`, { headers: { Authorization: basicAuth(apiKey, apiToken) } });
-            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: scope, accountDetails: { accountSid, region, subdomain } });
+            // await axios.get(`${buildBaseUrl(subdomain)}/v1/Accounts/${accountSid}/Calls.json?PageSize=1`, { headers: { Authorization: basicAuth(apiKey, apiToken) } });
+            return this._successResponse({ credentials: { apiKey, apiToken, accountSid, subdomain }, scope: scope, accountDetails: accountDetails });
         } catch (error) {
             return this._handleError(error);
         }
     }
 
     // Sets up inbound call/SMS webhook for the given Exotel virtual number (exophone).
-    // config must include: { exophone }  — the DID/Exophone to attach the webhook to
+    // config must include: { exophone, appId, capabilities }  — the DID/Exophone to attach the webhook to and the appId to use and the options to use
     async setupChannel({ apiAuthenticator, channelId, config }) {
-        const webhookUrl = `https://sockets.avakado.ai/exotel-redirect`;
+        const webhookUrl = `https://sockets.avakado.ai/exotel-redirect?channelId=${channelId}`;
         const { apiKey, apiToken, accountSid, subdomain } = apiAuthenticator.credentials;
-        const { exophone, appId } = config;
+        const { exophone, appId, capabilities } = config; // capabilities = { voice: true, sms: true, friendlyName: "Exotel Voice App" }
         if (!exophone) return this._errorResponse("missing_exophone", "config.exophone (DID number) is required.", 400);
         try {
-            return { success: true, config: { ...config, webhookUrl: webhookUrl }, error: null, externalId = exophone }
+            const body = new URLSearchParams({
+                ...(capabilities.voice && { VoiceUrl: `http://my.exotel.com/${accountSid}/exoml/start_voice/${appId}` }),
+                ...(capabilities.sms && { SMSUrl: `http://my.exotel.com/${accountSid}/exoml/start_sms/${appId}` }),
+                ...(capabilities.friendlyName && { FriendlyName: capabilities.friendlyName }),
+            });
+            try {
+                const { data } = await axios.put(`https://${apiKey}:${apiToken}${subdomain}/v2_beta/Accounts/${accountSid}/IncomingPhoneNumbers/${exophone}.json`,
+                    body,
+                    {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
+                    });
+            } catch (error) {
+                const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
+                throw new Error(`Failed to assign phone number to flow: ${message}`);
+            }
+            return { success: true, config: { ...config, webhookUrl: webhookUrl }, error: null, externalId: exophone }
             // Exotel doesn't have a single "register webhook" REST endpoint.
             // Webhooks are configured per-call via StatusCallback in the call API,
             // OR globally per Exophone via the integrations app_setting API.

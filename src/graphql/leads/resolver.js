@@ -196,8 +196,9 @@ export const leadResolvers = {
       if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "NOT_FOUND" } });
       let toId = null, topic = null, platformMeta = null;
       let type, data, content, shouldSendKafkaMessage = false;
+      let result
       switch (channel.apiAuthenticator.provider.name) {
-        case "Whatsapp":
+        case "Whatsapp": {
           topic = 'sending-whatsapp-message'
           const { whatsapp } = lead.contactDetails;
           toId = whatsapp?.find(entry => entry.isPrimary)?.handle ?? whatsapp?.[0]?.handle;
@@ -234,61 +235,68 @@ export const leadResolvers = {
             default:
               break;
           }
+          // create a message and conenct it to a conversation
+          let conversation = null;
+          // let CreateMessageSession = false;
+          if (conversationId) {
+            conversation = await Conversation.findById(conversationId);
+            if (!conversation) throw new GraphQLError("Conversation not found", { extensions: { code: "NOT_FOUND" } });
+            if (conversation.status !== 'open') {
+              // CreateMessageSession = true;
+              await conversation.updateStatus('open');
+            }
+          }
+          else {
+            const agent = await AgentModel.findOne({ business: context.user.business, channels: { $in: [channelId] } });
+            conversation = await Conversation.create({
+              agent: agent?._id,
+              business: context.user.business,
+              channel: channelId,
+              lead: id,
+              externalConversationId: toId?.toString() ?? 'unknown',
+            });
+            // CreateMessageSession = true;
+          }
+          result = await Message.create({
+            conversation: conversation._id,
+            business: context.user.business,
+            externalMessageId: toId?.toString() ?? 'unknown',
+            direction: 'outbound',
+            sender: {
+              type: 'user',
+              id: context.user._id,
+              name: context.user.name,
+              ref: context.user._id,
+              refModel: 'Users',
+            },
+            type: type,
+            kind: 'message',
+            content,
+            statusTimeline: {
+              initiated: new Date(),
+            }
+          });
+          // if (CreateMessageSession) {
+          //   await MessageSession.create({
+          //     conversation: conversation._id,
+          //     business: context.user.business,
+          //     firstMessage: result._id
+          //   });
+          // }
+          if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: result._id.toString() }), }] });
+          await sendKafkaMessage({ topic: 'socket-event', messages: [{ key: conversation._id.toString(), value: JSON.stringify({ nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: result }) }] });
           break;
+        }
+        case "Exotel": {
+         // contact lead 
+          break;
+        }
+
         default:
           throw new GraphQLError("Invalid channel provider", { extensions: { code: "NOT_FOUND" } });
       }
-      // create a message and conenct it to a conversation
-      let conversation = null;
-      // let CreateMessageSession = false;
-      if (conversationId) {
-        conversation = await Conversation.findById(conversationId);
-        if (!conversation) throw new GraphQLError("Conversation not found", { extensions: { code: "NOT_FOUND" } });
-        if (conversation.status !== 'open') {
-          // CreateMessageSession = true;
-          await conversation.updateStatus('open');
-        }
-      }
-      else {
-        const agent = await AgentModel.findOne({ business: context.user.business, channels: { $in: [channelId] } });
-        conversation = await Conversation.create({
-          agent: agent?._id,
-          business: context.user.business,
-          channel: channelId,
-          lead: id,
-          externalConversationId: toId?.toString() ?? 'unknown',
-        });
-        // CreateMessageSession = true;
-      }
-      const messageDocument = await Message.create({
-        conversation: conversation._id,
-        business: context.user.business,
-        externalMessageId: toId?.toString() ?? 'unknown',
-        direction: 'outbound',
-        sender: {
-          type: 'user',
-          id: context.user._id,
-          name: context.user.name,
-          ref: context.user._id,
-          refModel: 'Users',
-        },
-        type: type,
-        kind: 'message',
-        content,
-        statusTimeline: {
-          initiated: new Date(),
-        }
-      });
-      // if (CreateMessageSession) {
-      //   await MessageSession.create({
-      //     conversation: conversation._id,
-      //     business: context.user.business,
-      //     firstMessage: messageDocument._id
-      //   });
-      // }
-      if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: messageDocument._id.toString() }), }] });
-      await sendKafkaMessage({ topic: 'socket-event', messages: [{ key: conversation._id.toString(), value: JSON.stringify({ nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: messageDocument }) }] });
-      return messageDocument;
+
+      return result;
     },
     // ─── bulkCreateLeads ───────────────────────────────────────────────────────────
 
