@@ -130,34 +130,35 @@ export default class OauthExotel extends BaseOAuthProvider {
 
     // Sets up inbound call/SMS webhook for the given Exotel virtual number (exophone).
     // config must include: { exophone }  — the DID/Exophone to attach the webhook to
-    async setupChannel({ apiAuthenticator, providerName, channelId, config }) {
-        const webhookUrl = `${process.env.WEBHOOKS_URL}webhook/${providerName}/${channelId}`;
+    async setupChannel({ apiAuthenticator, channelId, config }) {
+        const webhookUrl = `https://sockets.avakado.ai/exotel-redirect`;
         const { apiKey, apiToken, accountSid, subdomain } = apiAuthenticator.credentials;
-        const { exophone } = config;
-
+        const { exophone, appId } = config;
         if (!exophone) return this._errorResponse("missing_exophone", "config.exophone (DID number) is required.", 400);
-
         try {
+            return { success: true, config: { ...config, webhookUrl: webhookUrl }, error: null, externalId = exophone }
             // Exotel doesn't have a single "register webhook" REST endpoint.
             // Webhooks are configured per-call via StatusCallback in the call API,
             // OR globally per Exophone via the integrations app_setting API.
             // We register the popup/callback URL via the integrations core endpoint.
-            const integrationsBase = `https://integrationscore.mum1.exotel.com/v2/integrations`;
-            const authCode = basicAuth(apiKey, apiToken);
 
-            // Set inbound call handler (popup) webhook
-            await axios.post(`${integrationsBase}/app_setting`,
-                { Key: "popup", Value: webhookUrl },
-                { headers: { Authorization: authCode, "Content-Type": "application/json" } }
-            );
 
-            // Set post-call status callback
-            await axios.post(`${integrationsBase}/app_setting`,
-                { Key: "callback", Value: webhookUrl },
-                { headers: { Authorization: authCode, "Content-Type": "application/json" } }
-            );
+            // const integrationsBase = `https://integrationscore.mum1.exotel.com/v2/integrations`;
+            // const authCode = basicAuth(apiKey, apiToken);
 
-            return this._successResponse({ ...config, webhookUrl, exophone });
+            // // Set inbound call handler (popup) webhook
+            // await axios.post(`${integrationsBase}/app_setting`,
+            //     { Key: "popup", Value: webhookUrl },
+            //     { headers: { Authorization: authCode, "Content-Type": "application/json" } }
+            // );
+
+            // // Set post-call status callback
+            // await axios.post(`${integrationsBase}/app_setting`,
+            //     { Key: "callback", Value: webhookUrl },
+            //     { headers: { Authorization: authCode, "Content-Type": "application/json" } }
+            // );
+
+            // return this._successResponse({ ...config, webhookUrl, exophone });
         } catch (error) {
             return this._handleError(error);
         }
