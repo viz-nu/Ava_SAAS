@@ -3,7 +3,7 @@ export const jobTypeDefs = `#graphql
 type Campaign {
     _id: ID!
     name: String!
-    channel: Channel!
+    channel: Channel
     leads: [Lead]
     config: JSON!
     status: String
