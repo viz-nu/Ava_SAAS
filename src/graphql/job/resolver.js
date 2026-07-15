@@ -49,8 +49,8 @@ export const jobResolvers = {
             const tasks = [];
             switch (channel.provider.name) {
                 case "Whatsapp":
-                    const { template: { templateName, languageCode, parametersMap } } = config;
-                    if (!templateName || !languageCode || !parametersMap) throw new GraphQLError("templateName, languageCode and parametersMap are required");
+                    const { template: { templateName, languageCode, parametersMap = [] } } = config;
+                    if (!templateName || !languageCode) throw new GraphQLError("templateName, languageCode are required");
                     for (const leadId of leadIds) {
                         let lead = await Lead.findById(leadId);
                         if (!lead) throw new GraphQLError("Lead not found");
