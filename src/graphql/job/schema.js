@@ -39,7 +39,7 @@ type Campaign {
             fetchTasks(campaignId: ID, status: String, limit: Int, page: Int): TaskPagination
         }
        type Mutation {
-            createCampaign(name: String, channelId: ID, leadIds: [ID], config: JSON): Campaign
+            createCampaign(name: String, channelId: ID, leadIds: [ID], config: JSON, scheduledAt: DateTime): Campaign
             cancelCampaign(id: ID): Campaign
         }
 `

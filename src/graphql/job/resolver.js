@@ -41,7 +41,7 @@ export const jobResolvers = {
         }
     },
     Mutation: {
-        createCampaign: async (_, { name, channelId, leadIds, config = { scheduledAt: new Date(Date.now() + 10 * 60 * 1000) } }, context, info) => {
+        createCampaign: async (_, { name, channelId, leadIds, config = {}, scheduledAt = new Date(Date.now() + 10 * 60 * 1000) }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
             const channel = await Channel.findById(channelId).populate("provider");
@@ -76,7 +76,7 @@ export const jobResolvers = {
                 default:
                     throw new GraphQLError("Cannot service campaign for this channel", { extensions: { code: "Invalid_Channel" } });
             }
-            const newCampaign = await Campaign.create({ name, business: context.user.business, channel: channelId, leads: leadIds, config, status: "pending", timeLines: { scheduledAt: new Date(config.scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
+            const newCampaign = await Campaign.create({ name, business: context.user.business, channel: channelId, leads: leadIds, config, status: "pending", timeLines: { scheduledAt: new Date(scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
             await Task.insertMany(tasks.map(task => ({ ...task, campaign: newCampaign._id, business: context.user.business })));
             await sendKafkaMessage({
                 topic: 'cron-job', messages: [{
@@ -85,7 +85,7 @@ export const jobResolvers = {
                         id: newCampaign._id,
                         name: newCampaign.name,
                         scheduleType: 'once',
-                        runAt: newCampaign.config.scheduledAt,
+                        runAt: scheduledAt,
                         type: "http",
                         url: "https://chat.avakado.ai/aux/trigger/" + newCampaign._id,
                         method: "POST",
