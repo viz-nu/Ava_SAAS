@@ -163,6 +163,7 @@ export default class OauthExotel extends BaseOAuthProvider {
             }
             return { success: true, config: { ...config, webhookUrl: webhookUrl }, error: null, externalId: exophone }
         } catch (error) {
+            console.log("error", error);
             return this._handleError(error);
         }
     }
