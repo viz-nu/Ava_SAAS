@@ -56,7 +56,20 @@ export const jobResolvers = {
                         if (!lead) throw new GraphQLError("Lead not found");
                         const data = { lead }
                         const components = buildComponents(parametersMap, data);
-                        console.log("components", components);
+                        console.log(JSON.stringify({
+                            type: "quick",
+                            data: {
+                                input: {
+                                    "to": lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle ?? lead.contactDetails.phone?.[0]?.handle,
+                                    templateName,
+                                    languageCode,
+                                    components: components
+                                },
+                                config: { "phoneNumberId": channel.config.phoneNumberId },
+                                apiId: "6a4c109329ef086643c24211",
+                                authId: channel.apiAuthenticator
+                            }
+                        }, null, 2));
                         tasks.push({
                             type: "quick",
                             data: {
