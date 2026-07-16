@@ -162,28 +162,6 @@ export default class OauthExotel extends BaseOAuthProvider {
                 throw new Error(`Failed to assign phone number to flow: ${message}`);
             }
             return { success: true, config: { ...config, webhookUrl: webhookUrl }, error: null, externalId: exophone }
-            // Exotel doesn't have a single "register webhook" REST endpoint.
-            // Webhooks are configured per-call via StatusCallback in the call API,
-            // OR globally per Exophone via the integrations app_setting API.
-            // We register the popup/callback URL via the integrations core endpoint.
-
-
-            // const integrationsBase = `https://integrationscore.mum1.exotel.com/v2/integrations`;
-            // const authCode = basicAuth(apiKey, apiToken);
-
-            // // Set inbound call handler (popup) webhook
-            // await axios.post(`${integrationsBase}/app_setting`,
-            //     { Key: "popup", Value: webhookUrl },
-            //     { headers: { Authorization: authCode, "Content-Type": "application/json" } }
-            // );
-
-            // // Set post-call status callback
-            // await axios.post(`${integrationsBase}/app_setting`,
-            //     { Key: "callback", Value: webhookUrl },
-            //     { headers: { Authorization: authCode, "Content-Type": "application/json" } }
-            // );
-
-            // return this._successResponse({ ...config, webhookUrl, exophone });
         } catch (error) {
             return this._handleError(error);
         }
