@@ -150,7 +150,7 @@ export default class OauthExotel extends BaseOAuthProvider {
                 ...(capabilities.friendlyName && { FriendlyName: capabilities.friendlyName }),
             });
             try {
-                const { data } = await axios.put(`https://${apiKey}:${apiToken}${subdomain}/v2_beta/Accounts/${accountSid}/IncomingPhoneNumbers/${exophone}.json`,
+                const { data } = await axios.put(`https://${apiKey}:${apiToken}@${subdomain}/v2_beta/Accounts/${accountSid}/IncomingPhoneNumbers/${exophone}.json`,
                     body,
                     {
                         headers: {
