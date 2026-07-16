@@ -142,7 +142,6 @@ export default class OauthExotel extends BaseOAuthProvider {
         const webhookUrl = `https://sockets.avakado.ai/exotel-redirect?channelId=${channelId}`;
         const { apiKey, apiToken, accountSid, subdomain } = apiAuthenticator.credentials;
         let { exophone, exophoneSid = null, appId, capabilities } = config; // capabilities = { voice: true, sms: true, friendlyName: "Exotel Voice App" }
-        console.log("config", JSON.stringify(config, null, 2));
         if (!exophone) return this._errorResponse("missing_exophone", "config.exophone (DID number) is required.", 400);
         try {
             if (!exophoneSid) {
