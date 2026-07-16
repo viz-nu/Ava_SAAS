@@ -44,7 +44,7 @@ export const jobResolvers = {
         createCampaign: async (_, { name, channelId, leadIds, config = {}, scheduledAt = new Date(Date.now() + 10 * 60 * 1000) }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const channel = await Channel.findById(channelId,"_id name config provider apiAuthenticator").populate("provider");
+            const channel = await Channel.findById(channelId, "_id name config provider apiAuthenticator").populate("provider");
             if (!channel) throw new GraphQLError("Channel not found");
             const tasks = [];
             switch (channel.provider.name) {
@@ -80,7 +80,7 @@ export const jobResolvers = {
                                     languageCode,
                                     components: components
                                 },
-                                config: { "phoneNumberId": channel.config.phoneNumberId },
+                                config: { phoneNumberId: channel.config.phoneNumberId },
                                 apiId: "6a4c109329ef086643c24211",
                                 authId: channel.apiAuthenticator
                             }
