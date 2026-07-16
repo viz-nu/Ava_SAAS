@@ -98,7 +98,7 @@ export const jobResolvers = {
                 }]
             });
             await User.populate(newCampaign, { path: 'createdBy', select: nested.createdBy });
-            await Channel.populate(newCampaign, { path: 'communicationChannels', select: nested.communicationChannels });
+            await Channel.populate(newCampaign, { path: 'channel', select: nested.channel });
             return newCampaign;
         },
         cancelCampaign: async (_, { id }, context, info) => {
