@@ -80,7 +80,7 @@ export const jobResolvers = {
                                     languageCode,
                                     components: components
                                 },
-                                config: { phoneNumberId: channel.config.phoneNumberId },
+                                config: { phoneNumberId: channel.config.phone_number_id },
                                 apiId: "6a4c109329ef086643c24211",
                                 authId: channel.apiAuthenticator
                             }
