@@ -154,6 +154,7 @@ input contactLeadMessageInput {
   enum ContactLeadAction {
     sendMessage
     sendMedia
+    initiateAiCall
   }
   type Mutation {
     createLeadTemplate(LeadTemplateInput: LeadTemplateInput!): LeadTemplate
@@ -176,7 +177,7 @@ input contactLeadMessageInput {
 
     deleteLead(id: ID!): Boolean
       @requireScope(scope: "lead:delete") @requireBusinessAccess
-    contactLead(id: ID!, action: ContactLeadAction!, channelId: ID!, message: contactLeadMessageInput, file:Upload, caption:String,conversationId: ID!): Message
+    contactLead(id: ID!, action: ContactLeadAction, channelId: ID!, message: contactLeadMessageInput, file:Upload, caption:String,conversationId: ID): JSON
       @requireScope(scope: "message:send") @requireBusinessAccess
   }
 `;

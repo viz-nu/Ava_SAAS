@@ -9,6 +9,9 @@ import OauthTelegram from "../services/ExternalAuthenticationServices/telegram.j
 import OauthTwilio from "../services/ExternalAuthenticationServices/twilio.js";
 import OauthWhatsApp from "../services/ExternalAuthenticationServices/whatsapp.js";
 
+import { Channel } from "../models/Channels.js";
+import { parsePhoneNumber } from 'libphonenumber-js';
+
 
 
 
@@ -70,3 +73,23 @@ export const PROVIDER_MAP = {
     "Exotel": new OauthExotel(),
     "Tata Tele": new OauthTataTele(),
 };
+
+export const normalizePhoneNumber = (rawNumber, defaultCountry = 'IN') => {
+    if (!rawNumber) return null;
+
+    try {
+        const phoneNumber = parsePhoneNumber(rawNumber, defaultCountry);
+        if (phoneNumber && phoneNumber.isValid()) {
+            return {
+                number: phoneNumber.number,// returns E.164, e.g. "+919959964639"
+                countryCallingCode: phoneNumber.countryCallingCode,
+                country: phoneNumber.country,
+                nationalNumber: phoneNumber.nationalNumber
+            };
+        }
+        return null;
+    } catch (err) {
+        console.warn(`Failed to parse phone number "${rawNumber}":`, err.message);
+        return null;
+    }
+}

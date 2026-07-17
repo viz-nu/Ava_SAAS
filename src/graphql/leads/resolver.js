@@ -12,6 +12,8 @@ import { uploadFileToWhatsApp } from "../../utils/whatsapp-app-bootstrap.js";
 import { Conversation } from "../../models/Conversations.js";
 import { AgentModel } from "../../models/Agent.js";
 import { fireAndForgetAxios } from "../../utils/fireAndForget.js";
+import { normalizePhoneNumber } from "../../utils/setup.js";
+import axios from "axios";
 
 export const leadResolvers = {
   Query: {
@@ -194,14 +196,21 @@ export const leadResolvers = {
       await channel.populate('apiAuthenticator');
       await Providers.populate(channel, { path: 'apiAuthenticator.provider', select: 'name' });
       if (!lead) throw new GraphQLError("Lead not found", { extensions: { code: "NOT_FOUND" } });
-      let toId = null, topic = null, platformMeta = null;
-      let type, data, content, shouldSendKafkaMessage = false;
       let result
       switch (channel.apiAuthenticator.provider.name) {
         case "Whatsapp": {
+          let toId = null, topic = null, platformMeta = null;
+          let type, data, content;
           topic = 'sending-whatsapp-message'
           const { whatsapp } = lead.contactDetails;
           toId = whatsapp?.find(entry => entry.isPrimary)?.handle ?? whatsapp?.[0]?.handle;
+          if (!toId) {
+            const { phone } = lead.contactDetails;
+            const completePhoneNumber = phone?.find(entry => entry.isPrimary) ?? phone?.[0];
+            const normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
+            if (normalizedPhoneNumber) toId = normalizedPhoneNumber.countryCallingCode + normalizedPhoneNumber.nationalNumber;
+            else throw new GraphQLError("Invalid phone number", { extensions: { code: "BAD_REQUEST" } })
+          }
           platformMeta = {
             accessToken: channel.apiAuthenticator.credentials.accessToken,
             phone_number_id: channel.config.phone_number_id,
@@ -210,7 +219,6 @@ export const leadResolvers = {
             case "sendMessage":
               ({ type, data } = message) ?? {};
               content = data;
-              shouldSendKafkaMessage = true;
               break;
             case "sendMedia":
               if (!file) throw new GraphQLError("No file provided", { extensions: { code: "BAD_REQUEST" } });
@@ -230,7 +238,6 @@ export const leadResolvers = {
                 ref: { strategy: "whatsapp_media_id", value: mediaId, needsAuth: true, url: `https://graph.facebook.com/v23.0/${mediaId}` },
               }]
               data = { id: mediaId, caption: type === 'document' ? caption : null };
-              shouldSendKafkaMessage = true;
               break;
             default:
               break;
@@ -283,12 +290,60 @@ export const leadResolvers = {
           //     firstMessage: result._id
           //   });
           // }
-          if (shouldSendKafkaMessage) await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: result._id.toString() }), }] });
+          await sendKafkaMessage({ topic, messages: [{ key: toId?.toString() ?? 'unknown', value: JSON.stringify({ operation: 'sendMessage', toId, platformMeta, type, data, messageId: result._id.toString() }), }] });
           await sendKafkaMessage({ topic: 'socket-event', messages: [{ key: conversation._id.toString(), value: JSON.stringify({ nameSpace: "CONVERSATION", roomId: conversation._id, event: "message.send", payload: result }) }] });
           break;
         }
         case "Exotel": {
-         // contact lead 
+          // contact lead 
+          let leadPhoneNumber = null;
+          const { phone } = lead.contactDetails;
+          const completePhoneNumber = phone?.find(entry => entry.isPrimary) ?? phone?.[0];
+          const normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
+          if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
+          else throw new GraphQLError("Invalid phone number", { extensions: { code: "BAD_REQUEST" } })
+          const { apiKey, apiToken, accountSid, subdomain } = channel.apiAuthenticator.credentials;
+          const { exophone, appId } = channel.config;
+          const formData = new URLSearchParams();
+          formData.append('CallerId', exophone);
+          formData.append('From', leadPhoneNumber);
+          formData.append('Url', `http://my.exotel.com/${accountSid}/exoml/start_voice/${appId}`);
+          formData.append('StatusCallback', `https://chat.avakado.ai/webhook/${channel.apiAuthenticator.provider.name}`);
+          formData.append('Record', 'true');
+          formData.append('CustomField', JSON.stringify({ param1: 'value1', param2: 'value2' }));
+          try {
+            //             formData: CallerId=%2B914041895140&From=9959964639&Url=http%3A%2F%2Fmy.exotel.com%2Fcampusroot1%2Fexoml%2Fstart_voice%2F1292738&StatusCallback=https%3A%2F%2Fb21c-117-200-164-96.ngrok-free.app%2Fwebhook%2Fphone&Record=true&CustomField=%7B%22param1%22%3A%22value1%22%2C%22param2%22%3A%22value2%22%7D
+            // data: {
+            //   "Call": {
+            //     "Sid": "e2956a336b893150bf85bc8acbf71a7h",
+            //     "ParentCallSid": null,
+            //     "DateCreated": "2026-07-17 13:13:29",
+            //     "DateUpdated": "2026-07-17 13:13:29",
+            //     "AccountSid": "campusroot1",
+            //     "To": "04041895140",
+            //     "From": "09959964639",
+            //     "PhoneNumberSid": "04041895140",
+            //     "Status": "in-progress",
+            //     "StartTime": "2026-07-17 13:13:29",
+            //     "EndTime": null,
+            //     "Duration": null,
+            //     "Price": null,
+            //     "Direction": "outbound-api",
+            //     "AnsweredBy": null,
+            //     "ForwardedFrom": null,
+            //     "CallerName": null,
+            //     "Uri": "/v1/Accounts/campusroot1/Calls/e2956a336b893150bf85bc8acbf71a7h.json",
+            //     "RecordingUrl": null
+            //   }
+            // }
+            console.log('formData:', formData.toString());
+            const { data } = await axios.post(`https://${apiKey}:${apiToken}@${subdomain}/v1/Accounts/${accountSid}/Calls/connect.json`, formData, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+            console.log('data:', JSON.stringify(data, null, 2));   // { Sid: 'f162cf479cce037eab49dd5d4fda19ba', ParentCallSid: null, DateCreated: '2025-11-10 16:56:32', DateUpdated: '2025-11-10 16:56:32', AccountSid: 'onewindowoverseaseducation1', To: '04045210835', From: '09959964639', PhoneNumberSid: '04045210835', Status: 'in-progress', StartTime: '2025-11-10 16:56:32', EndTime: null, Duration: null, Price: null, Direction: 'outbound-api', AnsweredBy: null, ForwardedFrom: null, CallerName: null, Uri: '/v1/Accounts/onewindowoverseaseducation1/Calls/f162cf479cce037eab49dd5d4fda19ba.json', RecordingUrl: null }
+          } catch (error) {
+            const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
+            throw new GraphQLError(`Error contacting lead: ${JSON.stringify(message)}`, { extensions: { code: "INTERNAL_SERVER_ERROR" } });
+          }
+          result = { _id: "someFakeID" }
           break;
         }
 
