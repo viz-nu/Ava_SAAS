@@ -58,11 +58,15 @@ export const conversationTypeDefs = `#graphql
   type ConversationAssignment {
     """Whether the AI agent should reply"""
     agentReply: Boolean
+    """Reason for handoff"""
+    handoffReason: String
+    """Urgency level of the handoff"""
+    handoffUrgency: String
     """Team assigned to this conversation"""
-    team: ID
+    // team: ID
     """When the conversation was assigned"""
     assignedAt: DateTime
-    """Who the conversation is assigned to"""
+    """Who the conversation is assigned to, for support/agent routing in case of support ping to business notifications else give it to agent"""
     assignedTo: String
   }
 
