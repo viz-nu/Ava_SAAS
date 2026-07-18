@@ -18,7 +18,7 @@ const CallSessionSchema = new Schema({
     direction: String,
     status: { type: String, enum: ["initiated", "ringing", "in_progress", "completed", "failed", "busy", "no_answer", "canceled"], default: "initiated" },
     statusTimeline: {
-        initiatedAt: Date, ringingAt: Date, in_progressAt: Date, completedAt: Date, failedAt: Date, busyAt: Date, no_answerAt: Date, canceledAt: Date, durationSec: { type: Number, default: 0 },
+        initiatedAt: Date, ringingAt: Date, in_progressAt: Date, completedAt: Date, failedAt: Date, busyAt: Date, no_answerAt: Date, cancelledAt: Date, durationSec: { type: Number, default: 0 },
     },
     recording: { status: { type: String, enum: ["none", "pending", "stored", "failed"], default: "none" }, key: String, url: String },
     transcripts: { type: [TranscriptSchema], default: [] }, // see note in chat re: very long calls
