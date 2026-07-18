@@ -89,6 +89,7 @@ export const jobResolvers = {
                         const { phone } = lead.contactDetails;
                         const completePhoneNumber = phone?.find(entry => entry.isPrimary) ?? phone?.[0];
                         const normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
+                        console.log("normalizedPhoneNumber", normalizedPhoneNumber);
                         if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
                         else {
                             await newCampaign.deleteOne();
