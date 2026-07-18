@@ -5,7 +5,7 @@ type Campaign {
     name: String!
     channel: Channel
     leads: [Lead]
-    config: JSON!
+    config: JSON
     status: String
     timeLines: JSON
     cancel_requested: Boolean
