@@ -93,7 +93,7 @@ export const jobResolvers = {
                         if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
                         else {
                             await newCampaign.deleteOne();
-                            throw new GraphQLError("Invalid phone number", { extensions: { code: "BAD_REQUEST" } })
+                            throw new GraphQLError("Invalid phone number of leadId: " + leadId, { extensions: { code: "BAD_REQUEST" } })
                         }
                         const { accountSid } = channel.apiAuthenticator.credentials;
                         const { exophone, appId } = channel.config;
