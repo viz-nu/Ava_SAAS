@@ -1,6 +1,6 @@
 import { model, Schema } from 'mongoose';
 const MessageSessionSchema = new Schema({
-    campaign: { type: Schema.Types.ObjectId, ref: 'Campaigns' },
+    campaign: { type: Schema.Types.ObjectId, ref: 'Campaign' },
     firstMessage: { type: Schema.Types.ObjectId, ref: 'Message' },
     lastMessage: { type: Schema.Types.ObjectId, ref: 'Message' },
     conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
@@ -8,7 +8,7 @@ const MessageSessionSchema = new Schema({
 })
 const MessagesSchema = new Schema({
     conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
-    campaign: { type: Schema.Types.ObjectId, ref: 'Campaigns' },
+    campaign: { type: Schema.Types.ObjectId, ref: 'Campaign' },
     business: { type: Schema.Types.ObjectId, ref: 'Businesses' },
     externalMessageId: String,
     direction: String,
