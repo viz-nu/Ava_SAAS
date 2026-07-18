@@ -62,8 +62,6 @@ export const conversationTypeDefs = `#graphql
     handoffReason: String
     """Urgency level of the handoff"""
     handoffUrgency: String
-    """Team assigned to this conversation"""
-    // team: ID
     """When the conversation was assigned"""
     assignedAt: DateTime
     """Who the conversation is assigned to, for support/agent routing in case of support ping to business notifications else give it to agent"""
