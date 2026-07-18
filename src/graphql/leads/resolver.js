@@ -302,43 +302,22 @@ export const leadResolvers = {
           const normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
           if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
           else throw new GraphQLError("Invalid phone number", { extensions: { code: "BAD_REQUEST" } })
-          const { apiKey, apiToken, accountSid, subdomain } = channel.apiAuthenticator.credentials;
+          const { accountSid } = channel.apiAuthenticator.credentials;
           const { exophone, appId } = channel.config;
-          const formData = new URLSearchParams();
-          formData.append('CallerId', exophone);
-          formData.append('From', leadPhoneNumber);
-          formData.append('Url', `http://my.exotel.com/${accountSid}/exoml/start_voice/${appId}`);
-          formData.append('StatusCallback', `https://chat.avakado.ai/webhook/${channel.apiAuthenticator.provider.name}`);
-          formData.append('Record', 'true');
-          formData.append('CustomField', JSON.stringify({ param1: 'value1', param2: 'value2' }));
+          let body = {
+            "input": {
+              "From": leadPhoneNumber,
+              "CallerId": exophone,
+              "Url": `http://my.exotel.com/${accountSid}/exoml/start_voice/${appId}`,
+              "StatusCallback": `https://chat.avakado.ai/webhook/${channel.apiAuthenticator.provider.name}`,
+              "Record": true
+            },
+            "apiId": "6a50b6bf445a2fbf099b4a29",
+            "authId": channel.apiAuthenticator._id
+          }
           try {
-            //             formData: CallerId=%2B914041895140&From=9959964639&Url=http%3A%2F%2Fmy.exotel.com%2Fcampusroot1%2Fexoml%2Fstart_voice%2F1292738&StatusCallback=https%3A%2F%2Fb21c-117-200-164-96.ngrok-free.app%2Fwebhook%2Fphone&Record=true&CustomField=%7B%22param1%22%3A%22value1%22%2C%22param2%22%3A%22value2%22%7D
-            // data: {
-            //   "Call": {
-            //     "Sid": "e2956a336b893150bf85bc8acbf71a7h",
-            //     "ParentCallSid": null,
-            //     "DateCreated": "2026-07-17 13:13:29",
-            //     "DateUpdated": "2026-07-17 13:13:29",
-            //     "AccountSid": "campusroot1",
-            //     "To": "04041895140",
-            //     "From": "09959964639",
-            //     "PhoneNumberSid": "04041895140",
-            //     "Status": "in-progress",
-            //     "StartTime": "2026-07-17 13:13:29",
-            //     "EndTime": null,
-            //     "Duration": null,
-            //     "Price": null,
-            //     "Direction": "outbound-api",
-            //     "AnsweredBy": null,
-            //     "ForwardedFrom": null,
-            //     "CallerName": null,
-            //     "Uri": "/v1/Accounts/campusroot1/Calls/e2956a336b893150bf85bc8acbf71a7h.json",
-            //     "RecordingUrl": null
-            //   }
-            // }
-            console.log('formData:', formData.toString());
-            const { data } = await axios.post(`https://${apiKey}:${apiToken}@${subdomain}/v1/Accounts/${accountSid}/Calls/connect.json`, formData, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-            console.log('data:', JSON.stringify(data, null, 2));   // { Sid: 'f162cf479cce037eab49dd5d4fda19ba', ParentCallSid: null, DateCreated: '2025-11-10 16:56:32', DateUpdated: '2025-11-10 16:56:32', AccountSid: 'onewindowoverseaseducation1', To: '04045210835', From: '09959964639', PhoneNumberSid: '04045210835', Status: 'in-progress', StartTime: '2025-11-10 16:56:32', EndTime: null, Duration: null, Price: null, Direction: 'outbound-api', AnsweredBy: null, ForwardedFrom: null, CallerName: null, Uri: '/v1/Accounts/onewindowoverseaseducation1/Calls/f162cf479cce037eab49dd5d4fda19ba.json', RecordingUrl: null }
+            const { data } = await axios.post(`https://chat.avakado.ai/aux/external-api-call`, body, { headers: { 'Content-Type': 'application/json' } });
+            console.log('data:', JSON.stringify(data, null, 2));
           } catch (error) {
             const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
             throw new GraphQLError(`Error contacting lead: ${JSON.stringify(message)}`, { extensions: { code: "INTERNAL_SERVER_ERROR" } });

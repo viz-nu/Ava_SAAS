@@ -8,6 +8,7 @@ import { Channel } from '../../models/Channels.js';
 import { sendKafkaMessage } from "../../utils/kafka.js";
 import { Lead } from "../../models/Leads.js";
 import { buildComponents } from "../../utils/tools.js";
+import { normalizePhoneNumber } from "../../utils/setup.js";
 export const jobResolvers = {
     Query: {
         fetchCampaigns: async (_, { id, name, channelIds, leadIds, status, limit = 10, page = 1 }, context, info) => {
@@ -44,38 +45,81 @@ export const jobResolvers = {
         createCampaign: async (_, { name, channelId, leadIds, config = {}, scheduledAt = new Date(Date.now() + 10 * 60 * 1000) }, context, info) => {
             const requestedFields = graphqlFields(info, {}, { processArguments: false });
             const { projection, nested } = flattenFields(requestedFields);
-            const channel = await Channel.findById(channelId, "_id name config provider apiAuthenticator").populate("provider");
+            const channel = await Channel.findById(channelId, "_id name config provider apiAuthenticator").populate("provider").populate("apiAuthenticator");
             if (!channel) throw new GraphQLError("Channel not found");
             const tasks = [];
+            const newCampaign = await Campaign.create({ name, business: context.user.business, channel: channelId, leads: leadIds, config, status: "pending", timeLines: { scheduledAt: new Date(scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
             switch (channel.provider.name) {
                 case "Whatsapp":
-                    const { template: { templateName, languageCode, parametersMap = [] } } = config;
-                    if (!templateName || !languageCode) throw new GraphQLError("templateName, languageCode are required");
+                    {
+                        const { template: { templateName, languageCode, parametersMap = [] } } = config;
+                        if (!templateName || !languageCode) {
+                            throw new GraphQLError("templateName, languageCode are required");
+                            await newCampaign.deleteOne();
+                        }
+                        for (const leadId of leadIds) {
+                            let lead = await Lead.findById(leadId);
+                            if (!lead) {
+                                await newCampaign.deleteOne();
+                                throw new GraphQLError("Lead not found");
+                            }
+                            const data = { lead }
+                            const components = buildComponents(parametersMap, data);
+                            tasks.push({
+                                type: "quick",
+                                data: {
+                                    input: {
+                                        "to": lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle ?? lead.contactDetails.phone?.[0]?.handle,
+                                        templateName,
+                                        languageCode,
+                                        components: components
+                                    },
+                                    config: { phoneNumberId: channel.config.phone_number_id },
+                                    apiId: "6a4c109329ef086643c24211",
+                                    authId: channel.apiAuthenticator
+                                }
+                            });
+                        }
+                        break;
+                    }
+                case "Exotel": {
                     for (const leadId of leadIds) {
                         let lead = await Lead.findById(leadId);
-                        if (!lead) throw new GraphQLError("Lead not found");
-                        const data = { lead }
-                        const components = buildComponents(parametersMap, data);
+                        let leadPhoneNumber = null;
+                        const { phone } = lead.contactDetails;
+                        const completePhoneNumber = phone?.find(entry => entry.isPrimary) ?? phone?.[0];
+                        const normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
+                        if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
+                        else {
+                            await newCampaign.deleteOne();
+                            throw new GraphQLError("Invalid phone number", { extensions: { code: "BAD_REQUEST" } })
+                        }
+                        const { accountSid } = channel.apiAuthenticator.credentials;
+                        const { exophone, appId } = channel.config;
                         tasks.push({
-                            type: "quick",
+                            type: "webhook",
                             data: {
-                                input: {
-                                    "to": lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle ?? lead.contactDetails.phone?.[0]?.handle,
-                                    templateName,
-                                    languageCode,
-                                    components: components
+                                "input": {
+                                    "From": leadPhoneNumber,
+                                    "CallerId": exophone,
+                                    "Url": `http://my.exotel.com/${accountSid}/exoml/start_voice/${appId}`,
+                                    "StatusCallback": `https://chat.avakado.ai/webhook/${channel.provider.name}`,
+                                    "Record": true,
+                                    "CustomField": {
+                                        campaign: newCampaign._id,
+                                        business: context.user.business
+                                    }
                                 },
-                                config: { phoneNumberId: channel.config.phone_number_id },
-                                apiId: "6a4c109329ef086643c24211",
-                                authId: channel.apiAuthenticator
+                                "apiId": "6a50b6bf445a2fbf099b4a29",
+                                "authId": channel.apiAuthenticator._id
                             }
                         });
                     }
                     break;
+                }
                 default:
                     throw new GraphQLError("Cannot service campaign for this channel", { extensions: { code: "Invalid_Channel" } });
             }
-            const newCampaign = await Campaign.create({ name, business: context.user.business, channel: channelId, leads: leadIds, config, status: "pending", timeLines: { scheduledAt: new Date(scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
             await Task.insertMany(tasks.map(task => ({ ...task, campaign: newCampaign._id, business: context.user.business })));
             await sendKafkaMessage({
                 topic: 'cron-job', messages: [{
