@@ -15,7 +15,10 @@ const ConversationSchema = new Schema({
     config: {
         // Human/agent routing — promoted to top level so the agent-inbox index can use it.
         assignment: {
-            agentReply: { type: Boolean, default: true }, team: { type: Schema.Types.ObjectId, ref: "Team" },
+            agentReply: { type: Boolean, default: true },
+            handoffReason: String,
+            handoffUrgency: String,
+            // team: { type: Schema.Types.ObjectId, ref: "Team" },
             assignedAt: Date,
             assignedTo: String // for support/agent routing in case of support ping to business notifications else give it to agent,
         },
