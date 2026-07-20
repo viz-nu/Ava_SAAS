@@ -3,13 +3,7 @@
 
 export const messageTypeDefs = `#graphql
 
-  """Who sent the message"""
-  enum SenderTypeEnum {
-    Lead
-    agent
-    user
-    system
-  }
+
 
   """Type of message content"""
   enum MessageTypeEnum {
@@ -126,7 +120,7 @@ export const messageTypeDefs = `#graphql
 
   """A single transcript segment from a call"""
   type Transcript {
-    speaker: SenderTypeEnum
+    speaker: String
     transcript: String
     """Millisecond offset from call start"""
     startMs: Int
