@@ -22,7 +22,7 @@ const MessagesSchema = new Schema({
     type: {
         type: String,
         enum: ["text", "image", "audio", "voice", "video", "document", "file", "sticker",
-            "location", "contacts", "interactive", "button", "order", "unknown"],
+            "location", "contacts", "interactive", "button", "order", "unknown", "template"],
         default: "text",
     },
     kind: { type: String, enum: ["message", "postback", "system"], default: "message" },
@@ -30,7 +30,7 @@ const MessagesSchema = new Schema({
     repliedTo: { type: Schema.Types.ObjectId, ref: "Message" },
     reactions: { type: [{ emoji: String, by: String, at: Date }], default: [], _id: false },
     statusTimeline: {
-        initiated: Date, sent: Date, delivered: Date, read: Date, failed: Date
+        scheduled: Date, initiated: Date, sent: Date, delivered: Date, read: Date, failed: Date
     },
     misc: { type: Schema.Types.Mixed, default: {} },
     errors: [{ type: Schema.Types.Mixed, default: [] }],

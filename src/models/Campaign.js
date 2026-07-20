@@ -12,6 +12,8 @@ const TaskSchema = new Schema({
     type: { type: String, enum: ["quick", "webhook"], required: true },
     data: { type: Schema.Types.Mixed, default: null },
     error: { type: Schema.Types.Mixed, default: null },
+    response: { type: Schema.Types.Mixed, default: null },
+    references: { type: { type: String, enum: ["Message", "CallSession"] }, id: { type: Schema.Types.ObjectId, refPath: "references.type" } },
 }, { timestamps: true });
 const CampaignSchema = new Schema({
     name: String,

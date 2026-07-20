@@ -9,6 +9,9 @@ import { sendKafkaMessage } from "../../utils/kafka.js";
 import { Lead } from "../../models/Leads.js";
 import { buildComponents } from "../../utils/tools.js";
 import { normalizePhoneNumber } from "../../utils/setup.js";
+import { Message } from "../../models/Messages.js";
+import { Conversation } from "../../models/Conversations.js";
+import { AgentModel } from '../../models/Agent.js';
 export const jobResolvers = {
     Query: {
         fetchCampaigns: async (_, { id, name, channelIds, leadIds, status, limit = 10, page = 1 }, context, info) => {
@@ -51,38 +54,64 @@ export const jobResolvers = {
             const tasks = [];
             const newCampaign = await Campaign.create({ name, business: context.user.business, channel: channelId, leads: leadIds, config, status: "pending", timeLines: { scheduledAt: new Date(scheduledAt), startedAt: null, completedAt: null, cancelledAt: null }, cancel_requested: false, createdBy: context.user._id, });
             switch (channel.provider.name) {
-                case "Whatsapp":
-                    {
-                        const { template: { templateName, languageCode, parametersMap = [] } } = config;
-                        if (!templateName || !languageCode) {
-                            throw new GraphQLError("templateName, languageCode are required");
-                            await newCampaign.deleteOne();
-                        }
-                        for (const leadId of leadIds) {
-                            let lead = await Lead.findById(leadId);
-                            if (!lead) {
-                                await newCampaign.deleteOne();
-                                throw new GraphQLError("Lead not found");
-                            }
-                            const data = { lead }
-                            const components = buildComponents(parametersMap, data);
-                            tasks.push({
-                                type: "quick",
-                                data: {
-                                    input: {
-                                        "to": lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle ?? lead.contactDetails.phone?.[0]?.handle,
-                                        templateName,
-                                        languageCode,
-                                        components: components
-                                    },
-                                    config: { phoneNumberId: channel.config.phone_number_id },
-                                    apiId: "6a4c109329ef086643c24211",
-                                    authId: channel.apiAuthenticator
-                                }
-                            });
-                        }
-                        break;
+                case "Whatsapp": {
+                    const { template: { templateName, languageCode, parametersMap = [] } } = config;
+                    if (!templateName || !languageCode) {
+                        throw new GraphQLError("templateName, languageCode are required");
+                        await newCampaign.deleteOne();
                     }
+                    for (const leadId of leadIds) {
+                        let lead = await Lead.findById(leadId);
+                        if (!lead) {
+                            await newCampaign.deleteOne();
+                            throw new GraphQLError("Lead not found");
+                        }
+                        const data = { lead }
+                        let to = lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle ?? lead.contactDetails.phone?.[0]?.handle;
+                        const components = buildComponents(parametersMap, data);
+                        let lastConversation = await Conversation.findOne({ lead: leadId, channel: channelId, business: context.user.business });
+                        if (!lastConversation) {
+                            const agentDetails = await AgentModel.findOne({ channels: channelId })
+                            lastConversation = await Conversation.create({ lead: leadId, channel: channelId, agent: agentDetails?._id, business: context.user.business, externalConversationId: to });
+                        }
+                        const message = await Message.create({
+                            conversation: lastConversation?._id,
+                            business: context.user.business,
+                            campaign: newCampaign._id,
+                            direction: "outbound",
+                            sender: {
+                                type: "user",
+                                id: context.user._id,
+                                name: context.user.name,
+                                ref: context.user._id,
+                                refModel: "User"
+                            },
+                            type: "template",
+                            content: {
+                                templateName,
+                                languageCode,
+                                components: components
+                            },
+                            statusTimeline: { scheduled: scheduledAt }
+                        })
+                        tasks.push({
+                            type: "quick",
+                            data: {
+                                input: {
+                                    "to": to,
+                                    templateName,
+                                    languageCode,
+                                    components: components
+                                },
+                                config: { phoneNumberId: channel.config.phone_number_id },
+                                apiId: "6a4c109329ef086643c24211",
+                                authId: channel.apiAuthenticator
+                            },
+                            references: { type: "Message", id: message?._id }
+                        });
+                    }
+                    break;
+                }
                 case "Exotel": {
                     for (const leadId of leadIds) {
                         let lead = await Lead.findById(leadId);
@@ -90,7 +119,6 @@ export const jobResolvers = {
                         const { phone } = lead.contactDetails;
                         const completePhoneNumber = phone?.find(entry => entry.isPrimary) ?? phone?.[0];
                         const normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
-                        console.log("normalizedPhoneNumber", { normalizedPhoneNumber, phone, completePhoneNumber});
                         if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
                         else {
                             await newCampaign.deleteOne();
