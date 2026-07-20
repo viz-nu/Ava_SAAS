@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 const TaskSchema = new Schema({
     business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
     campaign: { type: Schema.Types.ObjectId, ref: 'Campaign' },
-    lead: { type: Schema.Types.ObjectId, ref: "Leads" },
+    lead: { type: Schema.Types.ObjectId, ref: "Lead" },
     status: { type: String, enum: ["pending", "in-progress", "completed", "failed", "skipped"], default: "pending" },
     timeLine: {
         startedAt: Date,// start of task
@@ -17,7 +17,7 @@ const CampaignSchema = new Schema({
     name: String,
     business: { type: Schema.Types.ObjectId, ref: 'Businesses', required: true },
     channel: { type: Schema.Types.ObjectId, ref: "Channel", required: true },
-    leads: [{ type: Schema.Types.ObjectId, ref: "Leads" }],
+    leads: [{ type: Schema.Types.ObjectId, ref: "Lead" }],
     config: { type: Schema.Types.Mixed, default: null },
     status: { type: String, enum: ["pending", "active", "completed"], default: "pending" },
     timeLines: {
