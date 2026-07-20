@@ -26,13 +26,7 @@ export function extractHandles(contactDetails = {}) {
 export function buildDuplicateQuery(contactDetails, businessId) {
   const handles = extractHandles(contactDetails);
   if (!handles.length) return null;
-
-  const orClauses = handles.map(({ platform, handle }) => ({
-    [`contactDetails.${platform}`]: {
-      $elemMatch: { handle: { $regex: `^${handle}$`, $options: 'i' } }
-    }
-  }));
-
+  const orClauses = handles.map(({ platform, handle }) => ({ [`contactDetails.${platform}`]: { $elemMatch: { handle } } }));
   return { business: businessId, $or: orClauses };
 }
 
