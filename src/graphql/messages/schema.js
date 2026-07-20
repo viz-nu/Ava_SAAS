@@ -47,7 +47,7 @@ export const messageTypeDefs = `#graphql
 
   """Sender identity on a message"""
   type MessageSender {
-    type: SenderTypeEnum
+    type: String
     id: String
     name: String
     ref: JSON
