@@ -23,6 +23,7 @@ export const jobResolvers = {
             const campaigns = await Campaign.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(rootFields);
             const totalDocuments = await Campaign.countDocuments(filter);
             if (populateFields?.business) await Business.populate(campaigns, { path: 'business', select: populateFields.business });
+            if (populateFields?.leads) await Lead.populate(campaigns, { path: 'leads', select: populateFields.leads });
             if (populateFields?.createdBy) await User.populate(campaigns, { path: 'createdBy', select: populateFields.createdBy });
             if (populateFields?.channel) await Channel.populate(campaigns, { path: 'channel', select: populateFields.channel });
             return { data: campaigns, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
