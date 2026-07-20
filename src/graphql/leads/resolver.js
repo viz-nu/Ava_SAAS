@@ -63,7 +63,7 @@ export const leadResolvers = {
 
       const [leads, totalDocuments] = await Promise.all([
         Lead.find(filter)
-          .sort({ createdAt: -1 })
+          .sort({ updatedAt: -1 })
           .skip((page - 1) * limit)
           .limit(limit)
           .select(rootFields),

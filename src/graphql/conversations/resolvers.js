@@ -24,7 +24,7 @@ export const conversationResolvers = {
       }
       const requestedFields = graphqlFields(info, {}, { processArguments: false });
       const { rootFields, populateFields } = getSelectFields(requestedFields.data);
-      const [conversations, totalDocuments] = await Promise.all([Conversation.find(filter).limit(limit).skip(skip).sort({ createdAt: -1 }).select(rootFields), Conversation.countDocuments(filter),]);
+      const [conversations, totalDocuments] = await Promise.all([Conversation.find(filter).limit(limit).skip(skip).sort({ updatedAt: -1 }).select(rootFields), Conversation.countDocuments(filter),]);
       if (populateFields?.agent)
         await AgentModel.populate(conversations, {
           path: "agent",
@@ -58,10 +58,12 @@ export const conversationResolvers = {
       await conversation.updateStatus(status);
       return conversation;
     },
-    // updateConversationSettings: async (_, { id, settings }, context) => {
-    //   const conversation = await Conversation.findById(id);
-    //   if (!conversation) throw new GraphQLError('Conversation not found');
-    //   return conversation.updateSettings(settings);
-    // }
+    updateConversationConfig: async (_, { id, config }, context) => {
+      const conversation = await Conversation.findById(id);
+      if (!conversation) throw new GraphQLError('Conversation not found');
+      conversation.config = { ...conversation.config, ...config };
+      await conversation.save();
+      return conversation;
+    }
   }
 };
