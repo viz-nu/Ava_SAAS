@@ -1,5 +1,11 @@
 
 export const jobTypeDefs = `#graphql
+type CampaignTimeLines {
+    scheduledAt: DateTime
+    startedAt: DateTime
+    completedAt: DateTime
+    cancelledAt: DateTime
+}
 type Campaign {
     _id: ID!
     name: String!
@@ -7,7 +13,7 @@ type Campaign {
     leads: [Lead]
     config: JSON
     status: String
-    timeLines: JSON
+    timeLines: CampaignTimeLines
     cancel_requested: Boolean
     createdBy: User
     createdAt: DateTime
