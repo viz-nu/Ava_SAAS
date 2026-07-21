@@ -304,13 +304,36 @@ export const leadResolvers = {
           else throw new GraphQLError("Invalid phone number", { extensions: { code: "BAD_REQUEST" } })
           const { accountSid } = channel.apiAuthenticator.credentials;
           const { exophone, appId } = channel.config;
+          let lastConversation = await Conversation.findOne({ lead: id, channel: channelId, business: context.user.business });
+          const agentDetails = await AgentModel.findOne({ channels: channelId })
+          if (!lastConversation) lastConversation = await Conversation.create({ lead: id, channel: channelId, agent: agentDetails?._id, business: context.user.business, externalConversationId: leadPhoneNumber });
+          result = await CallSession.create({
+            lead: id,
+            agent: agentDetails?._id,
+            conversation: lastConversation?._id,
+            business: context.user.business,
+            channel: channel._id,
+            direction: "outbound-dial",
+            statusTimeline: { initiatedAt: new Date() },
+            callDetails: {
+              session: {
+                model: agentDetails?.personalInfo?.VoiceAgentSessionConfig?.model,
+                samplingRate: 8000,
+                voice: agentDetails?.personalInfo?.VoiceAgentSessionConfig?.voice,
+              }
+            }
+          });
           let body = {
             "input": {
               "From": leadPhoneNumber,
               "CallerId": exophone,
               "Url": `http://my.exotel.com/${accountSid}/exoml/start_voice/${appId}`,
               "StatusCallback": `https://chat.avakado.ai/webhook/${channel.apiAuthenticator.provider.name}`,
-              "Record": true
+              "Record": true,
+              "CustomField": {
+                callSession: result._id,
+                business: context.user.business
+              }
             },
             "apiId": "6a50b6bf445a2fbf099b4a29",
             "authId": channel.apiAuthenticator._id
@@ -322,10 +345,8 @@ export const leadResolvers = {
             const message = error?.response?.data?.message || error?.response?.data || error.message || "Unknown error";
             throw new GraphQLError(`Error contacting lead: ${JSON.stringify(message)}`, { extensions: { code: "INTERNAL_SERVER_ERROR" } });
           }
-          result = { _id: "someFakeID" }
           break;
         }
-
         default:
           throw new GraphQLError("Invalid channel provider", { extensions: { code: "NOT_FOUND" } });
       }

@@ -3,8 +3,6 @@
 
 export const messageTypeDefs = `#graphql
 
-
-
   """Type of message content"""
   enum MessageTypeEnum {
     text
@@ -98,17 +96,6 @@ export const messageTypeDefs = `#graphql
 
   # ─── Call Sessions ───────────────────────────────────────────────────────────
 
-  """Status of a call session"""
-  enum CallSessionStatusEnum {
-    initiated
-    ringing
-    in_progress
-    completed
-    failed
-    busy
-    no_answer
-    canceled
-  }
 
   """Recording state for a call session"""
   enum RecordingStatusEnum {
@@ -141,6 +128,7 @@ export const messageTypeDefs = `#graphql
 
   """Status timestamps for a call session"""
   type CallStatusTimeline {
+    scheduledAt: DateTime
     initiatedAt: DateTime
     ringingAt: DateTime
     in_progressAt: DateTime
@@ -155,23 +143,19 @@ export const messageTypeDefs = `#graphql
   """A phone/voice call session linked to a conversation"""
   type CallSession {
     _id: ID!
-    """Conversation this call belongs to"""
+    lead: Lead
     conversation: Conversation
-    business: ID
-    """Channel used for this call"""
-    channel: ID
-    """Provider-side call ID"""
+    campaign: Campaign
+    business: Business
+    channel: Channel
+    agent: Agent
     externalCallSessionId: String
-    """inbound | outbound"""
     direction: String
-    status: CallSessionStatusEnum
     statusTimeline: CallStatusTimeline
     recording: CallRecording
-    """Ordered transcript segments"""
     transcripts: [Transcript]
-    """Raw provider call details"""
     callDetails: JSON
-    """Ordered log of call events"""
+    isSummarized: Boolean
     sequenceOfEvents: [JSON]
     createdAt: DateTime
     updatedAt: DateTime
@@ -206,7 +190,6 @@ export const messageTypeDefs = `#graphql
     """
     fetchCallSessions(
       conversationId: ID
-      status: CallSessionStatusEnum
       limit: Int
       page: Int
     ): CallSessionPagination @requireScope(scope: "call:read") @requireBusinessAccess

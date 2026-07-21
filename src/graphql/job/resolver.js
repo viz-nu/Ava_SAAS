@@ -12,6 +12,7 @@ import { normalizePhoneNumber } from "../../utils/setup.js";
 import { Message } from "../../models/Messages.js";
 import { Conversation } from "../../models/Conversations.js";
 import { AgentModel } from '../../models/Agent.js';
+import { CallSession } from "../../models/CallSessions.js";
 export const jobResolvers = {
     Query: {
         fetchCampaigns: async (_, { id, name, channelIds, leadIds, status, limit = 10, page = 1 }, context, info) => {
@@ -126,6 +127,28 @@ export const jobResolvers = {
                         }
                         const { accountSid } = channel.apiAuthenticator.credentials;
                         const { exophone, appId } = channel.config;
+                        let lastConversation = await Conversation.findOne({ lead: leadId, channel: channelId, business: context.user.business });
+                        const agentDetails = await AgentModel.findOne({ channels: channelId })
+                        if (!lastConversation) {
+                            lastConversation = await Conversation.create({ lead: leadId, channel: channelId, agent: agentDetails?._id, business: context.user.business, externalConversationId: to });
+                        }
+                        const callSession = await CallSession.create({
+                            lead: leadId,
+                            agent: agentDetails?._id,
+                            conversation: lastConversation?._id,
+                            campaign: newCampaign._id,
+                            business: context.user.business,
+                            channel: channel._id,
+                            direction: "outbound-dial",
+                            statusTimeline: { scheduledAt: scheduledAt },
+                            callDetails: {
+                                session: {
+                                    model: agentDetails?.personalInfo?.VoiceAgentSessionConfig?.model,
+                                    samplingRate: 8000,
+                                    voice: agentDetails?.personalInfo?.VoiceAgentSessionConfig?.voice,
+                                }
+                            },
+                        });
                         tasks.push({
                             type: "webhook",
                             data: {
@@ -136,6 +159,7 @@ export const jobResolvers = {
                                     "StatusCallback": `https://chat.avakado.ai/webhook/${channel.provider.name}`,
                                     "Record": true,
                                     "CustomField": {
+                                        callSession: callSession._id,
                                         campaign: newCampaign._id,
                                         business: context.user.business
                                     }
