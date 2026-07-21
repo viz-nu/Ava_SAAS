@@ -13,6 +13,10 @@ type Campaign {
     createdAt: DateTime
     updatedAt: DateTime
 }
+    type TypeReference {
+        type: String
+        id: ID
+    }
     type Task {
         _id: ID!
         business: Business
@@ -25,6 +29,8 @@ type Campaign {
         data: JSON
         error: JSON
         updatedAt: DateTime
+        response: JSON
+        references: TypeReference
     }
     type CampaignPagination {
         data: [Campaign]
