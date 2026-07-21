@@ -130,7 +130,7 @@ export const jobResolvers = {
                         let lastConversation = await Conversation.findOne({ lead: leadId, channel: channelId, business: context.user.business });
                         const agentDetails = await AgentModel.findOne({ channels: channelId })
                         if (!lastConversation) {
-                            lastConversation = await Conversation.create({ lead: leadId, channel: channelId, agent: agentDetails?._id, business: context.user.business, externalConversationId: to });
+                            lastConversation = await Conversation.create({ lead: leadId, channel: channelId, agent: agentDetails?._id, business: context.user.business, externalConversationId: leadPhoneNumber });
                         }
                         const callSession = await CallSession.create({
                             lead: leadId,
