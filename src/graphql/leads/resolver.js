@@ -429,6 +429,15 @@ export const leadResolvers = {
 
       return { created, merged, duplicatesRequiringMode };
     },
+    bulkUpdateLeads: async (_, { dataList }, context) => {
+      const updated = [];
+      for (const input of dataList) {
+        const { id, LeadCreateInput } = input;
+        const updated = await Lead.findByIdAndUpdate(id, LeadCreateInput, { new: true, runValidators: true });
+        updated.push(updated);
+      }
+      return updated;
+    },
 
     updateLead: async (_, { id, LeadCreateInput }, context) => {
       const { name, contactDetails, createdBy, lastInteractedAt, nextFollowUpAt, source, tags, leadScore, status, notes, data } = LeadCreateInput;

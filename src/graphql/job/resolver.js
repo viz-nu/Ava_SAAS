@@ -44,6 +44,77 @@ export const jobResolvers = {
             if (populateFields?.campaign) await Campaign.populate(tasks, { path: 'campaign', select: populateFields.campaign });
             if (populateFields?.lead) await Lead.populate(tasks, { path: 'lead', select: populateFields.lead });
             return { data: tasks, metaData: { page, limit, totalPages: Math.ceil(totalDocuments / limit), totalDocuments } };
+        },
+        validateCampaign: async (_, { channelId, leadIds, config = {} }, context, info) => {
+            const channel = await Channel.findById(channelId, "_id name config provider apiAuthenticator").populate("provider").populate("apiAuthenticator");
+            if (!channel) throw new GraphQLError("Channel not found");
+            let leadErrors = [];
+            switch (channel.provider.name) {
+                case "Whatsapp": {
+                    if (!channel.config.phone_number_id) throw new GraphQLError("phone_number_id is required");
+                    if (!channel.apiAuthenticator) throw new GraphQLError("apiAuthenticator is required");
+                    const { template: { templateName, languageCode, parametersMap = [] } } = config;
+                    if (!templateName || !languageCode) throw new GraphQLError("templateName, languageCode are required");
+                    // stack all lead errors and return them in a single array
+
+                    for (const leadId of leadIds) {
+                        let lead = await Lead.findById(leadId);
+                        if (!lead) {
+                            leadErrors.push({ leadId, error: "Lead not found" });
+                            continue;
+                        }
+                        const data = { lead }
+                        let to = lead.contactDetails.whatsapp?.find(entry => entry.isPrimary)?.handle ?? lead.contactDetails.whatsapp?.[0]?.handle;
+                        if (!to) {
+                            leadErrors.push({ leadId, error: "Primary WhatsApp number not found" });
+                            continue;
+                        }
+                        let components = null;
+                        try {
+                            components = buildComponents(parametersMap, data);
+                        } catch (error) {
+                            leadErrors.push({ leadId, error: `error in building components for leadId: ${leadId} - ${error.message}` });
+                            continue;
+                        }
+                    }
+                }
+                case "Exotel": {
+                    const { exophone, appId } = channel.config;
+                    const { accountSid } = channel.apiAuthenticator.credentials;
+                    if (!accountSid) throw new GraphQLError("accountSid is required in credentials of channel apiAuthenticator");
+                    if (!exophone || !appId) throw new GraphQLError("exophone, appId are required in channel config");
+                    const agentDetails = await AgentModel.findOne({ channels: channelId })
+                    if (!agentDetails) throw new GraphQLError("agentDetails is required");
+                    const { personalInfo: { VoiceAgentSessionConfig: { model, voice } } } = agentDetails;
+                    if (!model || !voice) throw new GraphQLError("model, voice are required in personalInfo.VoiceAgentSessionConfig of agentDetails");
+                    for (const leadId of leadIds) {
+                        let lead = await Lead.findById(leadId);
+                        if (!lead) {
+                            leadErrors.push({ leadId, error: "Lead not found" });
+                            continue;
+                        }
+                        let leadPhoneNumber = null;
+                        const { phone } = lead.contactDetails;
+                        const completePhoneNumber = phone?.find(entry => entry.isPrimary) ?? phone?.[0];
+                        let normalizedPhoneNumber = null;
+                        try {
+                            normalizedPhoneNumber = normalizePhoneNumber(completePhoneNumber?.handle, completePhoneNumber?.metadata?.country ?? 'IN');
+                        } catch (error) {
+                            leadErrors.push({ leadId, error: `error in normalizing phone number for leadId: ${leadId} - ${error.message} - ${completePhoneNumber?.handle} - ${completePhoneNumber?.metadata?.country ?? 'IN'}` });
+                            continue;
+                        }
+                        if (normalizedPhoneNumber) leadPhoneNumber = normalizedPhoneNumber.nationalNumber;
+                        else {
+                            leadErrors.push({ leadId, error: "Invalid phone number of leadId: " + leadId });
+                            continue;
+                        }
+                    }
+                }
+                default:
+                    throw new GraphQLError("Invalid channel provider", { extensions: { code: "INVALID_CHANNEL_PROVIDER" } });
+            }
+            if (leadErrors.length > 0) throw new GraphQLError("Invalid leads", { extensions: { code: "INVALID_LEADS", leadErrors } });
+            return true;
         }
     },
     Mutation: {

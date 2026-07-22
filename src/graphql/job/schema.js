@@ -49,6 +49,7 @@ type Campaign {
       type  Query {
             fetchCampaigns(id: ID, name: String, channelIds: [ID], leadIds: [ID], status: String, limit: Int, page: Int): CampaignPagination
             fetchTasks(campaignId: ID, status: String, limit: Int, page: Int): TaskPagination
+            validateCampaign(channelId: ID, leadIds: [ID], config: JSON): Boolean
         }
        type Mutation {
             createCampaign(name: String, channelId: ID, leadIds: [ID], config: JSON, scheduledAt: DateTime): Campaign
