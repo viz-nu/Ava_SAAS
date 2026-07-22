@@ -96,6 +96,7 @@ export const jobResolvers = {
                             statusTimeline: { scheduled: scheduledAt }
                         })
                         tasks.push({
+                            lead: leadId,
                             type: "quick",
                             data: {
                                 input: {
@@ -150,6 +151,7 @@ export const jobResolvers = {
                             },
                         });
                         tasks.push({
+                            lead: leadId,
                             type: "webhook",
                             data: {
                                 "input": {
