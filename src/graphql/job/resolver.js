@@ -156,7 +156,7 @@ export const jobResolvers = {
                                 id: context.user._id,
                                 name: context.user.name,
                                 ref: context.user._id,
-                                refModel: "User"
+                                refModel: "Users"
                             },
                             type: "template",
                             content: {
