@@ -19,6 +19,7 @@ export const messageTypeDefs = `#graphql
     button
     order
     unknown
+    template
   }
 
   """Nature of the message event"""
